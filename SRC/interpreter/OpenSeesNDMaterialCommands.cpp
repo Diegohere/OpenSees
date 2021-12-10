@@ -65,6 +65,7 @@ void* OPS_UVCplanestress();
 void* OPS_UVCmultiaxial();
 void* OPS_PressureDependMultiYield03();
 void* OPS_NewPlasticDamageConcretePlaneStress();
+void* OPS_LocalBucklingWebPlate();
 
 namespace {
 
@@ -162,6 +163,7 @@ namespace {
 	nDMaterialsMap.insert(std::make_pair("UVCmultiaxial", &OPS_UVCmultiaxial));
 	nDMaterialsMap.insert(std::make_pair("PressureDependMultiYield03", &OPS_PressureDependMultiYield03));
 	nDMaterialsMap.insert(std::make_pair("PlasticDamageConcretePlaneStress", &OPS_NewPlasticDamageConcretePlaneStress));
+	nDMaterialsMap.insert(std::make_pair("OPS_LocalBucklingWebPlate", &OPS_LocalBucklingWebPlate));
 
 	return 0;
     }

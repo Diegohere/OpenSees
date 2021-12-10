@@ -394,6 +394,7 @@
 #define ND_TAG_StressDensityModel3D 57
 #define ND_TAG_UVCmultiaxial  58
 #define ND_TAG_UVCplanestress 59
+#define ND_TAG_LocalBucklingWebPlate 60
 
 #define ND_TAG_LowTension 65
 #define ND_TAG_LowTensionPlaneStress 66

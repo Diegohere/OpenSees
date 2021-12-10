@@ -1400,6 +1400,9 @@
     <ClCompile Include="..\..\..\SRC\material\uniaxial\SteelDRC.cpp">
       <Filter>uniaxial</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\material\nD\LocalBucklingWebPlate.cpp">
+      <Filter>nD</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\material\uniaxial\AxialSp.h">
@@ -2587,6 +2590,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\material\uniaxial\SteelFractureDI.h">
       <Filter>uniaxial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\material\nD\LocalBucklingWebPlate.h">
+      <Filter>nD</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

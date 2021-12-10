@@ -90,14 +90,15 @@ OBJS       = NDMaterial.o \
 	PlateFromPlaneStressMaterialThermal.o \
 	UVCmultiaxial.o	\
 	UVCplanestress.o \
-	PlateRebarMaterialThermal.o
+	PlateRebarMaterialThermal.o \
+	LocalBucklingWebPlate.o
 
 
-all: $(OBJS) 
+all: $(OBJS)
 	@$(CD) $(FE)/material/nD/soil; $(MAKE);
 	@$(CD) $(FE)/material/nD/feap; $(MAKE);
 	@$(CD) $(FE)/material/nD/cyclicSoil; $(MAKE);
-	@$(CD) $(FE)/material/nD/reinforcedConcretePlaneStress; $(MAKE); 
+	@$(CD) $(FE)/material/nD/reinforcedConcretePlaneStress; $(MAKE);
 	@$(CD) $(FE)/material/nD/UWmaterials; $(MAKE);
 	@$(CD) $(FE)/material/nD/matCMM; $(MAKE);
 	@$(CD) $(FE)/material/nD/stressDensityModel; $(MAKE);
@@ -117,7 +118,7 @@ spotless: clean
 	@$(CD) $(FE)/material/nD/soil; $(MAKE) wipe;
 	@$(CD) $(FE)/material/nD/feap; $(MAKE) wipe;
 	@$(CD) $(FE)/material/nD/cyclicSoil; $(MAKE) wipe;
-	@$(CD) $(FE)/material/nD/reinforcedConcretePlaneStress; $(MAKE) wipe; 
+	@$(CD) $(FE)/material/nD/reinforcedConcretePlaneStress; $(MAKE) wipe;
 	@$(CD) $(FE)/material/nD/UWmaterials; $(MAKE) wipe;
 	@$(CD) $(FE)/material/nD/matCMM; $(MAKE) wipe;
 	@$(CD) $(FE)/material/nD/stressDensityModel; $(MAKE) wipe;
@@ -125,6 +126,3 @@ spotless: clean
 wipe: spotless
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-
-
-

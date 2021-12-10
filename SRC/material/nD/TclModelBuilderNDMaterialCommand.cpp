@@ -126,6 +126,7 @@ extern void *OPS_AcousticMedium(void);
 extern void* OPS_UVCmultiaxial(void);
 extern void* OPS_UVCplanestress(void);
 extern  void *OPS_SAniSandMSMaterial(void);
+extern void* OPS_LocalBucklingWebPlate(void);
 
 extern  void *OPS_ElasticIsotropicMaterialThermal(void);  //L.Jiang [SIF]
 extern  void *OPS_DruckerPragerMaterialThermal(void);//L.Jiang [SIF]
@@ -420,6 +421,15 @@ TclModelBuilderNDMaterialCommand (ClientData clientData, Tcl_Interp *interp, int
       else 
 	return TCL_ERROR;
     }
+
+	else if ((strcmp(argv[1], "LocalBucklingWebPlate") == 0)) {
+
+	void *theMat = OPS_LocalBucklingWebPlate();
+	if (theMat != 0)
+		theMaterial = (NDMaterial*)theMat;
+	else
+		return TCL_ERROR;
+	}
 
 	  else if ((strcmp(argv[1],"MaterialCMM") == 0)){
 
