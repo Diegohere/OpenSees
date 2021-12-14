@@ -104,13 +104,12 @@ private:
 	int returnMappingHardening(Vector strain_nPlus1, Vector alpha, Vector eta_trial);
 
 	// Return mapping for softening stage
-	int returnMappingSoftening();
+	int returnMappingSoftening(Vector strain_nPlus1, Vector stressTrial, Vector alpha, );
 
-	//! Sets the elastoplastic tangent modulus based on the trial state
-	void calculateStiffness(double consistParam, double fBar,
-		const Vector& stressRelative);
+	//! Sets the elastoplastic tangent modulus for elastic stage
+	void calculateConsistentTangentModulusElastic();
 
-	// Sets the elastoplastic tangent modulus based on the trial state
+	// Sets the elastoplastic tangent modulus for hardening stage
 	void calculateConsistentTangentModulusHardening(double consistParam, double fBar,
 		const Vector& stressRelative);
 
@@ -137,6 +136,15 @@ private:
 
 	// Returns the current eK value
 	double calculateEk(unsigned int i);
+
+	// Returns the current value of chi1c
+	double calculateChi1c(void);
+
+	// Return the current value of the ratio sigmaSurSigmaY
+	double calculateSigmaSurSigmaY(void);
+
+	// Initialize value of b_chi1c
+	void initializeBChi1c(void);
 
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
@@ -180,6 +188,11 @@ private:
 	double tPlateThickness;
 	double sigmaC0Stress;
 
+	// Plate stress properties (fixed for now, could be set by the constructor)
+	const double alpha_chi1c = 1. / 3.;
+	const double sigmaDMStress = 10;
+	double b_chi1c;
+
 	// Internal variables
 	Vector strainConverged;
 	Vector strainTrial;
@@ -191,7 +204,8 @@ private:
 	double strainPEqTrial;
 	double strainPBEqConverged;  // Equivalent post buckling strain
 	double strainPBEqTrial;
-	double chi1c;
+	/*double chi1cConverged;
+	double chi1cTrial;*/
 	Vector stressConverged;
 	Vector stressTrial;
 	std::vector<Vector> alphaKConverged;
