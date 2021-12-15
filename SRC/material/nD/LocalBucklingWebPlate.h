@@ -104,7 +104,7 @@ private:
 	int returnMappingHardening(Vector strain_nPlus1, Vector alpha, Vector eta_trial);
 
 	// Return mapping for softening stage
-	int returnMappingSoftening(Vector strain_nPlus1, Vector stressTrial, Vector alpha, );
+	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alpha);
 
 	//! Sets the elastoplastic tangent modulus for elastic stage
 	void calculateConsistentTangentModulusElastic();
@@ -140,8 +140,11 @@ private:
 	// Returns the current value of chi1c
 	double calculateChi1c(void);
 
-	// Return the current value of the ratio sigmaSurSigmaY
+	// Returns the current value of the ratio sigmaSurSigmaY
 	double calculateSigmaSurSigmaY(void);
+
+	// Returns the current value of the derivative dSigmaSurSigmaYdEpsilonPBeq
+	double calculateDSigmaSurSigmaYdEpsilonPBeq(void);
 
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);
