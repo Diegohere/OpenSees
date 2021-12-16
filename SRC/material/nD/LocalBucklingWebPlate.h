@@ -114,7 +114,7 @@ private:
 		const Vector& stressRelative);
 
 	// Sets the consistent tangent modulus for softening stage
-	void calculateConsistentTangentModulusSoftening();
+	void calculateConsistentTangentModulusSoftening(const Vector& relativeStressTrial, const Vector& alpha, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
 
 	// Returns the dot product of two length 3 vectors
 	double dotprod3(const Vector& v1, const Vector& v2);
