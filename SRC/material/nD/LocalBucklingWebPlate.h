@@ -221,6 +221,7 @@ private:
 
 	// Projection matrices and their eigendecomposition
 	Vector pVect;
+	Matrix ppMat;
 	Matrix PMat;
 	Matrix qMat;
 	Matrix qMatT;  // transpose
