@@ -43,7 +43,7 @@ public:
 	const char* getClassType(void) const { return "LocalBucklingWebPlate"; };
 
 	// Returns the type of ND material
-	const char* getType() const { return "MultiaxialFiberStress"; };
+	const char* getType() const { return "BeamFiber"; };
 
 	// Return the number of vector components
 	int getOrder() const { return N_DIMS; };

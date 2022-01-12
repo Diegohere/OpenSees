@@ -110,7 +110,7 @@ void* OPS_LocalBucklingWebPlate(void) {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRatio,
-	double sy0, double qInf, double b, double dInfm, double a,
+	double sy0, double qInf, double b, double dInf, double a,
 	std::vector<double> cK, std::vector<double> gammaK,
 	double bPlate, double tPlate, double sigmaC0)
 	: NDMaterial(tag, ND_TAG_LocalBucklingWebPlate),
@@ -279,6 +279,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 	Vector etaTrial = Vector(N_DIMS);
 	Vector deltaStrain_todo = Vector(N_DIMS);
 	Vector deltaStrain_trial = Vector(N_DIMS);
+	Vector deltaStrain_converged4Peak = Vector(N_DIMS);
+	Vector deltaStrain_remaining4Peak = Vector(N_DIMS);
+	Vector deltaStrain_fullIncrement = Vector(N_DIMS);
 	Vector strain_previous = Vector(N_DIMS);
 	Vector strain_nPlus1 = Vector(N_DIMS);
 	double triaxiality = 0.;
@@ -291,8 +294,11 @@ int LocalBucklingWebPlate::timeIntegration() {
 	// Update the total strain vector
 	deltaStrain_todo.Zero();
 	deltaStrain_todo = strainTrial - strainConverged;
+	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 	strain_previous = strainConverged;
+	deltaStrain_converged4Peak.Zero();
+	deltaStrain_remaining4Peak = deltaStrain_trial;
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
@@ -350,6 +356,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
+						//TODO: change following not elastic if works
 						strain_previous += deltaStrain_trial;
 						deltaStrain_trial = deltaStrain_todo;
 					}
@@ -373,7 +380,12 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 				else { // if chi1c !=0 --> softening stage
 					postBucklingLoading = 1;
-					retVal = returnMappingSoftening(strain_nPlus1, stressTrial, alpha);
+
+					// Update the relative stress trial for softening stage ADDED ON 12.01.2022
+					stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
+					xiTrial = stressTrial - alpha;
+
+					retVal = returnMappingSoftening(strain_nPlus1, xiTrial, alpha);
 
 					// Check with the strain increments
 					deltaStrain_todo -= deltaStrain_trial;
@@ -381,6 +393,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
+						//TODO: change following hardening in compression if works
 						strain_previous += deltaStrain_trial;
 						deltaStrain_trial = deltaStrain_todo;
 					}
@@ -389,6 +402,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 				// Check if the initial capping stress sigmaC0 has been passed
 				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 					deltaStrain_todo -= deltaStrain_trial;
+					/*deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
+					deltaStrain_converged4Peak = deltaStrain_trial;*/
 
 					// Check if the full strain increment has been done
 					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
@@ -397,6 +412,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 					else { // converged but there is more strain increment to do
 						strain_previous += deltaStrain_trial;
 						deltaStrain_trial = deltaStrain_todo;
+						//deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo;
+
 					}
 
 					// Check if capping point is reached
@@ -406,6 +423,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 				else { // the capping point has been passed
 					deltaStrain_trial /= 2.;
+					/*deltaStrain_remaining4Peak /= 2;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
 				}
 			}
 		}
@@ -474,7 +493,7 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 
 		etaTilde = etaTrial + qMatT * alphaTilde;
 		eta = vecMult3(etaTilde, gammaDiag);
-		f2bar = 2. / 3. * pow(etaTrial(0), 2) + 2. * pow(etaTrial(1), 2) + 2. * pow(etaTrial(2), 2);
+		f2bar = 2. / 3. * pow(eta(0), 2) + 2. * pow(eta(1), 2) + 2. * pow(eta(2), 2);
 		fBar = sqrt(f2bar);
 
 		// Calculate Newton denominator
@@ -883,24 +902,28 @@ int LocalBucklingWebPlate::setTrialStrainIncr(const Vector& v, const Vector& r) 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 const Vector& LocalBucklingWebPlate::getStrain() {
+
 	return strainTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 const Vector& LocalBucklingWebPlate::getStress() {
+
 	return stressTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 const Matrix& LocalBucklingWebPlate::getTangent() {
+
 	return stiffnessTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 const Matrix& LocalBucklingWebPlate::getInitialTangent() {
+
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable
 	return stiffnessInitial;
 }
@@ -930,6 +953,7 @@ int LocalBucklingWebPlate::commitState() {
 * @return 0 if successful
 */
 int LocalBucklingWebPlate::revertToLastCommit() {
+
 	strainTrial = strainConverged;
 	strainPlasticTrial = strainPlasticConverged;
 	strainPEqTrial = strainPEqConverged;
@@ -948,6 +972,7 @@ int LocalBucklingWebPlate::revertToLastCommit() {
 * @return 0 if successful
 */
 int LocalBucklingWebPlate::revertToStart() {
+
 	strainConverged.Zero();
 	strainPlasticConverged.Zero();
 	strainPEqConverged = 0.;
@@ -1135,11 +1160,10 @@ Matrix LocalBucklingWebPlate::calculateComplianceMatrix() {
 void LocalBucklingWebPlate::initializeEigendecompositions() {
 
 	// Orthogonal matrix (eigenvectors)
-	double qDenom = sqrt(2.);
 	qMat.Zero();
-	qMat(0, 0) = 1. / qDenom;  qMat(0, 1) = -1. / qDenom; qMat(0, 2) = 0;
-	qMat(1, 0) = 1. / qDenom;  qMat(1, 1) = 1. / qDenom; qMat(1, 2) = 0;
-	qMat(2, 0) = 0;  qMat(2, 1) = 0; qMat(2, 2) = 1.;
+	qMat(0, 0) = 1.;
+	qMat(1, 1) = 1.;
+	qMat(2, 2) = 1.;
 	// Transpose
 	qMatT.Zero();
 	qMatT.addMatrixTranspose(0., qMat, 1.0);
@@ -1158,7 +1182,7 @@ void LocalBucklingWebPlate::initializeEigendecompositions() {
 	pVect.Zero();
 	pVect(0) = 1.;
 	lambdapp.Zero();
-	lambdaP(0) = 1.;
+	lambdapp(0) = 1.;
 	ppMat.Zero();
 	ppMat(0, 0) = 1.;
 
@@ -1213,10 +1237,25 @@ double LocalBucklingWebPlate::calculateYieldStress() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 double LocalBucklingWebPlate::calculateIsotropicModulus() {
+	double IsotropicModulus=0.0;
+
 	double sigmaY1, sigmaY2;
 	sigmaY1 = qInf * (1. - exp(-bIso * strainPEqTrial));
 	sigmaY2 = dInf * (1. - exp(-aIso * strainPEqTrial));
-	return bIso * (qInf - sigmaY1) - aIso * (dInf - sigmaY2);
+	IsotropicModulus = bIso * (qInf - sigmaY1) - aIso * (dInf - sigmaY2);
+
+	//double IsotropicModulus=0.0;
+	//IsotropicModulus = (qInf * bIso * exp(-bIso * strainPEqTrial)) - (dInf * aIso * exp(-aIso * strainPEqTrial));
+
+	/*opserr << "This is qInf:" << qInf << endln;
+	opserr << "This is bIso:" << bIso << endln;
+	opserr << "This is dInf:" << qInf << endln;
+	opserr << "This is aIso:" << bIso << endln;
+	opserr << "This is term 1:" << (qInf * bIso * exp(-bIso * strainPEqTrial)) << endln;
+	opserr << "This is term 2:" << (dInf * aIso * exp(-aIso * strainPEqTrial)) << endln;
+	opserr << "This is IsotropicModulus K:" << IsotropicModulus << endln;*/
+	
+	return IsotropicModulus;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
