@@ -155,6 +155,9 @@ private:
 	// Returns the inverse of a 3x3 matrix
 	Matrix matinv3(const Matrix& m);
 
+	// Reverts to before the capping point
+	int revertToBeforeCapping(bool cappingPoint);
+
 	/* ------------------------------------------------------------------------ */
 	/* Members                                                                  */
 	/* ------------------------------------------------------------------------ */

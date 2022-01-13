@@ -290,6 +290,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	double yieldStress = 0.;
 	double f2bar = 0.;
 	double chi1c = 0.;
+	int cappingPoint = 0;
 
 	// Update the total strain vector
 	deltaStrain_todo.Zero();
@@ -302,15 +303,26 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
+		iterationNumber_timeIntegration++;
 
 		// Update the total strain vector for time integration iteration
 		strain_nPlus1 = strain_previous + deltaStrain_trial;
 
 		// Elastic trial step
-		alpha.Zero();
-		for (unsigned int i = 0; i < nBackstresses; ++i)
-			alpha = alpha + alphaKConverged[i];
-		stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticConverged - strainPostBucklingConverged);
+		if (cappingPoint==0)
+		{
+			alpha.Zero();
+			for (unsigned int i = 0; i < nBackstresses; ++i)
+				alpha = alpha + alphaKConverged[i];
+			stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticConverged - strainPostBucklingConverged);
+		}
+		else // We are at the switch between hardening and softening stage
+		{
+			alpha.Zero();
+			for (unsigned int i = 0; i < nBackstresses; ++i)
+			alpha = alpha + alphaKTrial[i];
+			stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
+		}
 		xiTrial = stressTrial - alpha;
 		triaxiality = 1. / 3. * xiTrial[0];
 		etaTrial = qMatT * xiTrial;
@@ -347,27 +359,39 @@ int LocalBucklingWebPlate::timeIntegration() {
 				// Update the stiffness for elastic loading
 				calculateConsistentTangentModulusElastic();
 
-				// Check if buckling before initial yield (this is elastic buckling)
+				// Check if the initial capping stress sigmaC0 has been passed
 				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
-					deltaStrain_todo -= deltaStrain_trial;
+					//deltaStrain_todo -= deltaStrain_trial;
+					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
+					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if the full strain increment has been done
 					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
-						//TODO: change following not elastic if works
-						strain_previous += deltaStrain_trial;
-						deltaStrain_trial = deltaStrain_todo;
+						/*strain_previous += deltaStrain_trial;
+						deltaStrain_trial = deltaStrain_todo;*/
+						this->revertToBeforeCapping(cappingPoint);
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2;
 					}
 
 					// Check if capping point is reached
-					if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2)) <= RETURN_MAP_TOL) { // capping point is reached
-						chi1c = RETURN_MAP_TOL;
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+						cappingPoint == 1;
+						//chi1c = RETURN_MAP_TOL;
+						if (convergedMatLaw == 0)
+						{
+							strainPBEqTrial = RETURN_MAP_TOL / 100;
+						}
+						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
 				}
 				else { // the capping point has been passed
-					deltaStrain_trial /= 2.;
+					//deltaStrain_trial /= 2.;
+					this->revertToBeforeCapping(cappingPoint);
+					deltaStrain_remaining4Peak /= 2;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
 				}
 			}
 			else { // if not elastic
@@ -382,49 +406,57 @@ int LocalBucklingWebPlate::timeIntegration() {
 					postBucklingLoading = 1;
 
 					// Update the relative stress trial for softening stage ADDED ON 12.01.2022
-					stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
-					xiTrial = stressTrial - alpha;
+					/*stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
+					xiTrial = stressTrial - alpha;*/
 
 					retVal = returnMappingSoftening(strain_nPlus1, xiTrial, alpha);
 
 					// Check with the strain increments
-					deltaStrain_todo -= deltaStrain_trial;
-					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
-						convergedMatLaw = true;
-					}
-					else { // converged but there is more strain increment to do
-						//TODO: change following hardening in compression if works
-						strain_previous += deltaStrain_trial;
-						deltaStrain_trial = deltaStrain_todo;
-					}
+					//deltaStrain_todo -= deltaStrain_trial;
+					//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					//	convergedMatLaw = true;
+					//}
+					//else { // converged but there is more strain increment to do
+					//	//TODO: change following hardening in compression if works
+					//	strain_previous += deltaStrain_trial;
+					//	deltaStrain_trial = deltaStrain_todo;
+					//}
+					convergedMatLaw = true;
 				}
 
 				// Check if the initial capping stress sigmaC0 has been passed
 				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
-					deltaStrain_todo -= deltaStrain_trial;
-					/*deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
-					deltaStrain_converged4Peak = deltaStrain_trial;*/
+					//deltaStrain_todo -= deltaStrain_trial;
+					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
+					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if the full strain increment has been done
 					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
-						strain_previous += deltaStrain_trial;
-						deltaStrain_trial = deltaStrain_todo;
-						//deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo;
-
+						/*strain_previous += deltaStrain_trial;
+						deltaStrain_trial = deltaStrain_todo;*/
+						this->revertToBeforeCapping(cappingPoint);
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2;
 					}
 
 					// Check if capping point is reached
-					if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2)) <= RETURN_MAP_TOL) { // capping point is reached
-						chi1c = RETURN_MAP_TOL;
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= - RETURN_MAP_TOL) { // capping point is reached
+						cappingPoint == 1;
+						//chi1c = RETURN_MAP_TOL;
+						if (convergedMatLaw==0)
+						{
+							strainPBEqTrial = RETURN_MAP_TOL / 100;
+						}
+						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
 				}
 				else { // the capping point has been passed
-					deltaStrain_trial /= 2.;
-					/*deltaStrain_remaining4Peak /= 2;
-					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
+					//deltaStrain_trial /= 2.;
+					this->revertToBeforeCapping(cappingPoint);
+					deltaStrain_remaining4Peak /= 2;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
 				}
 			}
 		}
@@ -535,7 +567,7 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 		alphaKTrial[i] = alphaKConverged[i] * eK + stressRelative / yieldStress * cK[i] / gammaK[i] * (1. - eK);
 	}
 	strainPlasticTrial = strainPlasticConverged + consistParam_plastic * PMat * stressRelative;
-	stressTrial = elasticMatrix * (strainTrial - strainPlasticTrial - strainPostBucklingConverged);
+	stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingConverged);
 
 	// Calculate the consistent tangent modulus for hardening stage
 	calculateConsistentTangentModulusHardening(consistParam_plastic, fBar, stressRelative);
@@ -543,9 +575,9 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 	// Warn the user if the algorithm did not convergein the return mapping for hardening and return -1
 	if (iterationNumber_ReturnMapping >= MAXIMUM_ITERATIONS_RETURNMAPPING && fabs(phiVM) > RETURN_MAP_TOL) {
 		opserr << "LocalBucklingWebPlate::returnMappingHardening return mapping hardening stage did not converge!" << endln;
-		opserr << "\tDelta epsilon 11 = " << strainTrial[0] - strainConverged[0] << endln;
-		opserr << "\tDelta epsilon 12 = " << strainTrial[1] - strainConverged[1] << endln;
-		opserr << "\tDelta epsilon 13 = " << strainTrial[2] - strainConverged[2] << endln;
+		opserr << "\tDelta epsilon 11 = " << strain_nPlus1[0] - strainConverged[0] << endln;
+		opserr << "\tDelta epsilon 12 = " << strain_nPlus1[1] - strainConverged[1] << endln;
+		opserr << "\tDelta epsilon 13 = " << strain_nPlus1[2] - strainConverged[2] << endln;
 		opserr << "\tExiting with yield function = " << phiVM << " > " << RETURN_MAP_TOL << endln;
 		retVal = -1;
 	}
@@ -791,7 +823,7 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vec
 	D(1) = DPreFactor * (dPhiELLDSigma(1) + dPhiELLDChi1c * dChi1cDepsiPBeq * consistParam_postBuckling * dPsiDSigma(1) * B);
 	D(2) = DPreFactor * (dPhiELLDSigma(2) + dPhiELLDChi1c * dChi1cDepsiPBeq * consistParam_postBuckling * dPsiDSigma(2) * B);
 
-	AOutDPsiDSigma = A % dPsiDChi1c;
+	AOutDPsiDSigma = A % dPsiDSigma;
 	CepTerm1 = 3. * PMat + 2. * chi1c * ppMat + consistParam_postBuckling * AOutDPsiDSigma;
 	CepTerm2 = D % (dPhiELLDSigma + A * psi);
 	I.Zero();
@@ -803,6 +835,7 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vec
 
 	// Take the symmetric approximation
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	//opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
 	
 	return;
 
@@ -962,6 +995,25 @@ int LocalBucklingWebPlate::revertToLastCommit() {
 	stressTrial = stressConverged;
 	alphaKTrial = alphaKConverged;
 	stiffnessTrial = stiffnessConverged;
+	return 0;
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+/**
+*
+* @return 0 if successful
+*/
+int LocalBucklingWebPlate::revertToBeforeCapping(bool cappingPoint) {
+	if (cappingPoint ==0)
+	{
+		strainPlasticTrial = strainPlasticConverged;
+		strainPEqTrial = strainPEqConverged;
+		strainPostBucklingTrial = strainPostBucklingConverged;
+		strainPBEqTrial = strainPBEqConverged;
+		alphaKTrial = alphaKConverged;
+		stiffnessTrial = stiffnessConverged;
+	}
 	return 0;
 }
 

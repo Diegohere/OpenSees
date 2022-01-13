@@ -89,6 +89,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
     </ClCompile>
     <Lib>
       <OutputFile>.\..\..\lib\debug\material.lib</OutputFile>
