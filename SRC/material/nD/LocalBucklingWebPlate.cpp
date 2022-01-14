@@ -323,6 +323,12 @@ int LocalBucklingWebPlate::timeIntegration() {
 			alpha = alpha + alphaKTrial[i];
 			stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 		}
+
+	/*	if (abs(stressTrial[0])>1000)
+		{
+			opserr << "Stress trial to big:" << stressTrial[0] << endln;
+		}*/
+
 		xiTrial = stressTrial - alpha;
 		triaxiality = 1. / 3. * xiTrial[0];
 		etaTrial = qMatT * xiTrial;
@@ -372,13 +378,13 @@ int LocalBucklingWebPlate::timeIntegration() {
 					else { // converged but there is more strain increment to do
 						/*strain_previous += deltaStrain_trial;
 						deltaStrain_trial = deltaStrain_todo;*/
-						this->revertToBeforeCapping(cappingPoint);
+						revertToBeforeCapping(cappingPoint);
 						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2;
 					}
 
 					// Check if capping point is reached
 					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
-						cappingPoint == 1;
+						cappingPoint = 1;
 						//chi1c = RETURN_MAP_TOL;
 						if (convergedMatLaw == 0)
 						{
@@ -389,7 +395,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 				else { // the capping point has been passed
 					//deltaStrain_trial /= 2.;
-					this->revertToBeforeCapping(cappingPoint);
+					revertToBeforeCapping(cappingPoint);
 					deltaStrain_remaining4Peak /= 2;
 					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
 				}
@@ -425,10 +431,21 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= 0.01) { // not yet at capping point
 					//deltaStrain_todo -= deltaStrain_trial;
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
+
+					// Check if capping point is reached
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -0.01) { // capping point is reached
+						cappingPoint = 1;
+						//chi1c = RETURN_MAP_TOL;
+						if (convergedMatLaw == 0)
+						{
+							strainPBEqTrial = RETURN_MAP_TOL / 100;
+						}
+						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
+					}
 
 					// Check if the full strain increment has been done
 					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
@@ -437,24 +454,16 @@ int LocalBucklingWebPlate::timeIntegration() {
 					else { // converged but there is more strain increment to do
 						/*strain_previous += deltaStrain_trial;
 						deltaStrain_trial = deltaStrain_todo;*/
-						this->revertToBeforeCapping(cappingPoint);
-						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2;
-					}
-
-					// Check if capping point is reached
-					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= - RETURN_MAP_TOL) { // capping point is reached
-						cappingPoint == 1;
-						//chi1c = RETURN_MAP_TOL;
-						if (convergedMatLaw==0)
-						{
-							strainPBEqTrial = RETURN_MAP_TOL / 100;
+						if (cappingPoint == 0) {
+							revertToBeforeCapping(cappingPoint);
+							deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2;
 						}
-						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
+					
 				}
 				else { // the capping point has been passed
 					//deltaStrain_trial /= 2.;
-					this->revertToBeforeCapping(cappingPoint);
+					revertToBeforeCapping(cappingPoint);
 					deltaStrain_remaining4Peak /= 2;
 					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
 				}
@@ -1391,6 +1400,13 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY() {
 
 		sigmaSurSigmaY = real(sol4eq3);
 	}
+
+	/*if (sigmaSurSigmaY<0.1)
+	{
+		opserr << "sigmaSurSigmaY is too small " << sigmaSurSigmaY<< endln;
+		opserr << "strainPBeqTrial: " << strainPBEqTrial << endln;
+		opserr << "stressTrial: " << stressTrial << endln;
+	}*/
 
 	return sigmaSurSigmaY;
 
