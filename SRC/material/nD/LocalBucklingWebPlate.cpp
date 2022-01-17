@@ -33,12 +33,14 @@ void* OPS_LocalBucklingWebPlate(void) {
 	const unsigned int N_PARAM_PER_BACK = 2;
 	const unsigned int MAX_BACKSTRESSES = 8;
 	const unsigned int BACKSTRESS_SPACE = MAX_BACKSTRESSES * N_PARAM_PER_BACK;
+	const unsigned int N_REGULARIZATION_PARAMETERS = 1;
 
 	std::string inputInstructions = "Invalid args, want:\n"
 		"nDMaterial LocalBucklingWebPlate "
 		"tag? E? nu? fy? QInf? b? DInf? a? "
 		"N? C1? gamma1? <C2? gamma2? C3? gamma3? ... C8? gamma8?>"
-		"bPlate? tPlate? sigmaC0? \n";
+		"bPlate? tPlate? sigmaC0?"
+		"alphaReg?";
 
 	// Containers for the inputs
 	int nInputsToRead;
@@ -47,6 +49,7 @@ void* OPS_LocalBucklingWebPlate(void) {
 	double hardeningProps[N_HARDENING_PROPERTIES];  // holds E, nu, fy, QInf, b, DInf, a
 	double backstressProps[BACKSTRESS_SPACE];  // holds C's and gamma's
 	double softeningProps[N_SOFTENING_PROPERTIES];  // holds bPlate, tPlate, sigmaC0
+	double regularizationgProps[N_REGULARIZATION_PARAMETERS];  // holds alphaReg
 	std::vector<double> cK;
 	std::vector<double> gammaK;
 
@@ -97,12 +100,21 @@ void* OPS_LocalBucklingWebPlate(void) {
 		return 0;
 	}
 
+	// Get regularization parameters alphaReg
+	nInputsToRead = N_REGULARIZATION_PARAMETERS;
+	if (OPS_GetDoubleInput(&nInputsToRead, regularizationgProps) != 0) {
+		opserr << inputInstructions.c_str() << endln;
+		return 0;
+	}
+	
+
 	// Allocate the material
 	theMaterial = new LocalBucklingWebPlate(materialTag[0],
 		hardeningProps[0], hardeningProps[1], hardeningProps[2],
 		hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
 		cK, gammaK,
-		softeningProps[0], softeningProps[1], softeningProps[2]);
+		softeningProps[0], softeningProps[1], softeningProps[2],
+		regularizationgProps[0]);
 
 	return theMaterial;
 }
@@ -112,7 +124,8 @@ void* OPS_LocalBucklingWebPlate(void) {
 LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRatio,
 	double sy0, double qInf, double b, double dInf, double a,
 	std::vector<double> cK, std::vector<double> gammaK,
-	double bPlate, double tPlate, double sigmaC0)
+	double bPlate, double tPlate, double sigmaC0,
+	double alphaReg)
 	: NDMaterial(tag, ND_TAG_LocalBucklingWebPlate),
 	elasticModulus(E),
 	poissonRatio(poissonRatio),
@@ -126,6 +139,7 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	bPlateWidth(bPlate),
 	tPlateThickness(tPlate),
 	sigmaC0Stress(sigmaC0),
+	alphaRegularization(alphaReg),
 	shearModulus(E / (2. * (1. + poissonRatio))),
 	bulkModulus(E / (3. * (1. - 2. * poissonRatio))),
 	strainConverged(N_DIMS),
@@ -197,6 +211,7 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 	bPlateWidth(0.),
 	tPlateThickness(0.),
 	sigmaC0Stress(0.),
+	alphaRegularization(0.),
 	shearModulus(0. / (2. * (1. + poissonRatio))),
 	bulkModulus(0. / (3. * (1. - 2. * poissonRatio))),
 	strainConverged(N_DIMS),
@@ -1065,7 +1080,7 @@ NDMaterial* LocalBucklingWebPlate::getCopy() {
 	LocalBucklingWebPlate* theCopy;
 	theCopy = new LocalBucklingWebPlate(this->getTag(), elasticModulus, poissonRatio,
 		initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
-		bPlateWidth, tPlateThickness, sigmaC0Stress);
+		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization);
 
 	// Copy all the internals
 	theCopy->strainConverged = strainConverged;
@@ -1105,7 +1120,7 @@ NDMaterial* LocalBucklingWebPlate::getCopy(const char* code) {
 		LocalBucklingWebPlate* theCopy;
 		theCopy = new LocalBucklingWebPlate(this->getTag(), elasticModulus, poissonRatio,
 			initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
-			bPlateWidth, tPlateThickness, sigmaC0Stress);
+			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization);
 		return theCopy;
 	}
 	else {
@@ -1355,18 +1370,21 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY() {
 	double p4eq = 0., q4eq = 0.;
 	double Delta0eq = 0.;
 	double Delta1eq = 0.;
+	double strainPBEqTrialRegularized = 0.;
 
 	alphaAngle = 55. * 3.1416 / 180.;
 	cPlate = bPlateWidth / (2 * tan(alphaAngle));
 
+	strainPBEqTrialRegularized = strainPBEqTrial * alphaRegularization;
+
 	// Check if strainPBEqTrial is equal to 0 
-	if (strainPBEqTrial == 0) { // if equal to 0 --> sigmaSurSigmaY=1
+	if (strainPBEqTrialRegularized == 0) { // if equal to 0 --> sigmaSurSigmaY=1
 		sigmaSurSigmaY = 1.;
 	}
 	else {
-		AHat = (2 * pow(tPlateThickness, 2) * (1 - strainPBEqTrial)) / (sin(2 * alphaAngle) * sqrt(1 - pow((1 - strainPBEqTrial), 2)));
-		BHat = (pow(tPlateThickness, 2) * (bPlateWidth - 2 * cPlate)) / (bPlateWidth * sqrt(1 - pow((1 - strainPBEqTrial), 2)));
-		CHat = (tPlateThickness * sqrt(pow(cPlate, 2) + pow((bPlateWidth / 2 * sqrt(1 - pow((1 - strainPBEqTrial), 2))), 2)) - bPlateWidth * tPlateThickness);
+		AHat = (2 * pow(tPlateThickness, 2) * (1 - strainPBEqTrialRegularized)) / (sin(2 * alphaAngle) * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2)));
+		BHat = (pow(tPlateThickness, 2) * (bPlateWidth - 2 * cPlate)) / (bPlateWidth * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2)));
+		CHat = (tPlateThickness * sqrt(pow(cPlate, 2) + pow((bPlateWidth / 2 * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2))), 2)) - bPlateWidth * tPlateThickness);
 
 		DHat = -pow((BHat), 2);
 		EHat = 2 * BHat * CHat;
@@ -1421,7 +1439,7 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
 	double cPlate = 0.;
 
 	// Transform epsilonPBeq from double to complex number
-	std::complex<double> epsilonPBeq(strainPBEqTrial, hStep);
+	std::complex<double> epsilonPBeqRegularized(alphaRegularization * strainPBEqTrial, alphaRegularization * hStep);
 
 	alphaAngle = 55. * 3.1416 / 180.;
 	cPlate = bPlateWidth / (2 * tan(alphaAngle));
@@ -1442,9 +1460,9 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
 	std::complex<double> cPlateComplex(cPlate, 0);
 	std::complex<double> sinTwoAlphaComplex(sin(2 * alphaAngle), 0);
 
-	std::complex<double> AHat = (twoComplex * pow(tPlateComplex, 2) * (oneComplex - epsilonPBeq)) / (sinTwoAlphaComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeq), 2)));
-	std::complex<double> BHat = (pow(tPlateComplex, 2) * (bPlateComplex - twoComplex * cPlateComplex)) / (bPlateComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeq), 2)));
-	std::complex<double> CHat = (tPlateComplex * sqrt(pow(cPlateComplex, 2) + pow((bPlateComplex / twoComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeq), 2))), 2)) - bPlateComplex * tPlateComplex);
+	std::complex<double> AHat = (twoComplex * pow(tPlateComplex, 2) * (oneComplex - epsilonPBeqRegularized)) / (sinTwoAlphaComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2)));
+	std::complex<double> BHat = (pow(tPlateComplex, 2) * (bPlateComplex - twoComplex * cPlateComplex)) / (bPlateComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2)));
+	std::complex<double> CHat = (tPlateComplex * sqrt(pow(cPlateComplex, 2) + pow((bPlateComplex / twoComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2))), 2)) - bPlateComplex * tPlateComplex);
 
 	std::complex<double> DHat = -pow((BHat), 2);
 	std::complex<double> EHat = twoComplex * BHat * CHat;

@@ -26,7 +26,7 @@ public:
 	LocalBucklingWebPlate(int tag, double E, double poissonRatio, double sy0,
 		double qInf, double b, double dInf, double a,
 		std::vector<double> cK, std::vector<double> gammaK,
-		double bPlate, double tPlate, double sigmaC0);
+		double bPlate, double tPlate, double sigmaC0, double alphaReg);
 
 	// Constructor, parallel processing
 	LocalBucklingWebPlate(void);
@@ -193,6 +193,9 @@ private:
 	double bPlateWidth;
 	double tPlateThickness;
 	double sigmaC0Stress;
+
+	// Regularization properties (for buckling stage), set by the constructor
+	double alphaRegularization;
 
 	// Plate stress properties (fixed for now, could be set by the constructor)
 	const double alpha_chi1c = 1. / 3.;
