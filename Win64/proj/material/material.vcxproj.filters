@@ -1403,6 +1403,9 @@
     <ClCompile Include="..\..\..\SRC\material\nD\LocalBucklingWebPlate.cpp">
       <Filter>nD</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\material\nD\LocalBucklingFlangePlate.cpp">
+      <Filter>nD</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\material\uniaxial\AxialSp.h">
@@ -2592,6 +2595,9 @@
       <Filter>uniaxial</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\material\nD\LocalBucklingWebPlate.h">
+      <Filter>nD</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\material\nD\LocalBucklingFlangePlate.h">
       <Filter>nD</Filter>
     </ClInclude>
   </ItemGroup>

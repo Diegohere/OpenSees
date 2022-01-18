@@ -1,8 +1,8 @@
 // 
-// Created by Diego Heredia on 10.12.2021
+// Created by Diego Heredia on 18.01.2022
 //
 
-#include "LocalBucklingWebPlate.h"
+#include "LocalBucklingFlangePlate.h"
 
 #include <cmath>
 #include <iostream>
@@ -16,13 +16,13 @@
 #include <elementAPI.h>
 #include <OPS_Globals.h>
 
-static int numLocalBucklingWebPlate = 0;
+static int numLocalBucklingFlangePlate = 0;
 
 
-void* OPS_LocalBucklingWebPlate(void) {
-	if (numLocalBucklingWebPlate == 0) {
-		opserr << "Using the LocalBucklingWebPlate material" << endln;
-		numLocalBucklingWebPlate++;
+void* OPS_LocalBucklingFlangePlate(void) {
+	if (numLocalBucklingFlangePlate == 0) {
+		opserr << "Using the LocalBucklingFlangePlate material" << endln;
+		numLocalBucklingFlangePlate++;
 	}
 	NDMaterial* theMaterial = 0;
 
@@ -36,7 +36,7 @@ void* OPS_LocalBucklingWebPlate(void) {
 	const unsigned int N_REGULARIZATION_PARAMETERS = 1;
 
 	std::string inputInstructions = "Invalid args, want:\n"
-		"nDMaterial LocalBucklingWebPlate "
+		"nDMaterial LocalBucklingFlangePlate "
 		"tag? E? nu? fy? QInf? b? DInf? a? "
 		"N? C1? gamma1? <C2? gamma2? C3? gamma3? ... C8? gamma8?>"
 		"bPlate? tPlate? sigmaC0?"
@@ -56,7 +56,7 @@ void* OPS_LocalBucklingWebPlate(void) {
 	// Get the material tag
 	nInputsToRead = N_TAGS;
 	if (OPS_GetIntInput(&nInputsToRead, materialTag) != 0) {
-		opserr << "WARNING invalid nDMaterial LocalBucklingWebPlate tag" << endln;
+		opserr << "WARNING invalid nDMaterial LocalBucklingFlangePlate tag" << endln;
 		return 0;
 	}
 
@@ -109,7 +109,7 @@ void* OPS_LocalBucklingWebPlate(void) {
 	
 
 	// Allocate the material
-	theMaterial = new LocalBucklingWebPlate(materialTag[0],
+	theMaterial = new LocalBucklingFlangePlate(materialTag[0],
 		hardeningProps[0], hardeningProps[1], hardeningProps[2],
 		hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
 		cK, gammaK,
@@ -121,12 +121,12 @@ void* OPS_LocalBucklingWebPlate(void) {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRatio,
+LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poissonRatio,
 	double sy0, double qInf, double b, double dInf, double a,
 	std::vector<double> cK, std::vector<double> gammaK,
 	double bPlate, double tPlate, double sigmaC0,
 	double alphaReg)
-	: NDMaterial(tag, ND_TAG_LocalBucklingWebPlate),
+	: NDMaterial(tag, ND_TAG_LocalBucklingFlangePlate),
 	elasticModulus(E),
 	poissonRatio(poissonRatio),
 	initialYield(sy0),
@@ -197,8 +197,8 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-LocalBucklingWebPlate::LocalBucklingWebPlate()
-	: NDMaterial(0, ND_TAG_LocalBucklingWebPlate),
+LocalBucklingFlangePlate::LocalBucklingFlangePlate()
+	: NDMaterial(0, ND_TAG_LocalBucklingFlangePlate),
 	elasticModulus(0.),
 	poissonRatio(0.),
 	initialYield(0.),
@@ -270,7 +270,7 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-LocalBucklingWebPlate::~LocalBucklingWebPlate() {
+LocalBucklingFlangePlate::~LocalBucklingFlangePlate() {
 
 }
 
@@ -280,7 +280,7 @@ LocalBucklingWebPlate::~LocalBucklingWebPlate() {
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::timeIntegration() {
+int LocalBucklingFlangePlate::timeIntegration() {
 	// Initialize the variables for loading stage selection
 	elasticLoading = 0;
 	plasticLoading = 0;
@@ -315,6 +315,11 @@ int LocalBucklingWebPlate::timeIntegration() {
 	strain_previous = strainConverged;
 	deltaStrain_converged4Peak.Zero();
 	deltaStrain_remaining4Peak = deltaStrain_trial;
+
+	if (strainTrial!=strainTrial)
+	{
+		opserr << "Issue with section" << endln;
+	}
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
@@ -446,13 +451,13 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= 0.01) { // not yet at capping point
 					//deltaStrain_todo -= deltaStrain_trial;
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if capping point is reached
-					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -0.01) { // capping point is reached
 						cappingPoint = 1;
 						//chi1c = RETURN_MAP_TOL;
 						if (convergedMatLaw == 0)
@@ -488,7 +493,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 	// Warn the user if the algorithm did not converge and return -1
 	if (iterationNumber_timeIntegration >= MAXIMUM_ITERATIONS_TIMEINTEGRATION ) {
-		opserr << "LocalBucklingWebPlate::timeIntegration time integration did not converge!" << endln;
+		opserr << "LocalBucklingFlangePlate::timeIntegration time integration did not converge!" << endln;
 		retVal = -1;
 	}
 	
@@ -501,7 +506,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector alpha, Vector etaTrial) {
+int LocalBucklingFlangePlate::returnMappingHardening(Vector strain_nPlus1, Vector alpha, Vector etaTrial) {
 	// Initialize all the variables
 	int retVal = 0;
 	bool convergedReturnMapping = false;
@@ -598,7 +603,7 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 
 	// Warn the user if the algorithm did not convergein the return mapping for hardening and return -1
 	if (iterationNumber_ReturnMapping >= MAXIMUM_ITERATIONS_RETURNMAPPING && fabs(phiVM) > RETURN_MAP_TOL) {
-		opserr << "LocalBucklingWebPlate::returnMappingHardening return mapping hardening stage did not converge!" << endln;
+		opserr << "LocalBucklingFlangePlate::returnMappingHardening return mapping hardening stage did not converge!" << endln;
 		opserr << "\tDelta epsilon 11 = " << strain_nPlus1[0] - strainConverged[0] << endln;
 		opserr << "\tDelta epsilon 12 = " << strain_nPlus1[1] - strainConverged[1] << endln;
 		opserr << "\tDelta epsilon 13 = " << strain_nPlus1[2] - strainConverged[2] << endln;
@@ -615,15 +620,15 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alpha) {
+int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alpha) {
 	// Initialize all the variables
 	int retVal = 0;
 	bool convergedReturnMapping = false;
 	unsigned int iterationNumber_ReturnMapping = 0;
 	Vector gammaDiag = Vector(N_DIMS);
 	double consistParam_postBuckling = 0.;
-	double chi1c = 0.;
-	double sigmaSurSigmaY = 0.;
+	static double chi1c = 0.;
+	static double sigmaSurSigmaY = 0.;
 	Vector relativeStressNPlus1 = Vector(N_DIMS);
 	double phiELL = 0.;
 	double yieldStress = 0.;
@@ -689,14 +694,15 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 	dPhiELLdXi(1) = 6. * relativeStressNPlus1(1);
 	dPhiELLdXi(2) = 6. * relativeStressNPlus1(2);
 
-	strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiELLdXi;	
+	strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiELLdXi;
+	
 
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusSoftening(relativeStressTrial, alpha, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
 
 	// Warn the user if the algorithm did not convergein the return mapping for softening and return -1
 	if (iterationNumber_ReturnMapping >= MAXIMUM_ITERATIONS_RETURNMAPPING && fabs(phiELL) > RETURN_MAP_TOL) {
-		opserr << "LocalBucklingWebPlate::returnMappingSoftening return mapping softening stage did not converge!" << endln;
+		opserr << "LocalBucklingFlangePlate::returnMappingSoftening return mapping softening stage did not converge!" << endln;
 		opserr << "\tDelta epsilon 11 = " << strainTrial[0] - strainConverged[0] << endln;
 		opserr << "\tDelta epsilon 12 = " << strainTrial[1] - strainConverged[1] << endln;
 		opserr << "\tDelta epsilon 13 = " << strainTrial[2] - strainConverged[2] << endln;
@@ -709,13 +715,13 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateConsistentTangentModulusElastic() {
+void LocalBucklingFlangePlate::calculateConsistentTangentModulusElastic() {
 	stiffnessTrial = elasticMatrix;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateConsistentTangentModulusHardening(double consistParam_plastic, double fBar,
+void LocalBucklingFlangePlate::calculateConsistentTangentModulusHardening(double consistParam_plastic, double fBar,
 	const Vector& stressRelative) {
 	// Initialize the variables
 	Matrix iD3 = Matrix(N_DIMS, N_DIMS);
@@ -777,7 +783,7 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusHardening(double co
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vector& relativeStressTrial, const Vector& alpha,
+void LocalBucklingFlangePlate::calculateConsistentTangentModulusSoftening(const Vector& relativeStressTrial, const Vector& alpha,
 	const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam_postBuckling) {
 	// Initialize the variables
 	Vector dPhiELLDSigma = Vector(N_DIMS);
@@ -871,7 +877,12 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vec
 * @param v new total strain vector.
 * @return 0 if successful, -1 if return mapping did not converge.
 */
-int LocalBucklingWebPlate::setTrialStrain(const Vector& v) {
+int LocalBucklingFlangePlate::setTrialStrain(const Vector& v) {
+
+	if (v != v)
+	{
+		opserr << "Issue with section" << endln;
+	}
 
 	int rm_convergence;
 	// Reset the trial state
@@ -896,7 +907,7 @@ int LocalBucklingWebPlate::setTrialStrain(const Vector& v) {
 *
 * Note that this material model is rate independent.
 */
-int LocalBucklingWebPlate::setTrialStrain(const Vector& v, const Vector& r) {
+int LocalBucklingFlangePlate::setTrialStrain(const Vector& v, const Vector& r) {
 
 	// Reset the trial state
 	revertToLastCommit();
@@ -917,7 +928,7 @@ int LocalBucklingWebPlate::setTrialStrain(const Vector& v, const Vector& r) {
 * @param v strain increment vector
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::setTrialStrainIncr(const Vector& v) {
+int LocalBucklingFlangePlate::setTrialStrainIncr(const Vector& v) {
 
 	// Reset the trial state
 	revertToLastCommit();
@@ -941,7 +952,7 @@ int LocalBucklingWebPlate::setTrialStrainIncr(const Vector& v) {
 *
 * Note that this material model is rate independent.
 */
-int LocalBucklingWebPlate::setTrialStrainIncr(const Vector& v, const Vector& r) {
+int LocalBucklingFlangePlate::setTrialStrainIncr(const Vector& v, const Vector& r) {
 
 	// Reset the trial state
 	revertToLastCommit();
@@ -957,28 +968,28 @@ int LocalBucklingWebPlate::setTrialStrainIncr(const Vector& v, const Vector& r) 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-const Vector& LocalBucklingWebPlate::getStrain() {
+const Vector& LocalBucklingFlangePlate::getStrain() {
 
 	return strainTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-const Vector& LocalBucklingWebPlate::getStress() {
+const Vector& LocalBucklingFlangePlate::getStress() {
 
 	return stressTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-const Matrix& LocalBucklingWebPlate::getTangent() {
+const Matrix& LocalBucklingFlangePlate::getTangent() {
 
 	return stiffnessTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-const Matrix& LocalBucklingWebPlate::getInitialTangent() {
+const Matrix& LocalBucklingFlangePlate::getInitialTangent() {
 
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable
 	return stiffnessInitial;
@@ -990,7 +1001,7 @@ const Matrix& LocalBucklingWebPlate::getInitialTangent() {
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::commitState() {
+int LocalBucklingFlangePlate::commitState() {
 	strainConverged = strainTrial;
 	strainPlasticConverged = strainPlasticTrial;
 	strainPEqConverged = strainPEqTrial;
@@ -1008,7 +1019,7 @@ int LocalBucklingWebPlate::commitState() {
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::revertToLastCommit() {
+int LocalBucklingFlangePlate::revertToLastCommit() {
 
 	strainTrial = strainConverged;
 	strainPlasticTrial = strainPlasticConverged;
@@ -1027,7 +1038,7 @@ int LocalBucklingWebPlate::revertToLastCommit() {
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::revertToBeforeCapping(bool cappingPoint) {
+int LocalBucklingFlangePlate::revertToBeforeCapping(bool cappingPoint) {
 	if (cappingPoint ==0)
 	{
 		strainPlasticTrial = strainPlasticConverged;
@@ -1046,7 +1057,7 @@ int LocalBucklingWebPlate::revertToBeforeCapping(bool cappingPoint) {
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::revertToStart() {
+int LocalBucklingFlangePlate::revertToStart() {
 
 	strainConverged.Zero();
 	strainPlasticConverged.Zero();
@@ -1074,10 +1085,10 @@ int LocalBucklingWebPlate::revertToStart() {
 *
 * This is called by GenericSectionXD
 */
-NDMaterial* LocalBucklingWebPlate::getCopy() {
+NDMaterial* LocalBucklingFlangePlate::getCopy() {
 
-	LocalBucklingWebPlate* theCopy;
-	theCopy = new LocalBucklingWebPlate(this->getTag(), elasticModulus, poissonRatio,
+	LocalBucklingFlangePlate* theCopy;
+	theCopy = new LocalBucklingFlangePlate(this->getTag(), elasticModulus, poissonRatio,
 		initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
 		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization);
 
@@ -1114,17 +1125,17 @@ NDMaterial* LocalBucklingWebPlate::getCopy() {
 *
 * This is called by the continuum elements.
 */
-NDMaterial* LocalBucklingWebPlate::getCopy(const char* code) {
+NDMaterial* LocalBucklingFlangePlate::getCopy(const char* code) {
 	if (strcmp(code, getType()) == 0) {
-		LocalBucklingWebPlate* theCopy;
-		theCopy = new LocalBucklingWebPlate(this->getTag(), elasticModulus, poissonRatio,
+		LocalBucklingFlangePlate* theCopy;
+		theCopy = new LocalBucklingFlangePlate(this->getTag(), elasticModulus, poissonRatio,
 			initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
 			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization);
 		return theCopy;
 	}
 	else {
 		// Throw an error if failed to make copy
-		opserr << "LocalBucklingWebPlate::getCopy invalid NDMaterial type, expecting " << code << endln;
+		opserr << "LocalBucklingFlangePlate::getCopy invalid NDMaterial type, expecting " << code << endln;
 		return 0;
 	}
 }
@@ -1137,9 +1148,9 @@ NDMaterial* LocalBucklingWebPlate::getCopy(const char* code) {
 * @param theChannel
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::sendSelf(int commitTag, Channel& theChannel) {
+int LocalBucklingFlangePlate::sendSelf(int commitTag, Channel& theChannel) {
 	// Throw error to let the user know that paralleliziation not yet implemented
-	opserr << "Fatal: Paralleliziation for LocalBucklingWebPlate is not implemented yet!" << endln;
+	opserr << "Fatal: Paralleliziation for LocalBucklingFlangePlate is not implemented yet!" << endln;
 	return -1;
 }
 
@@ -1152,10 +1163,10 @@ int LocalBucklingWebPlate::sendSelf(int commitTag, Channel& theChannel) {
 * @param theBroker
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::recvSelf(int commitTag, Channel& theChannel,
+int LocalBucklingFlangePlate::recvSelf(int commitTag, Channel& theChannel,
 	FEM_ObjectBroker& theBroker) {
 	// Throw error to let the user know that paralleliziation not yet implemented
-	opserr << "Fatal: Paralleliziation for LocalBucklingWebPlate is not implemented yet!" << endln;
+	opserr << "Fatal: Paralleliziation for LocalBucklingFlangePlate is not implemented yet!" << endln;
 	return -1;
 }
 
@@ -1167,11 +1178,11 @@ int LocalBucklingWebPlate::recvSelf(int commitTag, Channel& theChannel,
 * @param flag is 2 for standard output, 25000 for JSON output
 (see OPS_Globals.h)
 */
-void LocalBucklingWebPlate::Print(OPS_Stream& s, int flag) {
+void LocalBucklingFlangePlate::Print(OPS_Stream& s, int flag) {
 
 	// if (flag == OPS_PRINT_PRINTMODEL_MATERIAL) {
 	if (flag == 2) {
-		s << "LocalBucklingWebPlate tag: " << this->getTag() << endln;
+		s << "LocalBucklingFlangePlate tag: " << this->getTag() << endln;
 		s << "   E: " << elasticModulus << " ";
 		s << "  fy: " << initialYield << " ";
 		s << "   Qinf: " << qInf << " ";
@@ -1191,7 +1202,7 @@ void LocalBucklingWebPlate::Print(OPS_Stream& s, int flag) {
 	if (flag == 25000) {
 		s << "\t\t\t{";
 		s << "\"name\": \"" << this->getTag() << "\", ";
-		s << "\"type\": \"LocalBucklingWebPlate\", ";
+		s << "\"type\": \"LocalBucklingFlangePlate\", ";
 		s << "\"E\": " << elasticModulus << ", ";
 		s << "\"fy\": " << initialYield << ", ";
 		s << "\"Qinf\": " << qInf << ", ";
@@ -1211,7 +1222,7 @@ void LocalBucklingWebPlate::Print(OPS_Stream& s, int flag) {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateElasticStiffness() {
+void LocalBucklingFlangePlate::calculateElasticStiffness() {
 	double eDenom = elasticModulus / (2. +2. * poissonRatio);
 	elasticMatrix.Zero();
 	elasticMatrix(0, 0) = (2. + 2. * poissonRatio) * eDenom;
@@ -1221,7 +1232,7 @@ void LocalBucklingWebPlate::calculateElasticStiffness() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-Matrix LocalBucklingWebPlate::calculateComplianceMatrix() {
+Matrix LocalBucklingFlangePlate::calculateComplianceMatrix() {
 	double eDenom = 1.0 / elasticModulus;
 	Matrix complianceMatrix = Matrix(N_DIMS, N_DIMS);
 	complianceMatrix.Zero();
@@ -1232,7 +1243,7 @@ Matrix LocalBucklingWebPlate::calculateComplianceMatrix() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::initializeEigendecompositions() {
+void LocalBucklingFlangePlate::initializeEigendecompositions() {
 
 	// Orthogonal matrix (eigenvectors)
 	qMat.Zero();
@@ -1277,7 +1288,7 @@ void LocalBucklingWebPlate::initializeEigendecompositions() {
 * @return the dot product of the two vectors
 *
 */
-double LocalBucklingWebPlate::dotprod3(const Vector& v1, const Vector& v2) {
+double LocalBucklingFlangePlate::dotprod3(const Vector& v1, const Vector& v2) {
 	double res = 0.;
 	for (unsigned int i = 0; i < N_DIMS; ++i)
 		res += v1(i) * v2(i);
@@ -1293,7 +1304,7 @@ double LocalBucklingWebPlate::dotprod3(const Vector& v1, const Vector& v2) {
 * @return vector containing the component-wise multiplication of the two vectors
 *
 */
-Vector LocalBucklingWebPlate::vecMult3(const Vector& v1, const Vector& v2) {
+Vector LocalBucklingFlangePlate::vecMult3(const Vector& v1, const Vector& v2) {
 	Vector res = Vector(N_DIMS);
 	for (unsigned int i = 0; i < N_DIMS; ++i)
 		res(i) = v1(i) * v2(i);
@@ -1302,7 +1313,7 @@ Vector LocalBucklingWebPlate::vecMult3(const Vector& v1, const Vector& v2) {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-double LocalBucklingWebPlate::calculateYieldStress() {
+double LocalBucklingFlangePlate::calculateYieldStress() {
 	double sigmaY1, sigmaY2;
 	sigmaY1 = qInf * (1. - exp(-bIso * strainPEqTrial));
 	sigmaY2 = dInf * (1. - exp(-aIso * strainPEqTrial));
@@ -1311,7 +1322,7 @@ double LocalBucklingWebPlate::calculateYieldStress() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-double LocalBucklingWebPlate::calculateIsotropicModulus() {
+double LocalBucklingFlangePlate::calculateIsotropicModulus() {
 	double IsotropicModulus=0.0;
 
 	double sigmaY1, sigmaY2;
@@ -1341,13 +1352,13 @@ double LocalBucklingWebPlate::calculateIsotropicModulus() {
 * @return computed eK factor
 *
 */
-double LocalBucklingWebPlate::calculateEk(unsigned int i) {
+double LocalBucklingFlangePlate::calculateEk(unsigned int i) {
 	return exp(-gammaK[i] * (strainPEqTrial - strainPEqConverged));
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-double LocalBucklingWebPlate::calculateChi1c() {
+double LocalBucklingFlangePlate::calculateChi1c() {
 	double chi1c = 0.;
 	double sigmaSurSigmaY = 0.;
 
@@ -1360,7 +1371,7 @@ double LocalBucklingWebPlate::calculateChi1c() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-double LocalBucklingWebPlate::calculateSigmaSurSigmaY() {
+double LocalBucklingFlangePlate::calculateSigmaSurSigmaY() {
 	double sigmaSurSigmaY = 0.;
 	double alphaAngle = 0.;
 	double cPlate = 0.;
@@ -1381,9 +1392,9 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY() {
 		sigmaSurSigmaY = 1.;
 	}
 	else {
-		AHat = (2 * pow(tPlateThickness, 2) * (1 - strainPBEqTrialRegularized)) / (sin(2 * alphaAngle) * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2)));
-		BHat = (pow(tPlateThickness, 2) * (bPlateWidth - 2 * cPlate)) / (bPlateWidth * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2)));
-		CHat = (tPlateThickness * sqrt(pow(cPlate, 2) + pow((bPlateWidth / 2 * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2))), 2)) - bPlateWidth * tPlateThickness);
+		AHat = (pow(tPlateThickness, 2) * (1 - strainPBEqTrialRegularized)) / (sin(2 * alphaAngle) * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2)));
+		BHat = (pow(tPlateThickness, 2) * (bPlateWidth - cPlate)) / (bPlateWidth * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2)));
+		CHat = (1. / 2. * tPlateThickness * sqrt(pow(cPlate, 2) + pow((bPlateWidth / 2 * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2))), 2)) - bPlateWidth * tPlateThickness);
 
 		DHat = -pow((BHat), 2);
 		EHat = 2 * BHat * CHat;
@@ -1431,7 +1442,7 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
+double LocalBucklingFlangePlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
 	double dSigmaSurSigmaYdEpsilonPBeq = 0.;
 	double hStep = 1e-12;
 	double alphaAngle = 0.;
@@ -1459,9 +1470,9 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
 	std::complex<double> cPlateComplex(cPlate, 0);
 	std::complex<double> sinTwoAlphaComplex(sin(2 * alphaAngle), 0);
 
-	std::complex<double> AHat = (twoComplex * pow(tPlateComplex, 2) * (oneComplex - epsilonPBeqRegularized)) / (sinTwoAlphaComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2)));
-	std::complex<double> BHat = (pow(tPlateComplex, 2) * (bPlateComplex - twoComplex * cPlateComplex)) / (bPlateComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2)));
-	std::complex<double> CHat = (tPlateComplex * sqrt(pow(cPlateComplex, 2) + pow((bPlateComplex / twoComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2))), 2)) - bPlateComplex * tPlateComplex);
+	std::complex<double> AHat = (pow(tPlateComplex, 2) * (oneComplex - epsilonPBeqRegularized)) / (sinTwoAlphaComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2)));
+	std::complex<double> BHat = (pow(tPlateComplex, 2) * (bPlateComplex - cPlateComplex)) / (bPlateComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2)));
+	std::complex<double> CHat = (oneDivTwoComplex * tPlateComplex * sqrt(pow(cPlateComplex, 2) + pow((bPlateComplex / twoComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2))), 2)) - bPlateComplex * tPlateComplex);
 
 	std::complex<double> DHat = -pow((BHat), 2);
 	std::complex<double> EHat = twoComplex * BHat * CHat;
@@ -1488,7 +1499,7 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::initializeBChi1c() {
+void LocalBucklingFlangePlate::initializeBChi1c() {
 	b_chi1c = (pow(sigmaC0Stress, 2)) / ((pow(sigmaC0Stress, 2) - pow(sigmaDMStress, 2)) * pow(alpha_chi1c, 2));
 }
 
@@ -1500,7 +1511,7 @@ void LocalBucklingWebPlate::initializeBChi1c() {
 * @return the inverse of A
 *
 */
-Matrix LocalBucklingWebPlate::matinv3(const Matrix& A) {
+Matrix LocalBucklingFlangePlate::matinv3(const Matrix& A) {
 	double detInv;
 	Matrix B = Matrix(3, 3);
 

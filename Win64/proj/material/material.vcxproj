@@ -208,6 +208,7 @@
     <ClCompile Include="..\..\..\SRC\material\nD\J2PlateFibre.cpp" />
     <ClCompile Include="..\..\..\SRC\material\nD\J2ThreeDimensionalThermal.cpp" />
     <ClCompile Include="..\..\..\SRC\material\nD\LinearCap.cpp" />
+    <ClCompile Include="..\..\..\SRC\material\nD\LocalBucklingFlangePlate.cpp" />
     <ClCompile Include="..\..\..\SRC\material\nD\LocalBucklingWebPlate.cpp" />
     <ClCompile Include="..\..\..\SRC\material\nD\matCMM\MaterialCMM.cpp" />
     <ClCompile Include="..\..\..\SRC\material\nD\PlaneStressLayeredMaterial.cpp" />
@@ -640,6 +641,7 @@
     <ClInclude Include="..\..\..\SRC\material\nD\J2PlateFibre.h" />
     <ClInclude Include="..\..\..\SRC\material\nD\J2ThreeDimensionalThermal.h" />
     <ClInclude Include="..\..\..\SRC\material\nD\LinearCap.h" />
+    <ClInclude Include="..\..\..\SRC\material\nD\LocalBucklingFlangePlate.h" />
     <ClInclude Include="..\..\..\SRC\material\nD\LocalBucklingWebPlate.h" />
     <ClInclude Include="..\..\..\SRC\material\nD\matCMM\MaterialCMM.h" />
     <ClInclude Include="..\..\..\SRC\material\nD\PlaneStressLayeredMaterial.h" />

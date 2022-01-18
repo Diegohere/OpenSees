@@ -91,7 +91,8 @@ OBJS       = NDMaterial.o \
 	UVCmultiaxial.o	\
 	UVCplanestress.o \
 	PlateRebarMaterialThermal.o \
-	LocalBucklingWebPlate.o
+	LocalBucklingWebPlate.o \
+	LocalBucklingFlangePlate.o
 
 
 all: $(OBJS)
