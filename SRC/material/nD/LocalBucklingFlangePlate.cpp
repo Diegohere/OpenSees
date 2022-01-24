@@ -1,5 +1,5 @@
 // 
-// Created by Diego Heredia on 18.01.2022
+// Created by Diego Heredia on 24.01.2022
 //
 
 #include "LocalBucklingFlangePlate.h"
@@ -106,7 +106,7 @@ void* OPS_LocalBucklingFlangePlate(void) {
 		opserr << inputInstructions.c_str() << endln;
 		return 0;
 	}
-	
+
 
 	// Allocate the material
 	theMaterial = new LocalBucklingFlangePlate(materialTag[0],
@@ -316,11 +316,6 @@ int LocalBucklingFlangePlate::timeIntegration() {
 	deltaStrain_converged4Peak.Zero();
 	deltaStrain_remaining4Peak = deltaStrain_trial;
 
-	if (strainTrial!=strainTrial)
-	{
-		opserr << "Issue with section" << endln;
-	}
-
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		iterationNumber_timeIntegration++;
@@ -329,7 +324,7 @@ int LocalBucklingFlangePlate::timeIntegration() {
 		strain_nPlus1 = strain_previous + deltaStrain_trial;
 
 		// Elastic trial step
-		if (cappingPoint==0)
+		if (cappingPoint == 0)
 		{
 			alpha.Zero();
 			for (unsigned int i = 0; i < nBackstresses; ++i)
@@ -340,14 +335,14 @@ int LocalBucklingFlangePlate::timeIntegration() {
 		{
 			alpha.Zero();
 			for (unsigned int i = 0; i < nBackstresses; ++i)
-			alpha = alpha + alphaKTrial[i];
+				alpha = alpha + alphaKTrial[i];
 			stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 		}
 
-	/*	if (abs(stressTrial[0])>1000)
-		{
-			opserr << "Stress trial to big:" << stressTrial[0] << endln;
-		}*/
+		/*	if (abs(stressTrial[0])>1000)
+			{
+				opserr << "Stress trial to big:" << stressTrial[0] << endln;
+			}*/
 
 		xiTrial = stressTrial - alpha;
 		triaxiality = 1. / 3. * xiTrial[0];
@@ -356,7 +351,7 @@ int LocalBucklingFlangePlate::timeIntegration() {
 
 		// Select which return mapping to do
 		if (triaxiality >= 0) { // if in tension
-			f2bar= 2. / 3. * pow(etaTrial(0), 2) + 2. * pow(etaTrial(1), 2) + 2. * pow(etaTrial(2), 2);
+			f2bar = 2. / 3. * pow(etaTrial(0), 2) + 2. * pow(etaTrial(1), 2) + 2. * pow(etaTrial(2), 2);
 			phiVM = 1. / 2. * f2bar - 1. / 3. * pow(yieldStress, 2);
 			convergedMatLaw = true;
 
@@ -366,7 +361,7 @@ int LocalBucklingFlangePlate::timeIntegration() {
 
 				// Update the stiffness for elastic loading
 				calculateConsistentTangentModulusElastic();
-				
+
 			}
 			else { //loading is plastic -->return mapping
 				plasticLoading = 1; //hardening stage
@@ -399,7 +394,7 @@ int LocalBucklingFlangePlate::timeIntegration() {
 						/*strain_previous += deltaStrain_trial;
 						deltaStrain_trial = deltaStrain_todo;*/
 						revertToBeforeCapping(cappingPoint);
-						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2;
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2.;
 					}
 
 					// Check if capping point is reached
@@ -408,7 +403,7 @@ int LocalBucklingFlangePlate::timeIntegration() {
 						//chi1c = RETURN_MAP_TOL;
 						if (convergedMatLaw == 0)
 						{
-							strainPBEqTrial = RETURN_MAP_TOL / 100;
+							strainPBEqTrial = RETURN_MAP_TOL / 100.;
 						}
 						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
@@ -416,14 +411,14 @@ int LocalBucklingFlangePlate::timeIntegration() {
 				else { // the capping point has been passed
 					//deltaStrain_trial /= 2.;
 					revertToBeforeCapping(cappingPoint);
-					deltaStrain_remaining4Peak /= 2;
+					deltaStrain_remaining4Peak /= 2.;
 					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
 				}
 			}
 			else { // if not elastic
-				
+
 				// Check if hardening or softening response
-				if (chi1c == 0) { 
+				if (chi1c == 0) {
 					// Do a step in the hardening direction
 					plasticLoading = 1;
 					retVal = returnMappingHardening(strain_nPlus1, alpha, etaTrial);
@@ -451,18 +446,18 @@ int LocalBucklingFlangePlate::timeIntegration() {
 				}
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= 0.01) { // not yet at capping point
+				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 					//deltaStrain_todo -= deltaStrain_trial;
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if capping point is reached
-					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -0.01) { // capping point is reached
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 						cappingPoint = 1;
 						//chi1c = RETURN_MAP_TOL;
 						if (convergedMatLaw == 0)
 						{
-							strainPBEqTrial = RETURN_MAP_TOL / 100;
+							strainPBEqTrial = RETURN_MAP_TOL / 100.;
 						}
 						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
@@ -476,15 +471,15 @@ int LocalBucklingFlangePlate::timeIntegration() {
 						deltaStrain_trial = deltaStrain_todo;*/
 						if (cappingPoint == 0) {
 							revertToBeforeCapping(cappingPoint);
-							deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2;
+							deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2.;
 						}
 					}
-					
+
 				}
 				else { // the capping point has been passed
 					//deltaStrain_trial /= 2.;
 					revertToBeforeCapping(cappingPoint);
-					deltaStrain_remaining4Peak /= 2;
+					deltaStrain_remaining4Peak /= 2.;
 					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
 				}
 			}
@@ -492,11 +487,11 @@ int LocalBucklingFlangePlate::timeIntegration() {
 	}
 
 	// Warn the user if the algorithm did not converge and return -1
-	if (iterationNumber_timeIntegration >= MAXIMUM_ITERATIONS_TIMEINTEGRATION ) {
+	if (iterationNumber_timeIntegration >= MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		opserr << "LocalBucklingFlangePlate::timeIntegration time integration did not converge!" << endln;
 		retVal = -1;
 	}
-	
+
 	return retVal;
 }
 
@@ -627,8 +622,8 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 	unsigned int iterationNumber_ReturnMapping = 0;
 	Vector gammaDiag = Vector(N_DIMS);
 	double consistParam_postBuckling = 0.;
-	static double chi1c = 0.;
-	static double sigmaSurSigmaY = 0.;
+	double chi1c = 0.;
+	double sigmaSurSigmaY = 0.;
 	Vector relativeStressNPlus1 = Vector(N_DIMS);
 	double phiELL = 0.;
 	double yieldStress = 0.;
@@ -648,7 +643,7 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
 		iterationNumber_ReturnMapping++;
 
-		gammaDiag(0) = 1. / (1. / elasticModulus + consistParam_postBuckling * (2. + 2 * chi1c));
+		gammaDiag(0) = 1. / (1. / elasticModulus + consistParam_postBuckling * (2. + 2. * chi1c));
 		gammaDiag(1) = 1. / (1. / shearModulus + consistParam_postBuckling * 6.);
 		gammaDiag(2) = gammaDiag(1);
 
@@ -659,7 +654,7 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 
 		phiELL = 3. / 2. * (2. / 3. * pow(relativeStressNPlus1(0), 2) + 2. * pow(relativeStressNPlus1(1), 2) + 2. * pow(relativeStressNPlus1(2), 2)) + chi1c * pow(stressTrial(0), 2) - pow(yieldStress, 2);
 
-		psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12 * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
+		psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
 
 		dSigmaSurSigmaYdEpsilonPBeq = calculateDSigmaSurSigmaYdEpsilonPBeq();
 
@@ -673,7 +668,7 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 		dXidLambda(1) = gammaDiagPrime(1) / shearModulus * (relativeStressTrial(1));
 		dXidLambda(2) = gammaDiagPrime(2) / shearModulus * (relativeStressTrial(2));
 
-		dPhiELLdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0),2) * dChi1cDLambdaPB;
+		dPhiELLdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2) * dChi1cDLambdaPB;
 
 		// Do the Newton Step
 		consistParam_postBuckling = consistParam_postBuckling - phiELL / dPhiELLdLambdaPB;
@@ -695,7 +690,6 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 	dPhiELLdXi(2) = 6. * relativeStressNPlus1(2);
 
 	strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiELLdXi;
-	
 
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusSoftening(relativeStressTrial, alpha, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
@@ -741,7 +735,7 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusHardening(double
 	Vector hTilde = Vector(N_DIMS);
 	double theta_1 = 0.;
 	Matrix nOutN = Matrix(N_DIMS, N_DIMS);
-	
+
 	iD3.Zero(); // 3x3 indentity matrix
 	iD3(0, 0) = iD3(1, 1) = iD3(2, 2) = 1.;
 	complianceMatrix = calculateComplianceMatrix();
@@ -797,10 +791,10 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusSoftening(const 
 	double dPhiELLDChi1c = 0.;
 	Vector dPsiDSigma = Vector(N_DIMS);
 	double dPsiDSigmaPreFactor = 0.;
-	double dPsiDChi1c = 0;
-	double dChi1cDepsiPBeq = 0;
+	double dPsiDChi1c = 0.;
+	double dChi1cDepsiPBeq = 0.;
 	Vector A = Vector(N_DIMS);
-	double B = 0;
+	double B = 0.;
 	Vector D = Vector(N_DIMS);
 	double DPreFactor = 0.;
 	Matrix CepTerm1 = Matrix(N_DIMS, N_DIMS);
@@ -816,7 +810,7 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusSoftening(const 
 	dPhiELLDSigma(1) = 6. * relativeStressNPlus1(1);
 	dPhiELLDSigma(2) = 6. * relativeStressNPlus1(2);
 
-	psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12 * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
+	psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
 
 	gammaDiag(0) = 1. / (1. / elasticModulus + consistParam_postBuckling * (2. + 2 * chi1c));
 	gammaDiag(1) = 1. / (1. / shearModulus + consistParam_postBuckling * 6.);
@@ -835,7 +829,7 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusSoftening(const 
 
 	dPsiDSigmaPreFactor = pow(4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2), -0.5);
 	dPsiDSigma(0) = dPsiDSigmaPreFactor * (2. * relativeStressNPlus1(0) + 8. * pow(chi1c, 2) * stressTrial(0));
-	dPsiDSigma(1) = dPsiDSigmaPreFactor * (6. * relativeStressNPlus1(1) );
+	dPsiDSigma(1) = dPsiDSigmaPreFactor * (6. * relativeStressNPlus1(1));
 	dPsiDSigma(2) = dPsiDSigmaPreFactor * (6. * relativeStressNPlus1(2));
 
 	dPsiDChi1c = dPsiDSigmaPreFactor * 8. * chi1c * pow(stressTrial(0), 2);
@@ -865,7 +859,7 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusSoftening(const 
 	// Take the symmetric approximation
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
 	//opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
-	
+
 	return;
 
 }
@@ -878,11 +872,6 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusSoftening(const 
 * @return 0 if successful, -1 if return mapping did not converge.
 */
 int LocalBucklingFlangePlate::setTrialStrain(const Vector& v) {
-
-	if (v != v)
-	{
-		opserr << "Issue with section" << endln;
-	}
 
 	int rm_convergence;
 	// Reset the trial state
@@ -1039,7 +1028,7 @@ int LocalBucklingFlangePlate::revertToLastCommit() {
 * @return 0 if successful
 */
 int LocalBucklingFlangePlate::revertToBeforeCapping(bool cappingPoint) {
-	if (cappingPoint ==0)
+	if (cappingPoint == 0)
 	{
 		strainPlasticTrial = strainPlasticConverged;
 		strainPEqTrial = strainPEqConverged;
@@ -1223,7 +1212,7 @@ void LocalBucklingFlangePlate::Print(OPS_Stream& s, int flag) {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 void LocalBucklingFlangePlate::calculateElasticStiffness() {
-	double eDenom = elasticModulus / (2. +2. * poissonRatio);
+	double eDenom = elasticModulus / (2. + 2. * poissonRatio);
 	elasticMatrix.Zero();
 	elasticMatrix(0, 0) = (2. + 2. * poissonRatio) * eDenom;
 	elasticMatrix(1, 1) = 1. * eDenom;
@@ -1323,7 +1312,7 @@ double LocalBucklingFlangePlate::calculateYieldStress() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 double LocalBucklingFlangePlate::calculateIsotropicModulus() {
-	double IsotropicModulus=0.0;
+	double IsotropicModulus = 0.0;
 
 	double sigmaY1, sigmaY2;
 	sigmaY1 = qInf * (1. - exp(-bIso * strainPEqTrial));
@@ -1340,7 +1329,7 @@ double LocalBucklingFlangePlate::calculateIsotropicModulus() {
 	opserr << "This is term 1:" << (qInf * bIso * exp(-bIso * strainPEqTrial)) << endln;
 	opserr << "This is term 2:" << (dInf * aIso * exp(-aIso * strainPEqTrial)) << endln;
 	opserr << "This is IsotropicModulus K:" << IsotropicModulus << endln;*/
-	
+
 	return IsotropicModulus;
 }
 
@@ -1364,7 +1353,7 @@ double LocalBucklingFlangePlate::calculateChi1c() {
 
 	sigmaSurSigmaY = calculateSigmaSurSigmaY();
 
-	chi1c = b_chi1c * pow((1 - sigmaSurSigmaY), 2);
+	chi1c = b_chi1c * pow((1.0 - sigmaSurSigmaY), 2);
 
 	return chi1c;
 }
@@ -1383,47 +1372,47 @@ double LocalBucklingFlangePlate::calculateSigmaSurSigmaY() {
 	double strainPBEqTrialRegularized = 0.;
 
 	alphaAngle = 55. * 3.1416 / 180.;
-	cPlate = bPlateWidth / (2 * tan(alphaAngle));
+	cPlate = bPlateWidth / (2. * tan(alphaAngle));
 
 	strainPBEqTrialRegularized = strainPBEqTrial * alphaRegularization;
 
 	// Check if strainPBEqTrial is equal to 0 
-	if (strainPBEqTrialRegularized == 0) { // if equal to 0 --> sigmaSurSigmaY=1
+	if (strainPBEqTrial < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
 		sigmaSurSigmaY = 1.;
 	}
 	else {
-		AHat = (pow(tPlateThickness, 2) * (1 - strainPBEqTrialRegularized)) / (sin(2 * alphaAngle) * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2)));
-		BHat = (pow(tPlateThickness, 2) * (bPlateWidth - cPlate)) / (bPlateWidth * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2)));
-		CHat = (1. / 2. * tPlateThickness * sqrt(pow(cPlate, 2) + pow((bPlateWidth / 2 * sqrt(1 - pow((1 - strainPBEqTrialRegularized), 2))), 2)) - bPlateWidth * tPlateThickness);
+		AHat = (pow(tPlateThickness, 2) * (1. - strainPBEqTrialRegularized)) / (sin(2. * alphaAngle) * sqrt(1. - pow((1. - strainPBEqTrialRegularized), 2)));
+		BHat = (pow(tPlateThickness, 2.) * (bPlateWidth - cPlate)) / (bPlateWidth * sqrt(1. - pow((1. - strainPBEqTrialRegularized), 2)));
+		CHat = (1. / 2. * tPlateThickness * sqrt(pow(cPlate, 2.) + pow((bPlateWidth / 2. * sqrt(1. - pow((1. - strainPBEqTrialRegularized), 2))), 2)) - bPlateWidth * tPlateThickness);
 
 		DHat = -pow((BHat), 2);
-		EHat = 2 * BHat * CHat;
-		FHat = -pow((AHat), 2) + 2 * pow((BHat), 2) - pow(CHat, 2);
-		GHat = -2 * BHat * CHat;
+		EHat = 2. * BHat * CHat;
+		FHat = -pow((AHat), 2) + 2. * pow((BHat), 2) - pow(CHat, 2);
+		GHat = -2. * BHat * CHat;
 		HHat = pow(AHat, 2) - pow(BHat, 2);
 
-		p4eq = (8 * DHat * FHat - 3 * pow(EHat, 2)) / (8 * pow(DHat, 2));
-		q4eq = (pow(EHat, 3) - 4 * DHat * EHat * FHat + 8 * pow(DHat, 2) * GHat) / (8 * pow(DHat, 3));
+		p4eq = (8. * DHat * FHat - 3. * pow(EHat, 2)) / (8. * pow(DHat, 2));
+		q4eq = (pow(EHat, 3) - 4. * DHat * EHat * FHat + 8. * pow(DHat, 2) * GHat) / (8. * pow(DHat, 3));
 
-		Delta0eq = pow(FHat, 2) - 3 * EHat * GHat + 12 * DHat * HHat;
-		Delta1eq = 2 * pow(FHat, 3) - 9 * EHat * FHat * GHat + 27 * pow(EHat, 2) * HHat + 27 * DHat * pow(GHat, 2) - 72 * DHat * FHat * HHat;
+		Delta0eq = pow(FHat, 2) - 3. * EHat * GHat + 12. * DHat * HHat;
+		Delta1eq = 2. * pow(FHat, 3) - 9. * EHat * FHat * GHat + 27. * pow(EHat, 2) * HHat + 27. * DHat * pow(GHat, 2) - 72. * DHat * FHat * HHat;
 
-		std::complex<double> Delta0eqComplex(Delta0eq, 0);
-		std::complex<double> Delta1eqComplex(Delta1eq, 0);
-		std::complex<double> fourComplex(4, 0);
-		std::complex<double> twoComplex(2, 0);
+		std::complex<double> Delta0eqComplex(Delta0eq, 0.);
+		std::complex<double> Delta1eqComplex(Delta1eq, 0.);
+		std::complex<double> fourComplex(4., 0.);
+		std::complex<double> twoComplex(2., 0.);
 		std::complex<double> Q4eq = pow(((Delta1eqComplex + sqrt(pow(Delta1eqComplex, 2) - fourComplex * pow(Delta0eqComplex, 3))) / twoComplex), 1.0 / 3.0);
 
-		std::complex<double> oneDivTwoComplex(0.5, 0);
-		std::complex<double> twoDivThreeComplex(2.0 / 3.0, 0);
-		std::complex<double> oneComplex(1, 0);
-		std::complex<double> threeComplex(3, 0);
-		std::complex<double> p4eqComplex(p4eq, 0);
-		std::complex<double> DHatComplex(DHat, 0);
-		std::complex<double> q4eqComplex(q4eq, 0);
+		std::complex<double> oneDivTwoComplex(0.5, 0.);
+		std::complex<double> twoDivThreeComplex(2.0 / 3.0, 0.);
+		std::complex<double> oneComplex(1., 0.);
+		std::complex<double> threeComplex(3., 0.);
+		std::complex<double> p4eqComplex(p4eq, 0.);
+		std::complex<double> DHatComplex(DHat, 0.);
+		std::complex<double> q4eqComplex(q4eq, 0.);
 		std::complex<double> S4eq = oneDivTwoComplex * sqrt(-twoDivThreeComplex * p4eqComplex + oneComplex / (threeComplex * DHatComplex) * (Q4eq + Delta0eqComplex / Q4eq));
 
-		std::complex<double> EHatComplex(EHat, 0);
+		std::complex<double> EHatComplex(EHat, 0.);
 		std::complex<double> sol4eq3 = -EHatComplex / (fourComplex * DHatComplex) + S4eq + oneDivTwoComplex * sqrt(-fourComplex * pow(S4eq, 2) - twoComplex * p4eqComplex - q4eqComplex / S4eq);
 
 		sigmaSurSigmaY = real(sol4eq3);
@@ -1444,7 +1433,7 @@ double LocalBucklingFlangePlate::calculateSigmaSurSigmaY() {
 
 double LocalBucklingFlangePlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
 	double dSigmaSurSigmaYdEpsilonPBeq = 0.;
-	double hStep = 1e-12;
+	double hStep = 1e-10;
 	double alphaAngle = 0.;
 	double cPlate = 0.;
 
@@ -1536,3 +1525,4 @@ Matrix LocalBucklingFlangePlate::matinv3(const Matrix& A) {
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+
