@@ -144,7 +144,7 @@ private:
 	double calculateSigmaSurSigmaY(void);
 
 	// Returns the current value of the derivative dSigmaSurSigmaYdEpsilonPBeq
-	double calculateDSigmaSurSigmaYdEpsilonPBeq(void);
+	double calculateDSigmaSurSigmaYdEpsilonPB11(void);
 
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);

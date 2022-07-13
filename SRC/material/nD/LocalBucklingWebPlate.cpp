@@ -339,13 +339,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 			stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 		}
 
-	/*	if (abs(stressTrial[0])>1000)
-		{
-			opserr << "Stress trial to big:" << stressTrial[0] << endln;
-		}*/
-
 		xiTrial = stressTrial - alpha;
-		triaxiality = 1. / 3. * xiTrial[0];
+		/*triaxiality = 1. / 3. * xiTrial[0];*/
+		triaxiality = 1. / 3. * stressTrial(0);
 		etaTrial = qMatT * xiTrial;
 		yieldStress = calculateYieldStress();
 
@@ -418,7 +414,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 			else { // if not elastic
 				
 				// Check if hardening or softening response
-				if (chi1c == 0) { 
+				//if (chi1c == 0) { 
+				if (abs(strainPostBucklingTrial(0)) <RETURN_MAP_TOL) {
 					// Do a step in the hardening direction
 					plasticLoading = 1;
 					retVal = returnMappingHardening(strain_nPlus1, alpha, etaTrial);
@@ -457,7 +454,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 						//chi1c = RETURN_MAP_TOL;
 						if (convergedMatLaw == 0)
 						{
-							strainPBEqTrial = RETURN_MAP_TOL / 100.;
+							/*strainPBEqTrial = RETURN_MAP_TOL / 100.;*/
+							strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
 						}
 						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
@@ -484,6 +482,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 			}
 		}
+	}
+	if (iterationNumber_timeIntegration >= 50) {
+		int stop = 0;
 	}
 
 	// Warn the user if the algorithm did not converge and return -1
@@ -654,11 +655,15 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 
 		phiELL = 3. / 2. * (2. / 3. * pow(relativeStressNPlus1(0), 2) + 2. * pow(relativeStressNPlus1(1), 2) + 2. * pow(relativeStressNPlus1(2), 2)) + chi1c * pow(stressTrial(0), 2) - pow(yieldStress, 2);
 
-		psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
+		//psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
+		dPhiELLdXi(0) = 2. * (relativeStressNPlus1(0) + chi1c * stressTrial(0));
+		dPhiELLdXi(1) = 6. * relativeStressNPlus1(1);
+		dPhiELLdXi(2) = 6. * relativeStressNPlus1(2);
 
-		dSigmaSurSigmaYdEpsilonPBeq = calculateDSigmaSurSigmaYdEpsilonPBeq();
+		dSigmaSurSigmaYdEpsilonPBeq = calculateDSigmaSurSigmaYdEpsilonPB11();
 
-		dChi1cDLambdaPB = -2. * psi * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPBeq;
+		//dChi1cDLambdaPB = -2. * psi * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPBeq;
+		dChi1cDLambdaPB = dPhiELLdXi(0) * 2.  * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPBeq;
 
 		gammaDiagPrime(0) = -2. * (1. + chi1c + consistParam_postBuckling * dChi1cDLambdaPB) * pow(gammaDiag(0), 2);
 		gammaDiagPrime(1) = -6. * pow(gammaDiag(1), 2);
@@ -674,6 +679,7 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		consistParam_postBuckling = consistParam_postBuckling - phiELL / dPhiELLdLambdaPB;
 
 		strainPBEqTrial = strainPBEqConverged + psi * consistParam_postBuckling;
+		strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiELLdXi;
 
 		sigmaSurSigmaY = calculateSigmaSurSigmaY();
 		chi1c = calculateChi1c();
@@ -685,11 +691,11 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 	}
 
 	// Update the variables
-	dPhiELLdXi(0) = 2. * (relativeStressNPlus1(0) + chi1c * stressTrial(0));
+	/*dPhiELLdXi(0) = 2. * (relativeStressNPlus1(0) + chi1c * stressTrial(0));
 	dPhiELLdXi(1) = 6. * relativeStressNPlus1(1);
 	dPhiELLdXi(2) = 6. * relativeStressNPlus1(2);
 
-	strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiELLdXi;	
+	strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiELLdXi;	*/
 
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusSoftening(relativeStressTrial, alpha, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
@@ -780,25 +786,27 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusHardening(double co
 void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vector& relativeStressTrial, const Vector& alpha,
 	const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam_postBuckling) {
 	// Initialize the variables
-	Vector dPhiELLDSigma = Vector(N_DIMS);
+	Vector dPhiCompDSigma = Vector(N_DIMS);
 	double chi1c = 0.;
-	double psi = 0.;
+	//double psi = 0.;
 	Vector gammaDiag = Vector(N_DIMS);
 	double sigmaSurSigmaY = 0;
-	double dSigmaSurSigmaYdEpsilonPBeq = 0;
+	double dSigmaSurSigmaYdEpsilonPB11 = 0;
 	Vector dGammaDChi1cDiag = Vector(N_DIMS);
 	Vector dXiDChi1c = Vector(N_DIMS);
-	double dPhiELLDChi1c = 0.;
-	Vector dPsiDSigma = Vector(N_DIMS);
+	double dPhiCompDChi1c = 0.;
+	/*Vector dPsiDSigma = Vector(N_DIMS);
 	double dPsiDSigmaPreFactor = 0.;
-	double dPsiDChi1c = 0.;
-	double dChi1cDepsiPBeq = 0.;
+	double dPsiDChi1c = 0.;*/
+	double dChi1cDepsiPB11 = 0.;
+	Vector d2PhiCompDSigmaDChi1c = Vector(N_DIMS);
+	Vector d2PhiCompDSigma2Diag = Vector(N_DIMS);
 	Vector A = Vector(N_DIMS);
 	double B = 0.;
 	Vector D = Vector(N_DIMS);
 	double DPreFactor = 0.;
 	Matrix CepTerm1 = Matrix(N_DIMS, N_DIMS);
-	Matrix AOutDPsiDSigma = Matrix(N_DIMS, N_DIMS);
+	//Matrix AOutDPsiDSigma = Matrix(N_DIMS, N_DIMS);
 	Matrix CepTerm2 = Matrix(N_DIMS, N_DIMS);
 	Matrix CepTerm3 = Matrix(N_DIMS, N_DIMS);
 	Matrix I = Matrix(N_DIMS, N_DIMS);
@@ -806,18 +814,18 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vec
 
 	chi1c = calculateChi1c();
 
-	dPhiELLDSigma(0) = 2. * (relativeStressNPlus1(0) + chi1c * stressTrial(0));
-	dPhiELLDSigma(1) = 6. * relativeStressNPlus1(1);
-	dPhiELLDSigma(2) = 6. * relativeStressNPlus1(2);
+	dPhiCompDSigma(0) = 2. * (relativeStressNPlus1(0) + chi1c * stressTrial(0));
+	dPhiCompDSigma(1) = 6. * relativeStressNPlus1(1);
+	dPhiCompDSigma(2) = 6. * relativeStressNPlus1(2);
 
-	psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
+	//psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
 
 	gammaDiag(0) = 1. / (1. / elasticModulus + consistParam_postBuckling * (2. + 2 * chi1c));
 	gammaDiag(1) = 1. / (1. / shearModulus + consistParam_postBuckling * 6.);
 	gammaDiag(2) = gammaDiag(1);
 
 	sigmaSurSigmaY = calculateSigmaSurSigmaY();
-	dSigmaSurSigmaYdEpsilonPBeq = calculateDSigmaSurSigmaYdEpsilonPBeq();
+	dSigmaSurSigmaYdEpsilonPB11 = calculateDSigmaSurSigmaYdEpsilonPB11();
 
 	dGammaDChi1cDiag.Zero();
 	dGammaDChi1cDiag(0) = -2. * consistParam_postBuckling * pow(gammaDiag(0), 2);
@@ -825,39 +833,66 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vec
 	dXiDChi1c.Zero();
 	dXiDChi1c(0) = dGammaDChi1cDiag(0) / elasticModulus * (relativeStressTrial(0) - 2. * consistParam_postBuckling * chi1c * alpha(0) * elasticModulus) - 2. * consistParam_postBuckling * gammaDiag(0) * alpha(0);
 
-	dPhiELLDChi1c = 2. * dXiDChi1c(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXiDChi1c(1) * relativeStressNPlus1(1) + 6. * dXiDChi1c(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
+	dPhiCompDChi1c = 2. * dXiDChi1c(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXiDChi1c(1) * relativeStressNPlus1(1) + 6. * dXiDChi1c(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
 
-	dPsiDSigmaPreFactor = pow(4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2), -0.5);
+	/*dPsiDSigmaPreFactor = pow(4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2), -0.5);
 	dPsiDSigma(0) = dPsiDSigmaPreFactor * (2. * relativeStressNPlus1(0) + 8. * pow(chi1c, 2) * stressTrial(0));
 	dPsiDSigma(1) = dPsiDSigmaPreFactor * (6. * relativeStressNPlus1(1) );
 	dPsiDSigma(2) = dPsiDSigmaPreFactor * (6. * relativeStressNPlus1(2));
 
-	dPsiDChi1c = dPsiDSigmaPreFactor * 8. * chi1c * pow(stressTrial(0), 2);
+	dPsiDChi1c = dPsiDSigmaPreFactor * 8. * chi1c * pow(stressTrial(0), 2);*/
 
-	dChi1cDepsiPBeq = -2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPBeq;
+	//dChi1cDepsiPBeq = -2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPBeq;
+
+	dChi1cDepsiPB11= 2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
+
+	d2PhiCompDSigma2Diag(0) = 2. * (1. + chi1c);
+	d2PhiCompDSigma2Diag(1) = 6.;
+	d2PhiCompDSigma2Diag(2) = 6.;
+
+	d2PhiCompDSigmaDChi1c(0) = 2. * (dXiDChi1c(0) * (1. + chi1c) + stressTrial(0));
+
+	B = 1. / (1. - dChi1cDepsiPB11 * consistParam_postBuckling * d2PhiCompDSigmaDChi1c(0));
 
 	A.Zero();
-	A(0) = 2. * dChi1cDepsiPBeq * 1. / (1. - dChi1cDepsiPBeq * consistParam_postBuckling * dPsiDChi1c) * stressTrial(0);
+	A(0) = d2PhiCompDSigmaDChi1c(0) * dChi1cDepsiPB11 * B;
 
-	B = 1. / (1. - dChi1cDepsiPBeq * consistParam_postBuckling * dPsiDChi1c);
+	/*DPreFactor = 1. / (dPhiELLDChi1c * dChi1cDepsiPBeq * psi * B);*/
+	DPreFactor = 1./(dPhiCompDChi1c * dChi1cDepsiPB11 * dPhiCompDSigma(0) * B);
+	D(0) = DPreFactor * (dPhiCompDSigma(0) + dPhiCompDChi1c * dChi1cDepsiPB11 * consistParam_postBuckling * d2PhiCompDSigma2Diag(0) * B);
+	D(1) = DPreFactor * (dPhiCompDSigma(1));
+	D(2) = DPreFactor * (dPhiCompDSigma(2));
 
-	DPreFactor = 1. / (dPhiELLDChi1c * dChi1cDepsiPBeq * psi * B);
-	D(0) = DPreFactor * (dPhiELLDSigma(0) + dPhiELLDChi1c * dChi1cDepsiPBeq * consistParam_postBuckling * dPsiDSigma(0) * B);
-	D(1) = DPreFactor * (dPhiELLDSigma(1) + dPhiELLDChi1c * dChi1cDepsiPBeq * consistParam_postBuckling * dPsiDSigma(1) * B);
-	D(2) = DPreFactor * (dPhiELLDSigma(2) + dPhiELLDChi1c * dChi1cDepsiPBeq * consistParam_postBuckling * dPsiDSigma(2) * B);
-
-	AOutDPsiDSigma = A % dPsiDSigma;
-	CepTerm1 = 3. * PMat + 2. * chi1c * ppMat + consistParam_postBuckling * AOutDPsiDSigma;
-	CepTerm2 = D % (dPhiELLDSigma + A * psi);
+	//AOutDPsiDSigma = A % dPsiDSigma;
+	/*CepTerm1 = 3. * PMat + 2. * chi1c * ppMat + consistParam_postBuckling * AOutDPsiDSigma;
+	CepTerm2 = D % (dPhiELLDSigma + A * psi);*/
+	CepTerm1.Zero();
+	CepTerm1(0, 0) = 2. * (1. + chi1c) * (1. + A(0) * consistParam_postBuckling);
+	CepTerm1(1, 1) = 6.;
+	CepTerm1(2, 2) = 6.;
+	/*CepTerm2 = D * (dPhiCompDSigma + consistParam_postBuckling * A * dPhiCompDSigma(0));*/
+	//opserr << "This is dPhiCompDSigma" << dPhiCompDSigma << endln;
+	//opserr << "This is D" << D << endln;
+	CepTerm2(0, 0) = D(0) * dPhiCompDSigma(0) * (1 + consistParam_postBuckling * A(0)); 
+	CepTerm2(0, 1) = D(0) * dPhiCompDSigma(1);
+	CepTerm2(0, 2) = D(0) * dPhiCompDSigma(2);
+	CepTerm2(1, 0) = D(1) * dPhiCompDSigma(0) * (1 + consistParam_postBuckling * A(0));
+	CepTerm2(1, 1) = D(1) * dPhiCompDSigma(1);
+	CepTerm2(1, 2) = D(1) * dPhiCompDSigma(2);
+	CepTerm2(2, 0) = D(2) * dPhiCompDSigma(0) * (1 + consistParam_postBuckling * A(0));
+	CepTerm2(2, 1) = D(2) * dPhiCompDSigma(1);
+	CepTerm2(2, 2) = D(2) * dPhiCompDSigma(2);
+	//opserr << "This is CepTerm2" << CepTerm2 << endln;
 	I.Zero();
 	I(0, 0) = I(1, 1) = I(2, 2) = 1.;
 	CepTerm3 = I + elasticMatrix * (consistParam_postBuckling * CepTerm1 - CepTerm2);
+	//opserr << "This is CepTerm3" << CepTerm3 << endln;
 	CepTerm3Inverse = matinv3(CepTerm3);
 	stiffnessTrial.Zero();
 	stiffnessTrial = elasticMatrix * CepTerm3Inverse;
 
 	// Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	//stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5); \\ matrix is diagonal
 	//opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
 	
 	return;
@@ -1369,21 +1404,21 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY() {
 	double p4eq = 0., q4eq = 0.;
 	double Delta0eq = 0.;
 	double Delta1eq = 0.;
-	double strainPBEqTrialRegularized = 0.;
+	double strainPB11TrialRegularized = 0.;
 
 	alphaAngle = 55. * 3.1416 / 180.;
 	cPlate = bPlateWidth / (2. * tan(alphaAngle));
 
-	strainPBEqTrialRegularized = strainPBEqTrial * alphaRegularization;
+	strainPB11TrialRegularized = abs(strainPostBucklingTrial(0)) * alphaRegularization;
 
 	// Check if strainPBEqTrial is equal to 0 
-	if (strainPBEqTrial < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
+	if (abs(strainPostBucklingTrial(0)) < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
 		sigmaSurSigmaY = 1.;
 	}
 	else {
-		AHat = (2. * pow(tPlateThickness, 2) * (1. - strainPBEqTrialRegularized)) / (sin(2. * alphaAngle) * sqrt(1. - pow((1. - strainPBEqTrialRegularized), 2)));
-		BHat = (pow(tPlateThickness, 2.) * (bPlateWidth - 2. * cPlate)) / (bPlateWidth * sqrt(1. - pow((1. - strainPBEqTrialRegularized), 2)));
-		CHat = (tPlateThickness * sqrt(pow(cPlate, 2.) + pow((bPlateWidth / 2. * sqrt(1. - pow((1. - strainPBEqTrialRegularized), 2))), 2)) - bPlateWidth * tPlateThickness);
+		AHat = (2. * pow(tPlateThickness, 2) * (1. - strainPB11TrialRegularized)) / (sin(2. * alphaAngle) * sqrt(1. - pow((1. - strainPB11TrialRegularized), 2)));
+		BHat = (pow(tPlateThickness, 2.) * (bPlateWidth - 2. * cPlate)) / (bPlateWidth * sqrt(1. - pow((1. - strainPB11TrialRegularized), 2)));
+		CHat = (tPlateThickness * sqrt(pow(cPlate, 2.) + pow((bPlateWidth / 2. * sqrt(1. - pow((1. - strainPB11TrialRegularized), 2))), 2)) - bPlateWidth * tPlateThickness);
 
 		DHat = -pow((BHat), 2);
 		EHat = 2. * BHat * CHat;
@@ -1431,14 +1466,14 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
-	double dSigmaSurSigmaYdEpsilonPBeq = 0.;
+double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPB11() {
+	double dSigmaSurSigmaYdEpsilonPB11 = 0.;
 	double hStep = 1e-10;
 	double alphaAngle = 0.;
 	double cPlate = 0.;
 
 	// Transform epsilonPBeq from double to complex number
-	std::complex<double> epsilonPBeqRegularized(alphaRegularization * strainPBEqTrial, alphaRegularization * hStep);
+	std::complex<double> epsilonPB11Regularized(alphaRegularization * abs(strainPostBucklingTrial(0)), alphaRegularization * hStep);
 
 	alphaAngle = 55. * 3.1416 / 180.;
 	cPlate = bPlateWidth / (2 * tan(alphaAngle));
@@ -1459,9 +1494,9 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
 	std::complex<double> cPlateComplex(cPlate, 0);
 	std::complex<double> sinTwoAlphaComplex(sin(2 * alphaAngle), 0);
 
-	std::complex<double> AHat = (twoComplex * pow(tPlateComplex, 2) * (oneComplex - epsilonPBeqRegularized)) / (sinTwoAlphaComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2)));
-	std::complex<double> BHat = (pow(tPlateComplex, 2) * (bPlateComplex - twoComplex * cPlateComplex)) / (bPlateComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2)));
-	std::complex<double> CHat = (tPlateComplex * sqrt(pow(cPlateComplex, 2) + pow((bPlateComplex / twoComplex * sqrt(oneComplex - pow((oneComplex - epsilonPBeqRegularized), 2))), 2)) - bPlateComplex * tPlateComplex);
+	std::complex<double> AHat = (twoComplex * pow(tPlateComplex, 2) * (oneComplex - epsilonPB11Regularized)) / (sinTwoAlphaComplex * sqrt(oneComplex - pow((oneComplex - epsilonPB11Regularized), 2)));
+	std::complex<double> BHat = (pow(tPlateComplex, 2) * (bPlateComplex - twoComplex * cPlateComplex)) / (bPlateComplex * sqrt(oneComplex - pow((oneComplex - epsilonPB11Regularized), 2)));
+	std::complex<double> CHat = (tPlateComplex * sqrt(pow(cPlateComplex, 2) + pow((bPlateComplex / twoComplex * sqrt(oneComplex - pow((oneComplex - epsilonPB11Regularized), 2))), 2)) - bPlateComplex * tPlateComplex);
 
 	std::complex<double> DHat = -pow((BHat), 2);
 	std::complex<double> EHat = twoComplex * BHat * CHat;
@@ -1480,9 +1515,9 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPBeq() {
 
 	std::complex<double> sol4eq3 = -EHat / (fourComplex * DHat) + S4eq + oneDivTwoComplex * sqrt(-fourComplex * pow(S4eq, 2) - twoComplex * p4eq - q4eq / S4eq);
 
-	dSigmaSurSigmaYdEpsilonPBeq = imag(sol4eq3) / hStep;
+	dSigmaSurSigmaYdEpsilonPB11 = imag(sol4eq3) / hStep;
 
-	return dSigmaSurSigmaYdEpsilonPBeq;
+	return dSigmaSurSigmaYdEpsilonPB11;
 
 }
 
