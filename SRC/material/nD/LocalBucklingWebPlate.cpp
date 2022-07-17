@@ -306,6 +306,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	double f2bar = 0.;
 	double chi1c = 0.;
 	int cappingPoint = 0;
+	double etaTangent = 0.;
 
 	// Update the total strain vector
 	deltaStrain_todo.Zero();
@@ -323,20 +324,23 @@ int LocalBucklingWebPlate::timeIntegration() {
 		// Update the total strain vector for time integration iteration
 		strain_nPlus1 = strain_previous + deltaStrain_trial;
 
+		// Compute reduction factor for elastic stiffness matrix
+		etaTangent = calculateEtaTangentReduce();
+
 		// Elastic trial step
 		if (cappingPoint==0)
 		{
 			alpha.Zero();
 			for (unsigned int i = 0; i < nBackstresses; ++i)
 				alpha = alpha + alphaKConverged[i];
-			stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticConverged - strainPostBucklingConverged);
+			stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticConverged - strainPostBucklingConverged);
 		}
 		else // We are at the switch between hardening and softening stage
 		{
 			alpha.Zero();
 			for (unsigned int i = 0; i < nBackstresses; ++i)
 			alpha = alpha + alphaKTrial[i];
-			stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
+			stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 		}
 
 		xiTrial = stressTrial - alpha;
@@ -356,7 +360,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 				elasticLoading = 1;
 
 				// Update the stiffness for elastic loading
-				calculateConsistentTangentModulusElastic();
+				calculateConsistentTangentModulusElastic(etaTangent);
 				
 			}
 			else { //loading is plastic -->return mapping
@@ -374,7 +378,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 				elasticLoading = 1;
 
 				// Update the stiffness for elastic loading
-				calculateConsistentTangentModulusElastic();
+				calculateConsistentTangentModulusElastic(etaTangent);
 
 				// Check if the initial capping stress sigmaC0 has been passed
 				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
@@ -715,8 +719,9 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateConsistentTangentModulusElastic() {
-	stiffnessTrial = elasticMatrix;
+void LocalBucklingWebPlate::calculateConsistentTangentModulusElastic(double etaTangent) {
+	//stiffnessTrial = elasticMatrix;
+	stiffnessTrial = etaTangent * elasticMatrix;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -1525,6 +1530,25 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPB11() {
 
 void LocalBucklingWebPlate::initializeBChi1c() {
 	b_chi1c = (pow(sigmaC0Stress, 2)) / ((pow(sigmaC0Stress, 2) - pow(sigmaDMStress, 2)) * pow(alpha_chi1c, 2));
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+double LocalBucklingWebPlate::calculateEtaTangentReduce() {
+	double etaTangent = 0.;
+
+	double epsiPb11_min = pow(1./beta1RegressionEuSurEl*pow((bPlateWidth/tPlateThickness),-beta2RegressionEuSurEl),1/beta3RegressionEuSurEl);
+
+	if (abs(strainPostBucklingTrial(0))<=epsiPb11_min)
+	{
+		etaTangent = 1;
+	}
+	else
+	{
+		etaTangent = beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionEuSurEl);
+	}
+
+	return etaTangent;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */

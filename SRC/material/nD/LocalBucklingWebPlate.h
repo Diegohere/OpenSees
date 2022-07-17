@@ -107,7 +107,7 @@ private:
 	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alpha);
 
 	//! Sets the elastoplastic tangent modulus for elastic stage
-	void calculateConsistentTangentModulusElastic();
+	void calculateConsistentTangentModulusElastic(double etaTangent);
 
 	// Sets the elastoplastic tangent modulus for hardening stage
 	void calculateConsistentTangentModulusHardening(double consistParam, double fBar,
@@ -148,6 +148,9 @@ private:
 
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);
+
+	// Computes elastic stiffness matrix 
+	double calculateEtaTangentReduce(void);
 
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
@@ -213,8 +216,6 @@ private:
 	double strainPEqTrial;
 	double strainPBEqConverged;  // Equivalent post buckling strain
 	double strainPBEqTrial;
-	/*double chi1cConverged;
-	double chi1cTrial;*/
 	Vector stressConverged;
 	Vector stressTrial;
 	std::vector<Vector> alphaKConverged;
@@ -234,6 +235,12 @@ private:
 	Vector lambdaC;
 	Vector lambdaP;
 	Vector lambdapp;
+
+	// Parameters for regression formulas
+	const double beta1RegressionEuSurEl = 2.59;
+	const double beta2RegressionEuSurEl = -0.98;
+	const double beta3RegressionEuSurEl = -0.37;
+
 
 };
 
