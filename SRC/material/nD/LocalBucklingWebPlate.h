@@ -114,7 +114,7 @@ private:
 		const Vector& stressRelative);
 
 	// Sets the consistent tangent modulus for softening stage
-	void calculateConsistentTangentModulusSoftening(const Vector& relativeStressTrial, const Vector& alpha, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
+	void calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& alpha, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
 
 	// Returns the dot product of two length 3 vectors
 	double dotprod3(const Vector& v1, const Vector& v2);
@@ -151,6 +151,15 @@ private:
 
 	// Computes elastic stiffness matrix 
 	double calculateEtaTangentReduce(void);
+
+	// Computes derivative of C elastic matrix moduli with respect to lambda_Pb
+	Vector calculateDCdLambdaPB(double etaTangent, double dPhiCompdXiVector11);
+
+	// Computes the derivative of etaTangent with respect to epsiPb11
+	double calculateDEtaTangentdEpsiPb11(void);
+
+	// Computes the values of constant c1c needed for buckling prior to yielding
+	void calculateC1c(double yieldStress, double alphaTot11);
 
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
@@ -225,6 +234,7 @@ private:
 	int elasticLoading;
 	int plasticLoading;
 	int postBucklingLoading;
+	double c1c = 0.;
 
 	// Projection matrices and their eigendecomposition
 	Vector pVect;
