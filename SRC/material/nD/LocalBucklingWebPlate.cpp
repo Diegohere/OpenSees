@@ -31,8 +31,8 @@ void* OPS_LocalBucklingWebPlate(void) {
 	const unsigned int N_HARDENING_PROPERTIES = 7;
 	const unsigned int N_SOFTENING_PROPERTIES = 3;
 	const unsigned int N_PARAM_PER_BACK = 2;
-	const unsigned int MAX_BACKSTRESSES = 8;
-	const unsigned int BACKSTRESS_SPACE = MAX_BACKSTRESSES * N_PARAM_PER_BACK;
+	const unsigned int REQUIRED_NUMBACKSTRESSES = 2;
+	const unsigned int BACKSTRESS_SPACE = REQUIRED_NUMBACKSTRESSES * N_PARAM_PER_BACK;
 	const unsigned int N_REGULARIZATION_PARAMETERS = 1;
 
 	std::string inputInstructions = "Invalid args, want:\n"
@@ -74,9 +74,9 @@ void* OPS_LocalBucklingWebPlate(void) {
 			inputInstructions.c_str() << endln;
 		return 0;
 	}
-	if (nBackstresses[0] > MAX_BACKSTRESSES) {
-		opserr << "WARNING: Too many backstresses defined, maximum is: " <<
-			MAX_BACKSTRESSES << endln <<
+	if (nBackstresses[0] != REQUIRED_NUMBACKSTRESSES) {
+		opserr << "WARNING: Number of backstresses should be: " <<
+			REQUIRED_NUMBACKSTRESSES << endln <<
 			inputInstructions.c_str() << endln;
 		return 0;
 	}
@@ -175,8 +175,11 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	// Set the number of backstresses
 	nBackstresses = cK.size();
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		alphaKTrial.push_back(Vector(N_DIMS));
-		alphaKConverged.push_back(Vector(N_DIMS));
+		alphaPKTrial.push_back(Vector(N_DIMS));
+		alphaPKConverged.push_back(Vector(N_DIMS));
+
+		alphaPBKTrial.push_back(Vector(N_DIMS));
+		alphaPBKConverged.push_back(Vector(N_DIMS));
 	}
 
 	// Zero all the vectors and matrices
@@ -226,8 +229,6 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 	strainPBEqTrial(0.),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
-	/*chi1cConverged(0.),
-	chi1cTrial(0.),*/
 	elasticLoading(0),
 	plasticLoading(0),
 	postBucklingLoading(0),
@@ -248,8 +249,11 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
   //Not tried for UVC parallel processing - probably wont work with parallel processing
 	nBackstresses = cK.size();
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		alphaKTrial.push_back(Vector(N_DIMS));
-		alphaKConverged.push_back(Vector(N_DIMS));
+		alphaPKTrial.push_back(Vector(N_DIMS));
+		alphaPKConverged.push_back(Vector(N_DIMS));
+
+		alphaPBKTrial.push_back(Vector(N_DIMS));
+		alphaPBKConverged.push_back(Vector(N_DIMS));
 	}
 
 	// Zero all the vectors and matrices
@@ -291,7 +295,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	int retVal = 0;
 	bool convergedMatLaw = false;
 	unsigned int iterationNumber_timeIntegration = 0;
-	Vector alpha = Vector(N_DIMS);
+	Vector alphaTot = Vector(N_DIMS);
 	Vector etaTrial = Vector(N_DIMS);
 	Vector deltaStrain_todo = Vector(N_DIMS);
 	Vector deltaStrain_trial = Vector(N_DIMS);
@@ -331,20 +335,20 @@ int LocalBucklingWebPlate::timeIntegration() {
 		// Elastic trial step
 		if (cappingPoint==0)
 		{
-			alpha.Zero();
+			alphaTot.Zero();
 			for (unsigned int i = 0; i < nBackstresses; ++i)
-				alpha = alpha + alphaKConverged[i];
+				alphaTot = alphaTot + alphaPKConverged[i] + alphaPBKConverged[i];
 			stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticConverged - strainPostBucklingConverged);
 		}
 		else // We are at the switch between hardening and softening stage
 		{
-			alpha.Zero();
+			alphaTot.Zero();
 			for (unsigned int i = 0; i < nBackstresses; ++i)
-				alpha = alpha + alphaKTrial[i];
+				alphaTot = alphaTot + alphaPKConverged[i] + alphaPBKConverged[i];
 			stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 		}
 
-		xiTrial = stressTrial - alpha;
+		xiTrial = stressTrial - alphaTot;
 		/*triaxiality = 1. / 3. * xiTrial[0];*/
 		triaxiality = 1. / 3. * stressTrial(0);
 		etaTrial = qMatT * xiTrial;
@@ -366,7 +370,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 			}
 			else { //loading is plastic -->return mapping
 				plasticLoading = 1; //hardening stage
-				retVal = returnMappingHardening(strain_nPlus1, alpha, etaTrial);
+				retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial);
 			}
 		}
 		else { // if in compression
@@ -401,7 +405,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 						if (convergedMatLaw == 0)
 						{
 							strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
-							calculateC1c(yieldStress, alpha(0));
+							calculateC1c(yieldStress, alphaTot(0));
 						}
 						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
@@ -419,12 +423,12 @@ int LocalBucklingWebPlate::timeIntegration() {
 				if (abs(strainPostBucklingTrial(0)) <RETURN_MAP_TOL) {
 					// Do a step in the hardening direction
 					plasticLoading = 1;
-					retVal = returnMappingHardening(strain_nPlus1, alpha, etaTrial);
+					retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial);
 				}
 				else { // if chi1c !=0 --> softening stage
 					postBucklingLoading = 1;
 
-					retVal = returnMappingSoftening(strain_nPlus1, xiTrial, alpha);
+					retVal = returnMappingSoftening(strain_nPlus1, xiTrial, alphaTot);
 
 					convergedMatLaw = true;
 				}
@@ -484,7 +488,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector alpha, Vector etaTrial) {
+int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector etaTrial) {
 	// Initialize all the variables
 	int retVal = 0;
 	bool convergedReturnMapping = false;
@@ -506,6 +510,13 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 	double consistDenom = 0.;
 	double phiVM = 0.;
 	Vector stressRelative = Vector(N_DIMS);
+	std::vector<Vector> alpha12Tot_Vector;
+	double etaTangent = 0.;
+
+	// Fill alphaTot_Vector with the two vector
+	for (unsigned int i = 0; i < nBackstresses; ++i) {
+		alpha12Tot_Vector.push_back(alphaPKConverged[i]+ alphaPBKConverged[i]);
+	}
 
 	// Do the return mapping algorithm for plastic loading
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
@@ -520,9 +531,9 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
 			eK = calculateEk(i);
 			beta += cK[i] / gammaK[i] * (1. - eK);
-			alphaTilde += alphaKConverged[i] * eK;
+			alphaTilde += alpha12Tot_Vector[i] * eK;
 		}
-		alphaTilde = alpha - alphaTilde;
+		alphaTilde = alphaTot - alphaTilde;
 		beta = 1. + beta / yieldStress;
 
 		// Update the relative stress and eta
@@ -542,7 +553,7 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 			eK = calculateEk(i);
 			betaPrime = betaPrime - cK[i] * isotropicModulus / (gammaK[i] * pow(yieldStress, 2)) * (1. - eK)
 				+ cK[i] * eK / yieldStress;
-			alphaTildePrime = alphaTildePrime + gammaK[i] * eK * alphaKConverged[i];
+			alphaTildePrime = alphaTildePrime + gammaK[i] * eK * alpha12Tot_Vector[i];
 		}
 		betaPrime = betaPrime * sqrt(2. / 3.) * fBar;
 		alphaTildePrime = alphaTildePrime * sqrt(2. / 3.) * fBar;
@@ -571,10 +582,13 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 	yieldStress = calculateYieldStress();
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
 		eK = calculateEk(i);
-		alphaKTrial[i] = alphaKConverged[i] * eK + stressRelative / yieldStress * cK[i] / gammaK[i] * (1. - eK);
+		alpha12Tot_Vector[i] = alpha12Tot_Vector[i] * eK + stressRelative / yieldStress * cK[i] / gammaK[i] * (1. - eK);
+		alphaPKTrial[i] = alpha12Tot_Vector[i] - alphaPBKConverged[i];
 	}
 	strainPlasticTrial = strainPlasticConverged + consistParam_plastic * PMat * stressRelative;
-	stressTrial = elasticMatrix * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingConverged);
+	
+	etaTangent = calculateEtaTangentReduce();
+	stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingConverged);
 
 	// Calculate the consistent tangent modulus for hardening stage
 	calculateConsistentTangentModulusHardening(consistParam_plastic, fBar, stressRelative);
@@ -598,7 +612,7 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 *
 * @return 0 if successful
 */
-int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alpha) {
+int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alphaTot) {
 	// Initialize all the variables
 	int retVal = 0;
 	bool convergedReturnMapping = false;
@@ -636,10 +650,10 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_postBuckling * 6.);
 		gammaDiag(2) = gammaDiag(1);
 
-		relativeStressNPlus1(0) = gammaDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alpha(0)) - gammaDiag(0) / LambdaC_nPlus1Diag(0) * alpha(0);
-		relativeStressNPlus1(1) = gammaDiag(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiag(1) / LambdaC_nPlus1Diag(1) * alpha(1);
-		relativeStressNPlus1(2) = gammaDiag(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiag(2) / LambdaC_nPlus1Diag(2) * alpha(2);
-		stressTrial = relativeStressNPlus1 + alpha;
+		relativeStressNPlus1(0) = gammaDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alphaTot(0)) - gammaDiag(0) / LambdaC_nPlus1Diag(0) * alphaTot(0);
+		relativeStressNPlus1(1) = gammaDiag(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiag(1) / LambdaC_nPlus1Diag(1) * alphaTot(1);
+		relativeStressNPlus1(2) = gammaDiag(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiag(2) / LambdaC_nPlus1Diag(2) * alphaTot(2);
+		stressTrial = relativeStressNPlus1 + alphaTot;
 
 		phiComp = 3. / 2. * (2. / 3. * pow(relativeStressNPlus1(0), 2) + 2. * pow(relativeStressNPlus1(1), 2) + 2. * pow(relativeStressNPlus1(2), 2)) + chi1c * pow(stressTrial(0), 2) - pow(yieldStress, 2);
 
@@ -658,9 +672,9 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		gammaDiagPrime(1) = -pow(gammaDiag(1), 2) * (dCdLambdaPB(1) + 6.);
 		gammaDiagPrime(2) = -pow(gammaDiag(2), 2) * (dCdLambdaPB(2) + 6.);
 
-		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alpha(0)) - 2 * chi1c * gammaDiag(0) * alpha(0) - 2 * consistParam_postBuckling * gammaDiag(0) * alpha(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * alpha(0) - gammaDiag(0) * dCdLambdaPB(0) * alpha(0);
-		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * alpha(1) - gammaDiag(1) * dCdLambdaPB(1) * alpha(1);
-		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * alpha(1) - gammaDiag(2) * dCdLambdaPB(2) * alpha(2);
+		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alphaTot(0)) - 2 * chi1c * gammaDiag(0) * alphaTot(0) - 2 * consistParam_postBuckling * gammaDiag(0) * alphaTot(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * alphaTot(0) - gammaDiag(0) * dCdLambdaPB(0) * alphaTot(0);
+		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * alphaTot(1) - gammaDiag(1) * dCdLambdaPB(1) * alphaTot(1);
+		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * alphaTot(2) - gammaDiag(2) * dCdLambdaPB(2) * alphaTot(2);
 
 		dPhiCompdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0),2) * dChi1cDLambdaPB;
 
@@ -687,7 +701,7 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 	strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiELLdXi;	*/
 
 	// Calculate the consistent tangent modulus for softening stage
-	calculateConsistentTangentModulusSoftening(strain_nPlus1, alpha, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
+	calculateConsistentTangentModulusSoftening(strain_nPlus1, alphaTot, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
 
 	// Warn the user if the algorithm did not convergein the return mapping for softening and return -1
 	if (iterationNumber_ReturnMapping >= MAXIMUM_ITERATIONS_RETURNMAPPING && fabs(phiComp) > RETURN_MAP_TOL) {
@@ -731,6 +745,13 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusHardening(double co
 	Vector hTilde = Vector(N_DIMS);
 	double theta_1 = 0.;
 	Matrix nOutN = Matrix(N_DIMS, N_DIMS);
+	double etaTangent = 0.;
+	std::vector<Vector> alpha12Tot_Vector;
+
+	// Fill alphaTot_Vector with the two vector
+	for (unsigned int i = 0; i < nBackstresses; ++i) {
+		alpha12Tot_Vector.push_back(alphaPKConverged[i] + alphaPBKConverged[i]);
+	}
 	
 	iD3.Zero(); // 3x3 indentity matrix
 	iD3(0, 0) = iD3(1, 1) = iD3(2, 2) = 1.;
@@ -748,14 +769,17 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusHardening(double co
 	hPrime = -(beta - 1.) * isotropicModulus * stressRelative / yieldStress;
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
 		eK = calculateEk(i);
-		hPrime += cK[i] * eK / yieldStress * stressRelative - gammaK[i] * eK * alphaKConverged[i];
+		hPrime += cK[i] * eK / yieldStress * stressRelative - gammaK[i] * eK * alpha12Tot_Vector[i];
 	}
 	hPrime *= sqrt(2. / 3.);
 	hOutN = hPrime % nHat;
 	aMat = matinv3(beta * iD3 + consistParam_plastic * hOutN * PMat);
 
 	nTilde = nHat - consistParam_plastic * aMat * hPrime;
-	xiTilde = matinv3(complianceMatrix + consistParam_plastic * PMat * aMat);
+
+	etaTangent = calculateEtaTangentReduce();
+
+	xiTilde = matinv3(1. / etaTangent * complianceMatrix + consistParam_plastic * PMat * aMat);
 	xiTildeA = aMat * xiTilde;
 
 	theta_2 = 1. - 2. / 3. * isotropicModulus * consistParam_plastic;
@@ -773,7 +797,7 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusHardening(double co
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& alpha,
+void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& alphaTot,
 	const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam_postBuckling) {
 	// Initialize the variables
 	Vector dPhiCompDSigma = Vector(N_DIMS);
@@ -825,7 +849,7 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vec
 	dGammaDChi1cDiag(0) = -2. * consistParam_postBuckling * pow(gammaDiag(0), 2);
 
 	dXiDChi1c.Zero();
-	dXiDChi1c(0) = dGammaDChi1cDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alpha(0)) - 2 * consistParam_postBuckling * gammaDiag(0) * alpha(0) - dGammaDChi1cDiag(0) / LambdaC_nPlus1Diag(0) * alpha(0);
+	dXiDChi1c(0) = dGammaDChi1cDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alphaTot(0)) - 2 * consistParam_postBuckling * gammaDiag(0) * alphaTot(0) - dGammaDChi1cDiag(0) / LambdaC_nPlus1Diag(0) * alphaTot(0);
 
 	dPhiCompDChi1c = 2. * dXiDChi1c(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXiDChi1c(1) * relativeStressNPlus1(1) + 6. * dXiDChi1c(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
 
@@ -1017,7 +1041,8 @@ int LocalBucklingWebPlate::commitState() {
 	strainPostBucklingConverged = strainPostBucklingTrial;
 	strainPBEqConverged = strainPBEqTrial;
 	stressConverged = stressTrial;
-	alphaKConverged = alphaKTrial;
+	alphaPKConverged = alphaPKTrial;
+	alphaPBKConverged = alphaPBKTrial;
 	stiffnessConverged = stiffnessTrial;
 	return 0;
 }
@@ -1036,7 +1061,8 @@ int LocalBucklingWebPlate::revertToLastCommit() {
 	strainPostBucklingTrial = strainPostBucklingConverged;
 	strainPBEqTrial = strainPBEqConverged;
 	stressTrial = stressConverged;
-	alphaKTrial = alphaKConverged;
+	alphaPKTrial = alphaPKConverged;
+	alphaPBKTrial = alphaPBKConverged;
 	stiffnessTrial = stiffnessConverged;
 	return 0;
 }
@@ -1054,7 +1080,8 @@ int LocalBucklingWebPlate::revertToBeforeCapping(bool cappingPoint) {
 		strainPEqTrial = strainPEqConverged;
 		strainPostBucklingTrial = strainPostBucklingConverged;
 		strainPBEqTrial = strainPBEqConverged;
-		alphaKTrial = alphaKConverged;
+		alphaPKTrial = alphaPKConverged;
+		alphaPBKTrial = alphaPBKConverged;
 		stiffnessTrial = stiffnessConverged;
 	}
 	return 0;
@@ -1074,13 +1101,12 @@ int LocalBucklingWebPlate::revertToStart() {
 	strainPostBucklingConverged.Zero();
 	strainPEqConverged = 0.;
 	strainPBEqConverged = 0.;
-	/*chi1cConverged = 0.;
-	chi1cTrial = 0.;*/
 	stressConverged.Zero();
 	plasticLoading = false;
 	stiffnessConverged.Zero();
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		alphaKConverged[i].Zero();
+		alphaPKConverged[i].Zero();
+		alphaPBKConverged[i].Zero();
 	}
 	revertToLastCommit();
 	return 0;
@@ -1114,8 +1140,10 @@ NDMaterial* LocalBucklingWebPlate::getCopy() {
 	theCopy->strainPBEqTrial = strainPBEqTrial;
 	theCopy->stressConverged = stressConverged;
 	theCopy->stressTrial = stressTrial;
-	theCopy->alphaKConverged = alphaKConverged;
-	theCopy->alphaKTrial = alphaKTrial;
+	theCopy->alphaPKConverged = alphaPKConverged;
+	theCopy->alphaPKTrial = alphaPKTrial;
+	theCopy->alphaPBKConverged = alphaPBKConverged;
+	theCopy->alphaPBKTrial = alphaPBKTrial;
 	theCopy->stiffnessConverged = stiffnessConverged;
 	theCopy->stiffnessTrial = stiffnessTrial;
 	theCopy->elasticLoading = elasticLoading;

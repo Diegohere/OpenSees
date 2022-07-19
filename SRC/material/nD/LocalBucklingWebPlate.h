@@ -101,10 +101,10 @@ private:
 	int timeIntegration();
 
 	// Return mapping for hardening stage
-	int returnMappingHardening(Vector strain_nPlus1, Vector alpha, Vector eta_trial);
+	int returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector eta_trial);
 
 	// Return mapping for softening stage
-	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alpha);
+	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alphaTot);
 
 	//! Sets the elastoplastic tangent modulus for elastic stage
 	void calculateConsistentTangentModulusElastic(double etaTangent);
@@ -114,7 +114,7 @@ private:
 		const Vector& stressRelative);
 
 	// Sets the consistent tangent modulus for softening stage
-	void calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& alpha, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
+	void calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& alphaTot, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
 
 	// Returns the dot product of two length 3 vectors
 	double dotprod3(const Vector& v1, const Vector& v2);
@@ -227,8 +227,10 @@ private:
 	double strainPBEqTrial;
 	Vector stressConverged;
 	Vector stressTrial;
-	std::vector<Vector> alphaKConverged;
-	std::vector<Vector> alphaKTrial;
+	std::vector<Vector> alphaPKConverged;
+	std::vector<Vector> alphaPKTrial;
+	std::vector<Vector> alphaPBKConverged;
+	std::vector<Vector> alphaPBKTrial;
 	Matrix stiffnessConverged;
 	Matrix stiffnessTrial;
 	int elasticLoading;
