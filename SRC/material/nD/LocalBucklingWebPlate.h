@@ -149,6 +149,9 @@ private:
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);
 
+	// Initialize value of sigmaYrO
+	void initializeSigmaYrO(void);
+
 	// Computes elastic stiffness matrix 
 	double calculateEtaTangentReduce(void);
 
@@ -160,6 +163,18 @@ private:
 
 	// Computes the values of constant c1c needed for buckling prior to yielding
 	void calculateC1c(double yieldStress, double alphaTot11);
+
+	// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
+	void setTensileEllipsoidYieldSurf(double yieldStress, Vector alphaTot);
+
+	// Returns the current value of chi1t
+	double calculateChi1t(void);
+
+	// Computes function f1t for tensile ellipsoid yield surface evolution
+	double calculateF1t();
+
+	// Computes parameter tBezier for Bezier curve
+	double calculateTBezier();
 
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
@@ -237,6 +252,16 @@ private:
 	int plasticLoading;
 	int postBucklingLoading;
 	double c1c = 0.;
+	double b_1tO = 0.;
+	double b_1tS = 0.;
+	double sigmaPrO = 0.;
+	double sigmaPrS = 0.;
+	const double sigmaYrS = 1.;
+	double sigmaYrO = 0.;
+	double epsilonPB11Unload = 0.;
+	Vector backstressAfterCompression;
+	double epsilonPB11Min = 0.;
+	double alphaPr = 0.;
 
 	// Projection matrices and their eigendecomposition
 	Vector pVect;
@@ -252,7 +277,23 @@ private:
 	const double beta1RegressionEuSurEl = 2.59;
 	const double beta2RegressionEuSurEl = -0.98;
 	const double beta3RegressionEuSurEl = -0.37;
-
+	const double beta1RegressionSigmaPrS = 0.015;
+	const double beta2RegressionSigmaPrS = -0.302;
+	const double beta3RegressionSigmaPrS = -0.986;
+	const double beta1RegressionSigmaYrO = 2.0627;
+	const double beta2RegressionSigmaYrO = -0.2557;
+	const double beta1RegressionKPrS = -689.6;
+	const double beta2RegressionKPrS = -0.704;
+	const double beta3RegressionKPrS = -0.297;
+	const double beta1RegressionKYrS = -0.113;
+	const double beta2RegressionKYrS = 1.591;
+	const double beta3RegressionKYrS = -0.099;
+	const double beta1RegressionAlphaPr = -0.0094;
+	const double beta2RegressionAlphaPr = 0.295;
+	const double beta3RegressionAlphaPr = 0.638;
+	const double beta1RegressionAlphaYr = 5.49;
+	const double beta2RegressionAlphaYr = -1.04;
+	const double beta3RegressionAlphaYr = 0.817;
 
 };
 

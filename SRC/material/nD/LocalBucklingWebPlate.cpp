@@ -470,7 +470,11 @@ int LocalBucklingWebPlate::timeIntegration() {
 					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
 				}
 			}
-		}
+
+			// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
+			setTensileEllipsoidYieldSurf(yieldStress, alphaTot);
+
+		} // end IF compression
 	}
 
 	// Warn the user if the algorithm did not converge and return -1
@@ -1543,6 +1547,12 @@ void LocalBucklingWebPlate::initializeBChi1c() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
+void LocalBucklingWebPlate::initializeSigmaYrO() {
+	sigmaYrO = beta1RegressionSigmaYrO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrO) * initialYield;
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
 double LocalBucklingWebPlate::calculateEtaTangentReduce() {
 	double etaTangent = 0.;
 
@@ -1609,6 +1619,83 @@ double LocalBucklingWebPlate::calculateDEtaTangentdEpsiPb11() {
 
 void LocalBucklingWebPlate::calculateC1c(double yieldStress, double alphaTot11) {
 	c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStress, Vector alphaTot) {
+	double sigmaPrS_regression = 0.;
+	double epsilonPb11MinS = 0.;
+	double epsilonPb11MinO = 0.;
+
+	// Determine different stresses sigmaPr
+	sigmaPrS_regression = beta1RegressionSigmaPrS * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaPrS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaPrS);
+	sigmaPrS = std::min(2 * yieldStress - (yieldStress - alphaTot(0)), sigmaPrS_regression / sigmaYrS * (2 * yieldStress - (yieldStress - alphaTot(0))));
+	sigmaPrO = std::min(2 * yieldStress - (yieldStress - alphaTot(0)), sigmaPrS_regression * sigmaYrO);
+
+	// Determine epsiPb11Min
+	epsilonPb11MinS = -pow((1. / beta1RegressionSigmaPrS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrS)), (1. / beta3RegressionSigmaPrS));
+	epsilonPb11MinO = -pow((1. / sigmaYrO * (2 * yieldStress - (yieldStress - alphaTot(0))) * 1. / beta1RegressionKPrS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrS)), (1. / beta3RegressionSigmaPrS));
+	epsilonPB11Min = std::min(epsilonPb11MinS, epsilonPb11MinO);
+
+	// Compute b_1t
+	if (strainPostBucklingTrial(0)<epsilonPB11Min)
+	{
+		b_1tO = (pow(yieldStress, 2) - pow((sigmaPrO - alphaTot(0)), 2)) / pow(sigmaPrO, 2);
+		b_1tS = (pow(yieldStress, 2) - pow((sigmaPrS - alphaTot(0)), 2)) / pow(sigmaPrS, 2);
+	}
+	else
+	{
+		b_1tO = 0.;
+		b_1tS = 0.;
+	}
+
+	// Set epsilonPb11Unload
+	epsilonPB11Unload = strainPostBucklingTrial(0);
+
+	// Compute yield surface center after compression stage
+	backstressAfterCompression = alphaTot;
+
+	// Set quantities for Bezier curve
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+double LocalBucklingWebPlate::calculateChi1t() {
+	double chi1t = 0.;
+	double f1t = 0.;
+
+	f1t = calculateF1t();
+
+	chi1t = b_1tO * (1. - f1t);
+
+	return chi1t;
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+double LocalBucklingWebPlate::calculateF1t() {
+	double tBezier = 0.;
+
+	if (abs(strainPostBucklingTrial(0))>abs(epsilonPB11Min)) // tensile yield surface is ellipsoid
+	{
+
+	}
+	else // tensile yield surface is Von-Mises cylinder
+	{
+
+	}
+
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+double LocalBucklingWebPlate::calculateTBezier() {
+	double a = 0.;
+	double b = 0.;
+	double c = 0.;
+	double d = 0.;
+
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
