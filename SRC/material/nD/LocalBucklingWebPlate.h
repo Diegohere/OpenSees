@@ -149,6 +149,9 @@ private:
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);
 
+	// Reverts to before the capping point
+	int revertToBeforeCapping(bool cappingPoint);
+
 	// Initialize value of sigmaYrO
 	void initializeSigmaYrO(void);
 
@@ -168,22 +171,28 @@ private:
 	void setTensileEllipsoidYieldSurf(double yieldStress, Vector alphaTot);
 
 	// Returns the current value of chi1t
-	double calculateChi1t(void);
+	double calculateChi1t(double yieldStress, double alphaTot11);
 
 	// Computes function f1t for tensile ellipsoid yield surface evolution
-	double calculateF1t();
+	double calculateF1t(double yieldStress, double alphaTot11);
 
 	// Computes parameter tBezier for Bezier curve
-	double calculateTBezier();
+	double calculateTBezier(void);
+
+	// Computes the two ratios for backstress update during plastic recovery stage
+	void calculateRatioAlphaBackstress(double yieldstress);
+
+	// Reverts to before the switch between Pl Recov and UVC stage
+	int revertToBeforeSwitchPlRecovUVC(bool switchPlRecovUVCPoint);
+
+	// Return mapping for plastic recovery stage
+	int returnMappingPlRecovStage(Vector strain_nPlus1, double yieldStress);
 
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
 
 	// Returns the inverse of a 3x3 matrix
 	Matrix matinv3(const Matrix& m);
-
-	// Reverts to before the capping point
-	int revertToBeforeCapping(bool cappingPoint);
 
 	/* ------------------------------------------------------------------------ */
 	/* Members                                                                  */
@@ -251,17 +260,24 @@ private:
 	int elasticLoading;
 	int plasticLoading;
 	int postBucklingLoading;
+	int PlRecoveryLoading;
 	double c1c = 0.;
 	double b_1tO = 0.;
 	double b_1tS = 0.;
-	double sigmaPrO = 0.;
-	double sigmaPrS = 0.;
-	const double sigmaYrS = 1.;
-	double sigmaYrO = 0.;
+	double sigmaPrBezierO = 0.;
+	double sigmaPrBezierS = 0.;
+	double sigmaYrBezierS = 1.;
+	double sigmaYrBezierO = 0.;
 	double epsilonPB11Unload = 0.;
 	Vector backstressAfterCompression;
-	double epsilonPB11Min = 0.;
-	double alphaPr = 0.;
+	double epsilonPB11Min = 1000.; // big number so that works for start with tension
+	double alphaPrBezier = 0.;
+	double alphaYrBezier = 0.;
+	double kPrBezierS = 0.;
+	double kYrBezierS = 0.;
+	double rAlphaBackstress1 = 0.;
+	double rAlphaBackstress2 = 0.;
+
 
 	// Projection matrices and their eigendecomposition
 	Vector pVect;
@@ -277,23 +293,23 @@ private:
 	const double beta1RegressionEuSurEl = 2.59;
 	const double beta2RegressionEuSurEl = -0.98;
 	const double beta3RegressionEuSurEl = -0.37;
-	const double beta1RegressionSigmaPrS = 0.015;
-	const double beta2RegressionSigmaPrS = -0.302;
-	const double beta3RegressionSigmaPrS = -0.986;
-	const double beta1RegressionSigmaYrO = 2.0627;
-	const double beta2RegressionSigmaYrO = -0.2557;
-	const double beta1RegressionKPrS = -689.6;
-	const double beta2RegressionKPrS = -0.704;
-	const double beta3RegressionKPrS = -0.297;
-	const double beta1RegressionKYrS = -0.113;
-	const double beta2RegressionKYrS = 1.591;
-	const double beta3RegressionKYrS = -0.099;
-	const double beta1RegressionAlphaPr = -0.0094;
-	const double beta2RegressionAlphaPr = 0.295;
-	const double beta3RegressionAlphaPr = 0.638;
-	const double beta1RegressionAlphaYr = 5.49;
-	const double beta2RegressionAlphaYr = -1.04;
-	const double beta3RegressionAlphaYr = 0.817;
+	const double beta1RegressionSigmaPrBezierS = 0.015;
+	const double beta2RegressionSigmaPrBezierS = -0.302;
+	const double beta3RegressionSigmaPrBezierS = -0.986;
+	const double beta1RegressionSigmaYrBezierO = 2.0627;
+	const double beta2RegressionSigmaYrBezierO = -0.2557;
+	const double beta1RegressionKPrBezierS = -689.6;
+	const double beta2RegressionKPrBezierS = -0.704;
+	const double beta3RegressionKPrBezierS = -0.297;
+	const double beta1RegressionKYrBezierS = -0.113;
+	const double beta2RegressionKYrBezierS = 1.591;
+	const double beta3RegressionKYrBezierS = -0.099;
+	const double beta1RegressionAlphaPrBezier = -0.0094;
+	const double beta2RegressionAlphaPrBezier = 0.295;
+	const double beta3RegressionAlphaPrBezier = 0.638;
+	const double beta1RegressionAlphaYrBezier = 5.49;
+	const double beta2RegressionAlphaYrBezier = -1.04;
+	const double beta3RegressionAlphaYrBezier = 0.817;
 
 };
 
