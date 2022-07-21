@@ -916,7 +916,7 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 	// Warn the user if the algorithm did not convergein the return mapping for plastic recovery stage and return -1
 	if (iterationNumber_ReturnMapping >= MAXIMUM_ITERATIONS_RETURNMAPPING && fabs(phiTens) > RETURN_MAP_TOL) {
-		opserr << "LocalBucklingWebPlate::returnMappingSoftening return mapping softening stage did not converge!" << endln;
+		opserr << "LocalBucklingWebPlate::returnMappingPlRecovStage return mapping plastic recovery stage did not converge!" << endln;
 		opserr << "\tDelta epsilon 11 = " << strainTrial[0] - strainConverged[0] << endln;
 		opserr << "\tDelta epsilon 12 = " << strainTrial[1] - strainConverged[1] << endln;
 		opserr << "\tDelta epsilon 13 = " << strainTrial[2] - strainConverged[2] << endln;

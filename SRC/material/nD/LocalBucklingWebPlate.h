@@ -188,6 +188,9 @@ private:
 	// Return mapping for plastic recovery stage
 	int returnMappingPlRecovStage(Vector strain_nPlus1);
 
+	// Sets the consistent tangent modulus for plastic recovery stage
+	void calculateConsistentTangentModulusPlRecovStage();
+
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
 
