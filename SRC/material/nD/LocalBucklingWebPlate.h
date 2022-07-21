@@ -186,7 +186,7 @@ private:
 	int revertToBeforeSwitchPlRecovUVC(bool switchPlRecovUVCPoint);
 
 	// Return mapping for plastic recovery stage
-	int returnMappingPlRecovStage(Vector strain_nPlus1, double yieldStress);
+	int returnMappingPlRecovStage(Vector strain_nPlus1);
 
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
