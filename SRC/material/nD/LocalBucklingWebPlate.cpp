@@ -857,19 +857,23 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		dSigmaBezierSDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierS + 3. * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierS + alphaYrBezier + kYrBezierS) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierS;
 		dSigmaBezierODtBezier = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * dSigmaBezierSDtBezier;
 		dEpsiBezierdtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11Unload) + 3. * (abs(epsilonPB11Unload) + alphaPrBezier) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezier) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
-		dSigmaBezierSDEpsiPb11 = dSigmaBezierSDtBezier / dEpsiBezierdtBezier;
-		dSigmaBezierODEpsiPb11 = dSigmaBezierODtBezier / dEpsiBezierdtBezier;
+		/*dSigmaBezierSDEpsiPb11 = dSigmaBezierSDtBezier / dEpsiBezierdtBezier;
+		dSigmaBezierODEpsiPb11 = dSigmaBezierODtBezier / dEpsiBezierdtBezier;*/
+		dSigmaBezierSDEpsiPb11 = -dSigmaBezierSDtBezier / dEpsiBezierdtBezier;
+		dSigmaBezierODEpsiPb11 = -dSigmaBezierODtBezier / dEpsiBezierdtBezier;
 		dBQuadraticDEpsiPb11 = 2. * dSigmaBezierODEpsiPb11;
 		dCQuadraticDEpsiPb11 = -2. * dSigmaBezierODEpsiPb11 * sigmaBezierO - b_1tO / b_1tS * (2. * (dSigmaBezierODEpsiPb11 * sigmaBezierS - dSigmaBezierSDEpsiPb11 * sigmaBezierO)
 			/ (pow(sigmaBezierS, 2))*(sigmaBezierO / sigmaBezierS)*(pow(yieldStress,2) - pow((sigmaBezierS - backstressAfterCompression(0)),2)) + pow((sigmaBezierO / sigmaBezierS), 2) * (-2. * dSigmaBezierSDEpsiPb11*(sigmaBezierS - backstressAfterCompression(0))));
 		dDiscriminantQuadraticDEpsiPb11 = 2. * dBQuadraticDEpsiPb11 * 2. * sigmaBezierO + 4. * dCQuadraticDEpsiPb11;
 		dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11 / (2. * sqrt(pow((2. * sigmaBezierO), 2)
 			+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))))));
-		dAlpha11TotDLambdaPb = -dAlpha11TotDEpsiPb11 * dPhiTensdXi(0);
-		dSigmaBezierODLambdaPb = -dSigmaBezierODEpsiPb11 * dPhiTensdXi(0);
+		/*dAlpha11TotDLambdaPb = -dAlpha11TotDEpsiPb11 * dPhiTensdXi(0);
+		dSigmaBezierODLambdaPb = -dSigmaBezierODEpsiPb11 * dPhiTensdXi(0);*/
+		dAlpha11TotDLambdaPb = dAlpha11TotDEpsiPb11 * dPhiTensdXi(0);
+		dSigmaBezierODLambdaPb = dSigmaBezierODEpsiPb11 * dPhiTensdXi(0);
 		dFchi1tdLambdaPb = -(-2. * (dSigmaBezierODLambdaPb - dAlpha11TotDLambdaPb) * (sigmaBezierO - backstressTot(0)) * (b_1tO * pow(sigmaBezierO,2)) - (pow(yieldStress,2) - pow((sigmaBezierO - backstressTot(0)),2)) * 2. * b_1tO * dSigmaBezierODLambdaPb * sigmaBezierO)/ pow((b_1tO * pow(sigmaBezierO,2)),2);
 
-		dChi1tDLambdaPB = -expA * b_1tO * pow((1 - f1t), (expA - 10)) * dFchi1tdLambdaPb;
+		dChi1tDLambdaPB = -expA * b_1tO * pow((1 - f1t), (expA - 1.)) * dFchi1tdLambdaPb;
 
 		dCdLambdaPB = calculateDCdLambdaPB(etaTangent, dPhiTensdXi(0));
 
