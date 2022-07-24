@@ -916,7 +916,7 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	backstress2PB_nPlus1(0) = rAlphaBackstress2 * backstress11Pb_nPlus1;
 
 	// Calculate the consistent tangent modulus for softening stage
-	calculateConsistentTangentModulusPlRecovStage();
+	calculateConsistentTangentModulusPlRecovStage(strain_nPlus1, consistParam_plRecov, yieldStress, relativeStressNPlus1,backstressTot);
 
 	// Warn the user if the algorithm did not convergein the return mapping for plastic recovery stage and return -1
 	if (iterationNumber_ReturnMapping >= MAXIMUM_ITERATIONS_RETURNMAPPING && fabs(phiTens) > RETURN_MAP_TOL) {
@@ -1013,7 +1013,7 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusHardening(double co
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& alphaTot,
+void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& backstressTot,
 	const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam_postBuckling) {
 	// Initialize the variables
 	Vector dPhiCompDSigma = Vector(N_DIMS);
@@ -1065,7 +1065,7 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vec
 	dGammaDChi1cDiag(0) = -2. * consistParam_postBuckling * pow(gammaDiag(0), 2);
 
 	dXiDChi1c.Zero();
-	dXiDChi1c(0) = dGammaDChi1cDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alphaTot(0)) - 2 * consistParam_postBuckling * gammaDiag(0) * alphaTot(0) - dGammaDChi1cDiag(0) / LambdaC_nPlus1Diag(0) * alphaTot(0);
+	dXiDChi1c(0) = dGammaDChi1cDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - 2 * consistParam_postBuckling * gammaDiag(0) * backstressTot(0) - dGammaDChi1cDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
 
 	dPhiCompDChi1c = 2. * dXiDChi1c(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXiDChi1c(1) * relativeStressNPlus1(1) + 6. * dXiDChi1c(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
 
@@ -1126,8 +1126,164 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusSoftening(const Vec
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateConsistentTangentModulusPlRecovStage() {
+void LocalBucklingWebPlate::calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus1 , double consistParam_plRecov, double yieldStress, Vector relativeStressNPlus1,  Vector backstressTot) {
+	// Initialize the variables
+	Vector dPhiTensDSigma = Vector(N_DIMS);
+	double chi1t = 0.;
+	Vector gammaDiag = Vector(N_DIMS);
+	Vector dGammaDChi1tDiag = Vector(N_DIMS);
+	Vector dXiDChi1t = Vector(N_DIMS);
+	double dPhiTensDChi1t = 0.;
+	double dChi1tDepsiPB11 = 0.;
+	Vector d2PhiTensDSigmaDChi1t = Vector(N_DIMS);
+	Vector d2PhiTensDSigma2Diag = Vector(N_DIMS);
+	double B = 0.;
+	Vector D = Vector(N_DIMS);
+	double DPreFactor = 0.;
+	Matrix CepTerm1 = Matrix(N_DIMS, N_DIMS);
+	Matrix CepTerm2 = Matrix(N_DIMS, N_DIMS);
+	Matrix CepTerm3 = Matrix(N_DIMS, N_DIMS);
+	Matrix I = Matrix(N_DIMS, N_DIMS);
+	Matrix CepTerm3Inverse = Matrix(N_DIMS, N_DIMS);
+	double etaTangent = 0.;
+	Vector LambdaC_nPlus1Diag = Vector(N_DIMS);
+	double dEtaTangentdEpsiPb11 = 0.;
+	Vector F = Vector(N_DIMS);
+	double tBezier = 0.;
+	double sigmaBezierS = 0.;
+	double sigmaBezierO = 0.;
+	double dSigmaBezierSDtBezier = 0.;
+	double dSigmaBezierODtBezier = 0.;
+	double dEpsiBezierdtBezier = 0.;
+	double dSigmaBezierSDEpsiPb11 = 0.;
+	double dSigmaBezierODEpsiPb11 = 0.;
+	double discriminantQuadratic = 0.;
+	double dBQuadraticDEpsiPb11 = 0.;
+	double dCQuadraticDEpsiPb11 = 0.;
+	double dDiscriminantQuadraticDEpsiPb11 = 0.;
+	double dAlpha11TotDEpsiPb11 = 0.;
+	double dBQuadraticDSigmaBS = 0.;
+	double dDiscriminantQuadraticDSigmaBS = 0.;
+	double dAlpha11DSigmaBezierS = 0.;
+	double dF1tDepsiPB11 = 0.;
+	Vector dPhiTensDAlpha = Vector(N_DIMS);
+	Vector d2PhiTensDSigmaDAlphaDiag = Vector(N_DIMS);
+	double A = 0.;
+	Vector H = Vector(N_DIMS);
+	double L = 0.;
 
+	chi1t = calculateChi1t(yieldStress,backstressTot(0));
+
+	etaTangent = calculateEtaTangentReduce();
+	LambdaC_nPlus1Diag = etaTangent * lambdaC;
+
+	tBezier = calculateTBezier();
+	sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
+	sigmaBezierO = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * sigmaBezierS;
+	dSigmaBezierSDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierS + 3. * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierS + alphaYrBezier + kYrBezierS) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierS;
+	dSigmaBezierODtBezier = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * dSigmaBezierSDtBezier;
+	dEpsiBezierdtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11Unload) + 3. * (abs(epsilonPB11Unload) + alphaPrBezier) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezier) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
+	dSigmaBezierSDEpsiPb11 = -dSigmaBezierSDtBezier / dEpsiBezierdtBezier;
+	dSigmaBezierODEpsiPb11 = -dSigmaBezierODtBezier / dEpsiBezierdtBezier;
+
+	discriminantQuadratic = 4. * pow(yieldStress, 2) - (4. * b_1tO * pow(sigmaBezierO, 2) * (pow(yieldStress, 2) - pow((backstressAfterCompression(0) - sigmaBezierS), 2))) / (b_1tS * pow(sigmaBezierS, 2));
+	dBQuadraticDEpsiPb11 = 2. * dSigmaBezierODEpsiPb11;
+	dCQuadraticDEpsiPb11 = -2. * dSigmaBezierODEpsiPb11 * sigmaBezierO - b_1tO / b_1tS * (2. * (dSigmaBezierODEpsiPb11 * sigmaBezierS - dSigmaBezierSDEpsiPb11 * sigmaBezierO)
+		/ (pow(sigmaBezierS, 2)) * (sigmaBezierO / sigmaBezierS) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2)) + pow((sigmaBezierO / sigmaBezierS), 2) * (-2. * dSigmaBezierSDEpsiPb11 * (sigmaBezierS - backstressAfterCompression(0))));
+	dDiscriminantQuadraticDEpsiPb11 = 2. * dBQuadraticDEpsiPb11 * 2. * sigmaBezierO + 4. * dCQuadraticDEpsiPb11;
+	dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11 / (2. * sqrt(pow((2. * sigmaBezierO), 2)
+		+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))))));
+
+	dBQuadraticDSigmaBS = 2. * (sigmaYrBezierO / (yieldStress + backstressAfterCompression(0)));
+	dDiscriminantQuadraticDSigmaBS = 8. * b_1tO / b_1tS * pow((sigmaYrBezierO / (yieldStress + backstressAfterCompression(0))),2 ) * (sigmaBezierS - backstressAfterCompression(0));
+	dAlpha11DSigmaBezierS = -1. / 2. * (-dBQuadraticDSigmaBS + dDiscriminantQuadraticDSigmaBS * 1. / (2. * sqrt(discriminantQuadratic)));
+
+	gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_plRecov * (2. + 2. * chi1t));
+	gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_plRecov * 6.);
+	gammaDiag(2) = gammaDiag(1);
+
+	dGammaDChi1tDiag.Zero();
+	dGammaDChi1tDiag(0) = -2. * consistParam_plRecov * pow(gammaDiag(0), 2);
+
+	dXiDChi1t.Zero();
+	dXiDChi1t(0) = dGammaDChi1tDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1t * consistParam_plRecov * backstressTot(0)) - 2 * consistParam_plRecov * gammaDiag(0) * backstressTot(0) - dGammaDChi1tDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
+
+	dF1tDepsiPB11 = -(-2. * (dSigmaBezierODEpsiPb11 - dAlpha11TotDEpsiPb11) * (sigmaBezierO - backstressTot(0)) * (b_1tO * pow(sigmaBezierO,2)) - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)),2)) * 2 * b_1tO * dSigmaBezierODEpsiPb11 * sigmaBezierO)/ pow((b_1tO * pow(sigmaBezierO,2)),2);
+
+	dChi1tDepsiPB11 = -b_1tO * dF1tDepsiPB11;
+
+	dPhiTensDSigma(0) = 2. * (relativeStressNPlus1(0) + chi1t * stressTrial(0));
+	dPhiTensDSigma(1) = 6. * relativeStressNPlus1(1);
+	dPhiTensDSigma(2) = 6. * relativeStressNPlus1(2);
+
+	dPhiTensDChi1t = 2. * dXiDChi1t(0) * (relativeStressNPlus1(0) + chi1t * stressTrial(0)) + 6. * dXiDChi1t(1) * relativeStressNPlus1(1) + 6. * dXiDChi1t(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
+
+	dPhiTensDAlpha(0) = -2. * relativeStressNPlus1(0);
+	dPhiTensDAlpha(1) = -6. * relativeStressNPlus1(1);
+	dPhiTensDAlpha(2) = -6. * relativeStressNPlus1(2);
+
+	d2PhiTensDSigma2Diag(0) = 2. * (1. + chi1t);
+	d2PhiTensDSigma2Diag(1) = 6.;
+	d2PhiTensDSigma2Diag(2) = 6.;
+
+	d2PhiTensDSigmaDChi1t(0) = 2. * (dXiDChi1t(0) * (1. + chi1t) + stressTrial(0));
+
+	d2PhiTensDSigmaDAlphaDiag(0) = -2.;
+	d2PhiTensDSigmaDAlphaDiag(1) = -6.;
+	d2PhiTensDSigmaDAlphaDiag(2) = -6.;
+
+	A = dAlpha11DSigmaBezierS * dSigmaBezierSDEpsiPb11;
+
+	B = 1. / (1. + 2 * consistParam_plRecov * A - dChi1tDepsiPB11 * consistParam_plRecov * d2PhiTensDSigmaDChi1t(0));
+
+	dEtaTangentdEpsiPb11 = calculateDEtaTangentdEpsiPb11();
+
+	H(0) = -2. / dChi1tDepsiPB11 * A + d2PhiTensDSigmaDChi1t(0);
+
+	// Stopped here 24.07.2022
+
+	L = dPhiTensDAlpha(0) * A / dChi1tDepsiPB11 + dPhiTensDChi1t;
+
+	F(0) = -consistParam_plRecov * H(0) + dEtaTangentdEpsiPb11 * 1. / dChi1tDepsiPB11 * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingTrial(0));
+	F(1) = dEtaTangentdEpsiPb11 * 1. / dChi1tDepsiPB11 * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingTrial(1));
+	F(2) = dEtaTangentdEpsiPb11 * 1. / dChi1tDepsiPB11 * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingTrial(2));
+
+	DPreFactor = 1. / (L * dChi1tDepsiPB11 * dPhiTensDSigma(0) * B);
+	D(0) = DPreFactor * (dPhiTensDSigma(0) + L * dChi1tDepsiPB11 * consistParam_plRecov * d2PhiTensDSigma2Diag(0) * B);
+	D(1) = DPreFactor * (dPhiTensDSigma(1));
+	D(2) = DPreFactor * (dPhiTensDSigma(2));
+
+	CepTerm1(0, 0) = d2PhiTensDSigma2Diag(0) - dChi1tDepsiPB11 * F(0) * d2PhiTensDSigma2Diag(0) * B;
+	CepTerm1(1, 0) = -dChi1tDepsiPB11 * F(1) * d2PhiTensDSigma2Diag(0) * B;
+	CepTerm1(1, 1) = d2PhiTensDSigma2Diag(1);
+	CepTerm1(2, 0) = -dChi1tDepsiPB11 * F(2) * d2PhiTensDSigma2Diag(0) * B;
+	CepTerm1(2, 2) = d2PhiTensDSigma2Diag(2);
+	/*CepTerm2 = D * (dPhiCompDSigma + consistParam_postBuckling * A * dPhiCompDSigma(0));*/
+	//opserr << "This is dPhiCompDSigma" << dPhiCompDSigma << endln;
+	//opserr << "This is D" << D << endln;
+	CepTerm2(0, 0) = D(0) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
+	CepTerm2(0, 1) = D(0) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
+	CepTerm2(0, 2) = D(0) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
+	CepTerm2(1, 0) = D(1) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
+	CepTerm2(1, 1) = D(1) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
+	CepTerm2(1, 2) = D(1) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
+	CepTerm2(2, 0) = D(2) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
+	CepTerm2(2, 1) = D(2) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
+	CepTerm2(2, 2) = D(2) * (dChi1tDepsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
+	//opserr << "This is CepTerm2" << CepTerm2 << endln;
+
+	I(0, 0) = I(1, 1) = I(2, 2) = 1.;
+	CepTerm3 = I + elasticMatrix * (consistParam_plRecov * CepTerm1 + CepTerm2);
+	//opserr << "This is CepTerm3" << CepTerm3 << endln;
+	CepTerm3Inverse = matinv3(CepTerm3);
+	stiffnessTrial.Zero();
+	stiffnessTrial = elasticMatrix * CepTerm3Inverse;
+
+	//Take the symmetric approximation
+	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	//opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
+
+	return;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */

@@ -104,7 +104,7 @@ private:
 	int returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector eta_trial);
 
 	// Return mapping for softening stage
-	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alphaTot);
+	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector backstressTot);
 
 	//! Sets the elastoplastic tangent modulus for elastic stage
 	void calculateConsistentTangentModulusElastic(double etaTangent);
@@ -114,7 +114,7 @@ private:
 		const Vector& stressRelative);
 
 	// Sets the consistent tangent modulus for softening stage
-	void calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& alphaTot, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
+	void calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& backstressTot, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
 
 	// Returns the dot product of two length 3 vectors
 	double dotprod3(const Vector& v1, const Vector& v2);
@@ -189,7 +189,7 @@ private:
 	int returnMappingPlRecovStage(Vector strain_nPlus1);
 
 	// Sets the consistent tangent modulus for plastic recovery stage
-	void calculateConsistentTangentModulusPlRecovStage();
+	void calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus1, double consistParam_plRecov, double yieldStress, Vector relativeStressNPlus1, Vector backstressTot);
 
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
