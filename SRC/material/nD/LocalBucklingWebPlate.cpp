@@ -491,7 +491,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 			else { // if not elastic
 				
 				// Check if hardening or softening response
-				if (abs(strainPostBucklingTrial(0)) <RETURN_MAP_TOL) {
+				if (abs(strainPostBucklingTrial(0)) <RETURN_MAP_TOL && c1c <= RETURN_MAP_TOL) {
 					// Do a step in the hardening direction
 					plasticLoading = 1;
 					retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial);
