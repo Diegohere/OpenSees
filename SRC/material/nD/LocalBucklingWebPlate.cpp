@@ -332,6 +332,13 @@ int LocalBucklingWebPlate::timeIntegration() {
 	deltaStrain_converged4Peak.Zero(); // works for both capping and switch El-Pl Recov stages
 	deltaStrain_remaining4Peak = deltaStrain_trial; // works for both capping and switch El-Pl Recov stages
 
+	//if (strainTrial(0) >= 0.0199) {
+	//	double testBreak = 0.;
+	//}
+	//if (strainConverged(0) >= 0.0199) {
+	//	double testBreak = 0.;
+	//}
+
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		iterationNumber_timeIntegration++;
@@ -428,6 +435,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 				deltaStrain_converged4Peak = deltaStrain_trial;*/
 
 				plasticLoading = 1; 
+
+				deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
+
 				convergedMatLaw = true;
 				retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial);
 
@@ -2111,6 +2121,12 @@ double LocalBucklingWebPlate::calculateF1t(double yieldStress, double alphaTot11
 	else // tensile yield surface is Von-Mises cylinder
 	{
 		f1t = 0.;
+	}
+
+	// Update f1t if no post-buckling strain
+	if (abs(strainPostBucklingTrial(0))<RETURN_MAP_TOL)
+	{
+		f1t = 1.; // I do this such that chi1t=0 for cyclic loading
 	}
 
 	return f1t;
