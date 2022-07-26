@@ -588,6 +588,8 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 	std::vector<Vector> alpha12Tot_Vector;
 	double etaTangent = 0.;
 
+	etaTangent = calculateEtaTangentReduce();
+
 	// Fill alphaTot_Vector with the two vector
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
 		/*alpha12Tot_Vector.push_back(alphaPKConverged[i]+ alphaPBKConverged[i]);*/
@@ -612,9 +614,11 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 		alphaTilde = alphaTot - alphaTilde;
 		beta = 1. + beta / yieldStress;
 
+		/*etaTangent = calculateEtaTangentReduce();*/
+
 		// Update the relative stress and eta
-		gammaDiag(0) = 1. / (beta + consistParam_plastic * 2. / 3. * elasticModulus);
-		gammaDiag(1) = 1. / (beta + consistParam_plastic * 2. * shearModulus);
+		gammaDiag(0) = 1. / (beta + consistParam_plastic * 2. / 3. * etaTangent * elasticModulus);
+		gammaDiag(1) = 1. / (beta + consistParam_plastic * 2. * etaTangent * shearModulus);
 		gammaDiag(2) = gammaDiag(1);
 
 		etaTilde = etaTrial + qMatT * alphaTilde;
@@ -634,7 +638,7 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 		betaPrime = betaPrime * sqrt(2. / 3.) * fBar;
 		alphaTildePrime = alphaTildePrime * sqrt(2. / 3.) * fBar;
 		for (unsigned int i = 0; i < N_DIMS; ++i)
-			gammaDiagPrime(i) = -pow(gammaDiag(i), 2) * (betaPrime + lambdaP(i) * lambdaC(i));
+			gammaDiagPrime(i) = -pow(gammaDiag(i), 2) * (betaPrime + lambdaP(i) * etaTangent * lambdaC(i));
 
 		consistDenom = dotprod3(vecMult3(lambdaP, eta),
 			vecMult3(gammaDiagPrime, etaTilde) + vecMult3(gammaDiag, qMatT * alphaTildePrime))
@@ -664,7 +668,7 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 	}
 	strainPlasticTrial = strainPlasticConverged + consistParam_plastic * PMat * stressRelative;
 	
-	etaTangent = calculateEtaTangentReduce();
+	/*etaTangent = calculateEtaTangentReduce();*/
 	stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 
 	// Calculate the consistent tangent modulus for hardening stage
