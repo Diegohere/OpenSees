@@ -335,7 +335,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	/*if (strainTrial(0) >= 0.0199) {
 		double testBreak = 0.;
 	}
-	if (strainConverged(0) >= 0.0199) {
+	if (strainConverged(0) <= -0.0501 && strainTrial(0) >= -0.0498) {
 		double testBreak = 0.;
 	}*/
 
@@ -851,10 +851,30 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 	yieldStress = calculateYieldStress();
 	chi1t = calculateChi1t(yieldStress,backstressTot(0));
+
+	/*if (strainConverged(0) <= -0.0501 && strainTrial(0) >= -0.0498)*/ // LPSCSuzuki
+	//if (strainConverged(0) <= -0.1107 && strainTrial(0) >= -0.1107) // LPC1CSuzuki step 447
+	//if (strainConverged(0) <= -0.1106 && strainTrial(0) >= -0.1106) // LPC1CSuzuki step 448
+	//{
+	//	opserr << "This is strainTrial: " << strainTrial << endln;
+	//	opserr << "This is stressTrial: " << stressTrial << endln;
+	//	opserr << "This is backstressAfterCompression: " << backstressAfterCompression << endln;
+	//	opserr << "This is backstressTot: " << backstressTot << endln;
+	//	opserr << "This is backstressPlasticTot: " << backstressPTot << endln;
+	//	opserr << "This is epsiPbConverged: " << strainPostBucklingConverged << endln;
+	//	opserr << "This is epsiPConverged: " << strainPlasticConverged << endln;
+
+	//	double testError = 1.;
+	//}
+
 	tBezier = calculateTBezier();
 	sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
 	sigmaBezierO = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * sigmaBezierS;
 	backstress11Pb_nPlus1 = (-2. * sigmaBezierO + sqrt(pow((2. * sigmaBezierO),2) + 4. * (-pow(sigmaBezierO,2) + pow(yieldStress,2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS),2) * (pow(yieldStress,2) - pow((sigmaBezierS - backstressAfterCompression(0)),2))))) / (-2.) - backstressPTot(0);
+	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))) < 0) // catch if sqrt is negative
+	{
+		backstress11Pb_nPlus1 = sigmaBezierO - backstressPTot(0);
+	}
 	backstressTot(0) = backstressPTot(0) + backstress11Pb_nPlus1;
 	f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)), 2)) / (b_1tO * pow(sigmaBezierO, 2));
 
@@ -895,6 +915,10 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		dDiscriminantQuadraticDEpsiPb11 = 2. * dBQuadraticDEpsiPb11 * 2. * sigmaBezierO + 4. * dCQuadraticDEpsiPb11;
 		dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11 / (2. * sqrt(pow((2. * sigmaBezierO), 2)
 			+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))))));
+		if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))) < 0) // catch if sqrt is negative
+		{
+			dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11 );
+		}
 		/*dAlpha11TotDLambdaPb = -dAlpha11TotDEpsiPb11 * dPhiTensdXi(0);
 		dSigmaBezierODLambdaPb = -dSigmaBezierODEpsiPb11 * dPhiTensdXi(0);*/
 		dAlpha11TotDLambdaPb = dAlpha11TotDEpsiPb11 * dPhiTensdXi(0);
@@ -925,6 +949,10 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
 		sigmaBezierO = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * sigmaBezierS;
 		backstress11Pb_nPlus1 = (-2. * sigmaBezierO + sqrt(pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))))) / (-2.) - backstressPTot(0);
+		if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2)))<0) // catch if sqrt is negative
+		{
+			backstress11Pb_nPlus1 = sigmaBezierO - backstressPTot(0);
+		}
 		backstressTot(0) = backstressPTot(0) + backstress11Pb_nPlus1;
 		f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)), 2)) / (b_1tO * pow(sigmaBezierO, 2));
 
@@ -956,6 +984,8 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		opserr << "\tDelta epsilon 13 = " << strainTrial[2] - strainConverged[2] << endln;
 		opserr << "\tExiting with yield function = " << phiTens << " > " << RETURN_MAP_TOL << endln;
 		retVal = -1;
+
+		opserr << "This is strainTrial: " << strainTrial << endln;
 	}
 
 	return retVal;
@@ -1223,10 +1253,18 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusPlRecovStage(Vector
 	dDiscriminantQuadraticDEpsiPb11 = 2. * dBQuadraticDEpsiPb11 * 2. * sigmaBezierO + 4. * dCQuadraticDEpsiPb11;
 	dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11 / (2. * sqrt(pow((2. * sigmaBezierO), 2)
 		+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))))));
+	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))) < 0) // catch if sqrt is negative
+	{
+		dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11);
+	}
 
 	dBQuadraticDSigmaBS = 2. * (sigmaYrBezierO / (yieldStress + backstressAfterCompression(0)));
 	dDiscriminantQuadraticDSigmaBS = 8. * b_1tO / b_1tS * pow((sigmaYrBezierO / (yieldStress + backstressAfterCompression(0))),2 ) * (sigmaBezierS - backstressAfterCompression(0));
 	dAlpha11DSigmaBezierS = -1. / 2. * (-dBQuadraticDSigmaBS + dDiscriminantQuadraticDSigmaBS * 1. / (2. * sqrt(discriminantQuadratic)));
+	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))) < 0) // catch if sqrt is negative
+	{
+		dAlpha11DSigmaBezierS = -1. / 2. * (-dBQuadraticDSigmaBS + dDiscriminantQuadraticDSigmaBS);
+	}
 
 	gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_plRecov * (2. + 2. * chi1t));
 	gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_plRecov * 6.);
@@ -1309,7 +1347,8 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusPlRecovStage(Vector
 
 	//Take the symmetric approximation
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
-	//opserr << "This is tangentModulusPlRecovStage" << stiffnessTrial << endln;
+	/*opserr << "This is tangentModulusPlRecovStage" << stiffnessTrial << endln;
+	opserr << "This is strain vector:" << strainTrial << endln;*/
 
 	return;
 }
