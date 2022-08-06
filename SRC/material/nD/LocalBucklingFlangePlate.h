@@ -107,14 +107,15 @@ private:
 	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alpha);
 
 	//! Sets the elastoplastic tangent modulus for elastic stage
-	void calculateConsistentTangentModulusElastic();
+	void calculateConsistentTangentModulusElastic(double etaTangent);
 
 	// Sets the elastoplastic tangent modulus for hardening stage
 	void calculateConsistentTangentModulusHardening(double consistParam, double fBar,
 		const Vector& stressRelative);
 
 	// Sets the consistent tangent modulus for softening stage
-	void calculateConsistentTangentModulusSoftening(const Vector& relativeStressTrial, const Vector& alpha, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
+	void calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& backstressTot,
+		const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam_postBuckling);
 
 	// Returns the dot product of two length 3 vectors
 	double dotprod3(const Vector& v1, const Vector& v2);
@@ -143,8 +144,8 @@ private:
 	// Returns the current value of the ratio sigmaSurSigmaY
 	double calculateSigmaSurSigmaY(void);
 
-	// Returns the current value of the derivative dSigmaSurSigmaYdEpsilonPBeq
-	double calculateDSigmaSurSigmaYdEpsilonPBeq(void);
+	// Returns the current value of the derivative dSigmaSurSigmaYdEpsilonPB11
+	double calculateDSigmaSurSigmaYdEpsilonPB11(void);
 
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);
@@ -157,6 +158,18 @@ private:
 
 	// Reverts to before the capping point
 	int revertToBeforeCapping(bool cappingPoint);
+
+	// Computes elastic stiffness matrix 
+	double calculateEtaTangentReduce(void);
+
+	// Computes derivative of C elastic matrix moduli with respect to lambda_Pb
+	Vector calculateDCdLambdaPB(double etaTangent, double dPhiCompdXiVector11);
+
+	// Computes the derivative of etaTangent with respect to epsiPb11
+	double calculateDEtaTangentdEpsiPb11(void);
+
+	// Computes the values of constant c1c needed for buckling prior to yielding
+	void calculateC1c(double yieldStress, double alphaTot11);
 
 	/* ------------------------------------------------------------------------ */
 	/* Members                                                                  */
@@ -224,6 +237,7 @@ private:
 	int elasticLoading;
 	int plasticLoading;
 	int postBucklingLoading;
+	double c1c = 0.;
 
 	// Projection matrices and their eigendecomposition
 	Vector pVect;

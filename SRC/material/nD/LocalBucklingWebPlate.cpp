@@ -716,7 +716,7 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 	double phiComp = 0.;
 	double yieldStress = 0.;
 	double psi = 0.;
-	double dSigmaSurSigmaYdEpsilonPBeq = 0.;
+	double dSigmaSurSigmaYdEpsilonPB11 = 0.;
 	double dChi1cDLambdaPB = 0.;
 	Vector gammaDiagPrime = Vector(N_DIMS);
 	Vector dXidLambda = Vector(N_DIMS);
@@ -753,9 +753,9 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		dPhiCompdXi(1) = 6. * relativeStressNPlus1(1);
 		dPhiCompdXi(2) = 6. * relativeStressNPlus1(2);
 
-		dSigmaSurSigmaYdEpsilonPBeq = calculateDSigmaSurSigmaYdEpsilonPB11();
+		dSigmaSurSigmaYdEpsilonPB11 = calculateDSigmaSurSigmaYdEpsilonPB11();
 
-		dChi1cDLambdaPB = dPhiCompdXi(0) * 2.  * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPBeq;
+		dChi1cDLambdaPB = dPhiCompdXi(0) * 2.  * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
 
 		dCdLambdaPB = calculateDCdLambdaPB(etaTangent, dPhiCompdXi(0));
 
