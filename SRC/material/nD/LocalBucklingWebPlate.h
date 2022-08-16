@@ -101,7 +101,7 @@ private:
 	int timeIntegration();
 
 	// Return mapping for hardening stage
-	int returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector eta_trial);
+	int returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector eta_trial, int switchUVCRecovUVCPoint);
 
 	// Return mapping for softening stage
 	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector backstressTot);
@@ -191,6 +191,15 @@ private:
 	// Sets the consistent tangent modulus for plastic recovery stage
 	void calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus1, double consistParam_plRecov, double yieldStress, Vector relativeStressNPlus1, Vector backstressTot);
 
+	// Reverts to before the switch between UVC Recov and UVC stage
+	int revertToBeforeSwitchUVCRecovUVC(bool switchUVCRecovUVCPoint);
+
+	// Return mapping for the UVC recovery stage
+	int returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot);
+
+	// Sets the consistent tangent modulus for UVC recovery stage
+	void calculateConsistentTangentModulusUVCRecov(Vector strain_nPlus1, double consistParam_plastic, double fBar, Vector relativeStressNPlus1);
+
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
 
@@ -264,6 +273,7 @@ private:
 	int plasticLoading;
 	int postBucklingLoading;
 	int PlRecoveryLoading;
+	int UVCRecoveryLoading;
 	double c1c = 0.;
 	double b_1tO = 0.;
 	double b_1tS = 0.;
