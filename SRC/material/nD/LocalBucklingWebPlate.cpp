@@ -852,9 +852,8 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	yieldStress = calculateYieldStress();
 	chi1t = calculateChi1t(yieldStress,backstressTot(0));
 
-	/*if (strainConverged(0) <= -0.0501 && strainTrial(0) >= -0.0498)*/ // LPSCSuzuki
-	//if (strainConverged(0) <= -0.1107 && strainTrial(0) >= -0.1107) // LPC1CSuzuki step 447
-	//if (strainConverged(0) <= -0.1106 && strainTrial(0) >= -0.1106) // LPC1CSuzuki step 448
+	///*if (strainConverged(0) <= -0.0501 && strainTrial(0) >= -0.0498)*/ // LPSCSuzuki HSS300x12
+	////if (strainConverged(0) <= -0.1399 && strainTrial(0) >= -0.136) // LPC1CSuzuki HSS300x15
 	//{
 	//	opserr << "This is strainTrial: " << strainTrial << endln;
 	//	opserr << "This is stressTrial: " << stressTrial << endln;
@@ -957,6 +956,11 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)), 2)) / (b_1tO * pow(sigmaBezierO, 2));
 
 		chi1t = b_1tO * pow((1 - f1t), expA);
+
+		/*if (iterationNumber_ReturnMapping>100)
+		{
+			double errorNb = 1.0;
+		}*/
 
 		// Check convergence
 		if (fabs(phiTens) < RETURN_MAP_TOL) {
