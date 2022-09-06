@@ -426,8 +426,11 @@ int LocalBucklingWebPlate::timeIntegration() {
 					else
 					{ // if we have reduced epsiPb11 too much 
 						revertToBeforeSwitchPlRecovUVC(switchPlRecovUVCPoint);
-						deltaStrain_remaining4Peak /= 2.;
-						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
+						//deltaStrain_remaining4Peak /= 2.;
+						//deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
+						deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
+
 					} // end if we have reduced epsiPb11 too much 
 
 				} // end Plastic recovery stage
@@ -593,8 +596,10 @@ int LocalBucklingWebPlate::timeIntegration() {
 				else { // the capping point has been passed
 					//deltaStrain_trial /= 2.;
 					revertToBeforeCapping(cappingPoint);
-					deltaStrain_remaining4Peak /= 2.;
-					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
+					/*deltaStrain_remaining4Peak /= 2.;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
+					deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
 				}
 			}
 
@@ -922,15 +927,27 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	chi1t = calculateChi1t(yieldStress,backstressTot(0));
 
 	///*if (strainConverged(0) <= -0.0501 && strainTrial(0) >= -0.0498)*/ // LPSCSuzuki HSS300x12
-	////if (strainConverged(0) <= -0.1399 && strainTrial(0) >= -0.136) // LPC1CSuzuki HSS300x15
+	//if (strainConverged(0) <= -0.07417 && strainConverged(0) > -0.07418 && strainTrial(0) >= -0.038766 && strainTrial(0) < -0.038765) 
 	//{
-	//	opserr << "This is strainTrial: " << strainTrial << endln;
 	//	opserr << "This is stressTrial: " << stressTrial << endln;
-	//	opserr << "This is backstressAfterCompression: " << backstressAfterCompression << endln;
 	//	opserr << "This is backstressTot: " << backstressTot << endln;
-	//	opserr << "This is backstressPlasticTot: " << backstressPTot << endln;
-	//	opserr << "This is epsiPbConverged: " << strainPostBucklingConverged << endln;
+	//	opserr << "This is strainTrial: " << strainTrial << endln;
 	//	opserr << "This is epsiPConverged: " << strainPlasticConverged << endln;
+	//	opserr << "This is epsiPBEqConverged: " << strainPBEqConverged<< endln;
+	//	opserr << "This is epsiPbConverged: " << strainPostBucklingConverged << endln;
+	//	opserr << "This is chi1t: " << chi1t << endln;
+	//	opserr << "This is sigmaY: " << yieldStress << endln;
+	//	opserr << "This is bPlate: " << bPlateWidth << endln;
+	//	opserr << "This is tPlate: " << tPlateThickness << endln;
+	//	opserr << "This is b_chi1tO: " << b_1tO << endln;
+	//	opserr << "This is b_chi1tS: " << b_1tS << endln;
+	//	opserr << "This is epsilonPB11Unload: " << epsilonPB11Unload << endln;
+	//	opserr << "This is sigmaPrO: " << sigmaPrBezierO << endln;
+	//	opserr << "This is sigmaPrS: " << sigmaPrBezierS << endln;
+	//	opserr << "This is sigmaYrUnscaled: " << sigmaYrBezierO<< endln;
+	//	opserr << "This is backstressPlasticTot: " << backstressPTot << endln;
+	//	opserr << "This is backstressAfterCompression: " << backstressAfterCompression << endln;
+	//	opserr << "This is alphaNormBezierStress: " << (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) << endln;
 
 	//	double testError = 1.;
 	//}
@@ -1012,6 +1029,10 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 		strainPBEqTrial = strainPBEqConverged *- psi * consistParam_plRecov;
 		strainPostBucklingTrial = strainPostBucklingConverged + consistParam_plRecov * dPhiTensdXi;
+		/*if (strainPostBucklingTrial(0) > 0)
+		{
+			break;
+		}*/
 
 		tBezier = calculateTBezier();
 		sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
@@ -1026,10 +1047,12 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 		chi1t = b_1tO * pow((1 - f1t), expA);
 
-		/*if (iterationNumber_ReturnMapping>100)
+		if (iterationNumber_ReturnMapping>100)
 		{
-			double errorNb = 1.0;
-		}*/
+			//double errorNb = 1.0;
+			strainPostBucklingTrial(0) = -strainPostBucklingConverged(0); // Trick to divide strain increment by 2
+			break;
+		}
 
 		// Check convergence
 		if (fabs(phiTens) < RETURN_MAP_TOL) {
@@ -2329,7 +2352,8 @@ void LocalBucklingWebPlate::initializeBChi1c() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 void LocalBucklingWebPlate::initializeSigmaYrO() {
-	sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * initialYield;
+	/*sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * initialYield;*/
+	sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO);
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */

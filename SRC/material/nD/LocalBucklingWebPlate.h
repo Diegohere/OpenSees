@@ -306,23 +306,44 @@ private:
 	const double beta1RegressionEuSurEl = 2.59;
 	const double beta2RegressionEuSurEl = -0.98;
 	const double beta3RegressionEuSurEl = -0.37;
-	const double beta1RegressionSigmaPrBezierS = 0.015;
-	const double beta2RegressionSigmaPrBezierS = -0.302;
-	const double beta3RegressionSigmaPrBezierS = -0.986;
-	const double beta1RegressionSigmaYrBezierO = 2.0627;
-	const double beta2RegressionSigmaYrBezierO = -0.2557;
-	const double beta1RegressionKPrBezierS = -689.6;
-	const double beta2RegressionKPrBezierS = -0.704;
-	const double beta3RegressionKPrBezierS = -0.297;
-	const double beta1RegressionKYrBezierS = -0.113;
-	const double beta2RegressionKYrBezierS = 1.591;
-	const double beta3RegressionKYrBezierS = -0.099;
-	const double beta1RegressionAlphaPrBezier = -0.0094;
-	const double beta2RegressionAlphaPrBezier = 0.295;
-	const double beta3RegressionAlphaPrBezier = 0.638;
-	const double beta1RegressionAlphaYrBezier = 5.49;
-	const double beta2RegressionAlphaYrBezier = -1.04;
-	const double beta3RegressionAlphaYrBezier = 0.817;
+
+	//// Without shift in epsiYr due to elastic unloading
+	//const double beta1RegressionSigmaPrBezierS = 0.015;
+	//const double beta2RegressionSigmaPrBezierS = -0.302;
+	//const double beta3RegressionSigmaPrBezierS = -0.986;
+	//const double beta1RegressionSigmaYrBezierO = 2.0627;
+	//const double beta2RegressionSigmaYrBezierO = -0.2557;
+	//const double beta1RegressionKPrBezierS = -689.6;
+	//const double beta2RegressionKPrBezierS = -0.704;
+	//const double beta3RegressionKPrBezierS = -0.297;
+	//const double beta1RegressionKYrBezierS = -0.113;
+	//const double beta2RegressionKYrBezierS = 1.591;
+	//const double beta3RegressionKYrBezierS = -0.099;
+	//const double beta1RegressionAlphaPrBezier = -0.0094;
+	//const double beta2RegressionAlphaPrBezier = 0.295;
+	//const double beta3RegressionAlphaPrBezier = 0.638;
+	//const double beta1RegressionAlphaYrBezier = 5.49;
+	//const double beta2RegressionAlphaYrBezier = -1.04;
+	//const double beta3RegressionAlphaYrBezier = 0.817;
+
+	// Including shift in epsiYr due to elastic unloading
+	const double beta1RegressionSigmaPrBezierS = 0.0212;
+	const double beta2RegressionSigmaPrBezierS = -0.4589;
+	const double beta3RegressionSigmaPrBezierS = -0.9931;
+	const double beta1RegressionSigmaYrBezierO = 617.1178; //Remember to update function to compute it (no \sigmaY0)
+	const double beta2RegressionSigmaYrBezierO = -0.1429;
+	const double beta1RegressionKPrBezierS = -751.315;
+	const double beta2RegressionKPrBezierS = -0.8368;
+	const double beta3RegressionKPrBezierS = -0.4062;
+	const double beta1RegressionKYrBezierS = -0.1672;
+	const double beta2RegressionKYrBezierS = 1.536;
+	const double beta3RegressionKYrBezierS = 0.;
+	const double beta1RegressionAlphaPrBezier = -0.0081;
+	const double beta2RegressionAlphaPrBezier = 0.3719;
+	const double beta3RegressionAlphaPrBezier = 0.6748;
+	const double beta1RegressionAlphaYrBezier = 3.0429;
+	const double beta2RegressionAlphaYrBezier = -0.8248;
+	const double beta3RegressionAlphaYrBezier = 0.7856;
 
 };
 
