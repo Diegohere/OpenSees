@@ -290,6 +290,7 @@ private:
 	double kYrBezierS = 0.;
 	double rAlphaBackstress1 = 0.;
 	double rAlphaBackstress2 = 0.;
+	double c1cUnload = 0.;
 
 
 	// Projection matrices and their eigendecomposition

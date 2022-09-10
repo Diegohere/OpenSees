@@ -550,7 +550,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 			else { // if not elastic
 				
 				// Check if hardening or softening response
-				if (abs(strainPostBucklingTrial(0)) <RETURN_MAP_TOL && c1c <= RETURN_MAP_TOL) {
+				//if (abs(strainPostBucklingTrial(0)) <RETURN_MAP_TOL && c1c <= RETURN_MAP_TOL) {
+				if (abs(strainPostBucklingTrial(0)) < RETURN_MAP_TOL) {
 					// Do a step in the hardening direction
 					plasticLoading = 1;
 					retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial, switchUVCRecovUVCPoint);
@@ -607,6 +608,10 @@ int LocalBucklingWebPlate::timeIntegration() {
 			setTensileEllipsoidYieldSurf(yieldStress, alphaTot);
 
 		} // end IF compression
+
+		/*if (iterationNumber_timeIntegration >= 400) {
+			int ErrorVal = -1;
+		}*/
 	}
 
 	// Warn the user if the algorithm did not converge and return -1
@@ -1069,6 +1074,9 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	alphaPBKTrial[0] = backstress1PB_nPlus1;
 	alphaPBKTrial[1] = backstress2PB_nPlus1;
 
+	// Update c1c for compressive yield surface
+	c1c = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
+
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusPlRecovStage(strain_nPlus1, consistParam_plRecov, yieldStress, relativeStressNPlus1,backstressTot);
 
@@ -1214,6 +1222,9 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 
 	/*etaTangent = calculateEtaTangentReduce();*/
 	stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
+
+	// Update c1c for compressive yield surface
+	c1c = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
 
 	// Calculate the consistent tangent modulus for hardening stage
 	calculateConsistentTangentModulusUVCRecov(strain_nPlus1, consistParam_plastic, fBar, relativeStressNPlus1);
@@ -2474,6 +2485,9 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStress, Vec
 
 	//Compute ratios for backstress update during plastic recovery stage
 	calculateRatioAlphaBackstress(yieldStress);
+
+	// Set c1cUnload
+	c1cUnload = c1c;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
