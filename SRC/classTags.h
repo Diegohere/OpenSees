@@ -807,6 +807,7 @@
 #define ELE_TAG_ASDAbsorbingBoundary3D    220  // Massimo Petracca (ASDEA)
 #define ELE_TAG_ZeroLengthContactASDimplex  221  // Onur Deniz Akan (IUSS), Massimo Petracca (ASDEA)
 #define ELE_TAG_ExternalElement           99990
+#define ELE_TAG_GradientForceBeamColumn2d 222 // by Diego Heredia
 
 
 

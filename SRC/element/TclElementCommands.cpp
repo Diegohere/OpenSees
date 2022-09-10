@@ -199,6 +199,11 @@ extern void* OPS_DispBeamColumnAsym3dTcl();  //Xinlong Du
 extern void* OPS_MixedBeamColumnAsym3dTcl(); //Xinlong Du
 extern void* OPS_ZeroLengthContactASDimplex(void); // Onur Deniz Akan (IUSS), Massimo Petracca (ASDEA)
 
+// Added by Diego Heredia 10.09.2022
+extern void* OPS__GradientForceBeamColumn2d();
+extern void* OPS__GradientForceBeamColumn3d();
+
+
 extern int TclModelBuilder_addFeapTruss(ClientData clientData, Tcl_Interp *interp,  int argc,
 					TCL_Char **argv, Domain*, TclModelBuilder *, int argStart);
 
@@ -382,6 +387,11 @@ TclModelBuilder_addWheelRail(ClientData clientData, Tcl_Interp *interp, int argc
 extern int
 TclModelBuilder_addGradientInelasticBeamColumn(ClientData, Tcl_Interp*, int, TCL_Char**,
 	Domain*, TclModelBuilder*);
+
+// Added by Diego Heredia on 10.09.2022 (EPFL)
+extern int
+TclModelBuilder_addGradientForceBeamColumn(ClientData clientData, Tcl_Interp* interp, int argc, TCL_Char** argv,
+    Domain*, TclModelBuilder*);
 
 int
 TclModelBuilderElementCommand(ClientData clientData, Tcl_Interp *interp,
@@ -1818,6 +1828,13 @@ TclModelBuilderElementCommand(ClientData clientData, Tcl_Interp *interp,
 			theTclDomain, theTclBuilder);
 		return result;
 	}
+
+    // Added by Diego Heredia on 10.09.2022
+    else if (strcmp(argv[1], "gradientForceBeamColumn") == 0) {
+    int result = TclModelBuilder_addGradientForceBeamColumn(clientData, interp, argc, argv,
+        theTclDomain, theTclBuilder);
+    return result;
+    }
 
   else {
 

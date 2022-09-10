@@ -221,6 +221,9 @@
     <ClCompile Include="..\..\..\SRC\element\fourNodeQuad\NineNodeQuad.cpp" />
     <ClCompile Include="..\..\..\SRC\element\fourNodeQuad\SixNodeTri.cpp" />
     <ClCompile Include="..\..\..\SRC\element\frictionBearing\FPBearingPTV.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn2d.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn3d.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\gradientForceBeamColumn\TclGradientForceBeamColumnCommand.cpp" />
     <ClCompile Include="..\..\..\SRC\element\gradientInelasticBeamColumn\GradientInelasticBeamColumn2d.cpp" />
     <ClCompile Include="..\..\..\SRC\element\gradientInelasticBeamColumn\GradientInelasticBeamColumn3d.cpp" />
     <ClCompile Include="..\..\..\SRC\element\gradientInelasticBeamColumn\TclGradientInelasticBeamColumnCommand.cpp" />
@@ -509,6 +512,8 @@
     <ClInclude Include="..\..\..\SRC\element\fourNodeQuad\NineNodeQuad.h" />
     <ClInclude Include="..\..\..\SRC\element\fourNodeQuad\SixNodeTri.h" />
     <ClInclude Include="..\..\..\SRC\element\frictionBearing\FPBearingPTV.h" />
+    <ClInclude Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn2d.h" />
+    <ClInclude Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn3d.h" />
     <ClInclude Include="..\..\..\SRC\element\gradientInelasticBeamColumn\GradientInelasticBeamColumn2d.h" />
     <ClInclude Include="..\..\..\SRC\element\gradientInelasticBeamColumn\GradientInelasticBeamColumn3d.h" />
     <ClInclude Include="..\..\..\SRC\element\Information.h" />
@@ -727,6 +732,13 @@
     <ClInclude Include="..\..\..\SRC\element\HUelements\MultipleShearSpring.h" />
     <ClInclude Include="..\..\..\SRC\element\HUelements\YamamotoBiaxialHDR.h" />
     <ClInclude Include="..\..\..\SRC\element\NewElement.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="element.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\SRC\element\gradientForceBeamColumn\Makefile" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

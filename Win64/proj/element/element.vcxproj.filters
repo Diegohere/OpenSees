@@ -138,6 +138,9 @@
     <Filter Include="CEqElement">
       <UniqueIdentifier>{44a1f5d6-7e75-44f5-a5a5-b79b65801b24}</UniqueIdentifier>
     </Filter>
+    <Filter Include="gradientForceBeamColumn">
+      <UniqueIdentifier>{6c5b1a0e-c4ec-43fa-8494-287c55c73671}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\SRC\element\Element.cpp">
@@ -986,6 +989,15 @@
     <ClCompile Include="..\..\..\SRC\element\truss\InertiaTruss.cpp">
       <Filter>truss</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn2d.cpp">
+      <Filter>gradientForceBeamColumn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn3d.cpp">
+      <Filter>gradientForceBeamColumn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\gradientForceBeamColumn\TclGradientForceBeamColumnCommand.cpp">
+      <Filter>gradientForceBeamColumn</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\element\Element.h">
@@ -1741,5 +1753,24 @@
     <ClInclude Include="..\..\..\SRC\element\truss\InertiaTruss.h">
       <Filter>truss</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn2d.h">
+      <Filter>gradientForceBeamColumn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn3d.h">
+      <Filter>gradientForceBeamColumn</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="element.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\SRC\element\gradientForceBeamColumn\Makefile">
+      <Filter>gradientForceBeamColumn</Filter>
+    </None>
   </ItemGroup>
 </Project>

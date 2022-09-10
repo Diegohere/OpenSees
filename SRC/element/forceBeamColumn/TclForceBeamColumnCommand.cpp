@@ -81,6 +81,9 @@
 #include <ElasticSection2d.h>
 #include <ElasticSection3d.h>
 
+//Added by Diego Heredia
+#include<NewtonCotesBeamIntegrationUpdated.h>
+
 extern void printCommand(int argc, TCL_Char **argv);
 
 int
@@ -322,6 +325,8 @@ TclModelBuilder_addForceBeamColumn(ClientData clientData, Tcl_Interp *interp,
 	  beamIntegr = new TrapezoidalBeamIntegration();
 	else if (strcmp(argv[argi],"CompositeSimpson") == 0)
 	  beamIntegr = new CompositeSimpsonBeamIntegration();
+    else if (strcmp(argv[argi], "NewtonCotesUpdated") == 0)  //added by Diego Heredia
+        beamIntegr = new NewtonCotesBeamIntegrationUpdated();
 	argi++;
 
 	if (beamIntegr == 0) {
