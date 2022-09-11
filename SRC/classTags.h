@@ -808,6 +808,7 @@
 #define ELE_TAG_ZeroLengthContactASDimplex  221  // Onur Deniz Akan (IUSS), Massimo Petracca (ASDEA)
 #define ELE_TAG_ExternalElement           99990
 #define ELE_TAG_GradientForceBeamColumn2d 222 // by Diego Heredia
+#define ELE_TAG_GradientForceBeamColumn3d 223 // by Diego Heredia
 
 
 

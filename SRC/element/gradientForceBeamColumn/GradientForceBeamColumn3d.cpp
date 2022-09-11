@@ -26,14 +26,16 @@
 #include <float.h>
 //#include <complex.h>
 
-// Initialize class wide variables
-Matrix GradientForceBeamColumn2d::theMatrix(6, 6);
-Vector GradientForceBeamColumn2d::theVector(6);
-double GradientForceBeamColumn2d::workArea[200];
+#define DefaultLoverGJ 1.0e-10
 
-Vector GradientForceBeamColumn2d::eNonLocalSubdivide[maxNumSections];
-Matrix GradientForceBeamColumn2d::FSectionSubdivide[maxNumSections];
-Vector GradientForceBeamColumn2d::srSubdivide[maxNumSections];
+// Initialize class wide variables
+Matrix GradientForceBeamColumn3d::theMatrix(6, 6);
+Vector GradientForceBeamColumn3d::theVector(6);
+double GradientForceBeamColumn3d::workArea[200];
+
+Vector GradientForceBeamColumn3d::eNonLocalSubdivide[maxNumSections];
+Matrix GradientForceBeamColumn3d::FSectionSubdivide[maxNumSections];
+Vector GradientForceBeamColumn3d::srSubdivide[maxNumSections];
 
 // Method to read the command arguments
 void* OPS_GradientForceBeamColumn3d()
@@ -47,8 +49,8 @@ void* OPS_GradientForceBeamColumn3d()
 	// Get dimensions and nb DOFs
 	int ndm = OPS_GetNDM();
 	int ndf = OPS_GetNDF();
-	if (ndm != 2 || ndf != 3) {
-		opserr << "WARNING! dimension must be 2d and nb DOF must be 3\n";
+	if (ndm != 3 || ndf != 6) {
+		opserr << "WARNING! dimension must be 3d and nb DOF must be 6\n";
 		return 0;
 	}
 
@@ -109,19 +111,19 @@ void* OPS_GradientForceBeamColumn3d()
 	//}
 
 	// Initialize the element
-	Element* theEle = new GradientForceBeamColumn2d(eleTag, nodeTagI, nodeTagJ, *theCoordTransf, *theBeamIntegration,
+	Element* theEle = new GradientForceBeamColumn3d(eleTag, nodeTagI, nodeTagJ, *theCoordTransf, *theBeamIntegration,
 		sections, numIntegrPoints, maxNumIters, tolerance,lc);
 	delete[] sections;
 	return 0;
 }
 
 // Constructor 2 (for parallel processing)
-GradientForceBeamColumn2d::GradientForceBeamColumn2d() : Element(0, ELE_TAG_GradientForceBeamColumn2d), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
+GradientForceBeamColumn3d::GradientForceBeamColumn3d() : Element(0, ELE_TAG_GradientForceBeamColumn3d), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
 maxIters(0), Tol(0), lc(0), initialFlag(0),
-Kelement(3, 3), q(3), KelementCommit(3, 3), qCommit(3), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
+Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
 FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0),
-numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(6),
-KelementInitial(0)
+numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
+KelementInitial(0), isTorsion(false)
 // complete
 {
 	// Set Node Pointers to 0
@@ -132,19 +134,19 @@ KelementInitial(0)
 }
 
 // Constructor 1 (for normal processing) invoked by a FEM_ObjectBroker
-GradientForceBeamColumn2d::GradientForceBeamColumn2d(int tag, int nodeI, int nodeJ, CrdTransf& CT, BeamIntegration& BI,
+GradientForceBeamColumn3d::GradientForceBeamColumn3d(int tag, int nodeI, int nodeJ, CrdTransf& CT, BeamIntegration& BI,
 	SectionForceDeformation** sec, int numSec, int maxNumIters, double tolerance, double LC)
-	:Element(tag, ELE_TAG_GradientForceBeamColumn2d), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
+	:Element(tag, ELE_TAG_GradientForceBeamColumn3d), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
 	maxIters(maxNumIters), Tol(tolerance), lc(LC), initialFlag(0),
-	Kelement(3, 3), q(3), KelementCommit(3, 3), qCommit(3), H(2* numSec,2* numSec), H_inv(2 * numSec, 2 * numSec),
+	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(6* numSec,6* numSec), H_inv(6 * numSec, 6 * numSec),
 	FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), 
-	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(6),
-	KelementInitial(0)
+	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
+	KelementInitial(0), isTorsion(false)
 	// complete
 {
 	// Pointers to Nodes and Their IDs
 	if (connectedExternalNodes.Size() != 2) {
-		opserr << "WARNING! GradientForceBeamColumn2d::GradientForceBeamColumn2d(): " << this->getTag() << " - failed to create an ID of size 2\n";
+		opserr << "WARNING! GradientForceBeamColumn3d::GradientForceBeamColumn3d(): " << this->getTag() << " - failed to create an ID of size 2\n";
 		exit(-1);
 	}
 
@@ -160,14 +162,14 @@ GradientForceBeamColumn2d::GradientForceBeamColumn2d(int tag, int nodeI, int nod
 	beamIntegr = BI.getCopy();
 
 	if (!beamIntegr) {
-		opserr << "WARNING! GradientForceBeamColumn2d::GradientForceBeamColumn2d(): " << this->getTag() << " - could not create copy of beam integration object" << endln;
+		opserr << "WARNING! GradientForceBeamColumn3d::GradientForceBeamColumn3d(): " << this->getTag() << " - could not create copy of beam integration object" << endln;
 		exit(-1);
 	}
 
 	// get copy of the transformation object   
-	crdTransf = CT.getCopy2d();
+	crdTransf = CT.getCopy3d();
 	if (crdTransf == 0) {
-		opserr << "WARNING! GradientForceBeamColumn2d::GradientForceBeamColumn2d(): could not create copy of coordinate transformation object" << endln;
+		opserr << "WARNING! GradientForceBeamColumn3d::GradientForceBeamColumn3d(): could not create copy of coordinate transformation object" << endln;
 		exit(-1);
 	}
 
@@ -177,7 +179,7 @@ GradientForceBeamColumn2d::GradientForceBeamColumn2d(int tag, int nodeI, int nod
 
 // Destructor
 //      delete must be invoked on any objects created by the object
-GradientForceBeamColumn2d::~GradientForceBeamColumn2d()
+GradientForceBeamColumn3d::~GradientForceBeamColumn3d()
 {
 	if (sections != 0) {
 		for (int i = 0; i < numSections; i++)
@@ -221,39 +223,39 @@ GradientForceBeamColumn2d::~GradientForceBeamColumn2d()
 }
 
 int
-GradientForceBeamColumn2d::getNumExternalNodes(void) const
+GradientForceBeamColumn3d::getNumExternalNodes(void) const
 {
 	return 2;
 }
 
 const ID&
-GradientForceBeamColumn2d::getExternalNodes(void)
+GradientForceBeamColumn3d::getExternalNodes(void)
 {
 	return connectedExternalNodes;
 }
 
 Node**
-GradientForceBeamColumn2d::getNodePtrs()
+GradientForceBeamColumn3d::getNodePtrs()
 {
 	return theNodes;
 }
 
 int
-GradientForceBeamColumn2d::getNumDOF(void)
+GradientForceBeamColumn3d::getNumDOF(void)
 {
-	return 6;
+	return NEGD;
 }
 
 // Definition of setDomain()
 void
-GradientForceBeamColumn2d::setDomain(Domain* theDomain)
+GradientForceBeamColumn3d::setDomain(Domain* theDomain)
 {
 	// check Domain is not null - invoked when object removed from a domain
 	if (theDomain == 0) {
 		theNodes[0] = 0;
 		theNodes[1] = 0;
 
-		opserr << "ERROR! GradientForceBeamColumn2d::setDomain():  theDomain = 0 ";
+		opserr << "ERROR! GradientForceBeamColumn3d::setDomain():  theDomain = 0 ";
 		exit(0);
 	}
 
@@ -265,13 +267,13 @@ GradientForceBeamColumn2d::setDomain(Domain* theDomain)
 	theNodes[1] = theDomain->getNode(Nd2);
 
 	if (theNodes[0] == 0) {
-		opserr << "ERROR! GradientForceBeamColumn2d::setDomain: Nd1: ";
+		opserr << "ERROR! GradientForceBeamColumn3d::setDomain: Nd1: ";
 		opserr << Nd1 << "does not exist in model\n";
 		exit(0);
 	}
 
 	if (theNodes[1] == 0) {
-		opserr << "ERROR! GradientForceBeamColumn2d::setDomain: Nd2: ";
+		opserr << "ERROR! GradientForceBeamColumn3d::setDomain: Nd2: ";
 		opserr << Nd2 << "does not exist in model\n";
 		exit(0);
 	}
@@ -283,26 +285,26 @@ GradientForceBeamColumn2d::setDomain(Domain* theDomain)
 	int dofNode1 = theNodes[0]->getNumberDOF();
 	int dofNode2 = theNodes[1]->getNumberDOF();
 
-	if (dofNode1 != 3) {
-		opserr << "ERROR! GradientForceBeamColumn2d::setDomain() - element: " << this->getTag() << " - node " << Nd1 << " does not have 3 DOFs\n";
+	if (dofNode1 != NND) {
+		opserr << "ERROR! GradientForceBeamColumn3d::setDomain() - element: " << this->getTag() << " - node " << Nd1 << " does not have 6 DOFs\n";
 		exit(0);
 	}
 
-	if (dofNode2 != 3) {
-		opserr << "ERROR! GradientForceBeamColumn2d::setDomain() - element: " << this->getTag() << " - node " << Nd2 << " does not have 3 DOFs\n";
+	if (dofNode2 != NND) {
+		opserr << "ERROR! GradientForceBeamColumn3d::setDomain() - element: " << this->getTag() << " - node " << Nd2 << " does not have 6 DOFs\n";
 		exit(0);
 	}
 
 	// Initialize Coordinate Transformation
 	if (crdTransf->initialize(theNodes[0], theNodes[1])) {
-		opserr << "WARNING! GradientForceBeamColumn2d::setDomain() - element: " << this->getTag() << " - Error initializing coordinate transformation\n";
+		opserr << "WARNING! GradientForceBeamColumn3d::setDomain() - element: " << this->getTag() << " - Error initializing coordinate transformation\n";
 		exit(0);
 	}
 
 	// get element length
 	double L = crdTransf->getInitialLength();
 	if (L == 0.0) {
-		opserr << "WARNING! GradientForceBeamColumn2d::setDomain(): element has zero length:" << this->getTag();
+		opserr << "WARNING! GradientForceBeamColumn3d::setDomain(): element has zero length:" << this->getTag();
 		exit(0);
 	}
 
@@ -312,13 +314,13 @@ GradientForceBeamColumn2d::setDomain(Domain* theDomain)
 
 //Function to commit state of the element
 int
-GradientForceBeamColumn2d::commitState()
+GradientForceBeamColumn3d::commitState()
 {
 	int err = 0;
 
 	// Element commitState()
 	if ((err = this->Element::commitState()))
-		opserr << "WARNING! GradientForceBeamColumn2d::commitState() - element: " << this->getTag() << " - failed in committing base class\n";
+		opserr << "WARNING! GradientForceBeamColumn3d::commitState() - element: " << this->getTag() << " - failed in committing base class\n";
 
 	// Commit section state variables
 	for (int i = 0; i < numSections; i++) {
@@ -332,7 +334,7 @@ GradientForceBeamColumn2d::commitState()
 
 	// Commit the transformation between coord. systems
 	if ((err = crdTransf->commitState()) != 0)
-		opserr << "WARNING! GradientForceBeamColumn2d::commitState() - element: " << this->getTag() << " - failed to commit coordinate transformation object\n";
+		opserr << "WARNING! GradientForceBeamColumn3d::commitState() - element: " << this->getTag() << " - failed to commit coordinate transformation object\n";
 
 	// Complete committing the variables
 	return err;
@@ -340,7 +342,7 @@ GradientForceBeamColumn2d::commitState()
 
 //Function to revert to last commit
 int
-GradientForceBeamColumn2d::revertToLastCommit(void)
+GradientForceBeamColumn3d::revertToLastCommit(void)
 {
 	int err = 0;
 	// Revert section state variables to last committed state
@@ -354,7 +356,7 @@ GradientForceBeamColumn2d::revertToLastCommit(void)
 	}
 	// Revert coordinate transformation object to last committed state
 	if ((err = crdTransf->revertToLastCommit()))
-		opserr << "WARNING! GradientForceBeamColumn2d::revertToLastCommit() - element: " << this->getTag() << " - coordinate transformation object failed to revert to last committed state\n";
+		opserr << "WARNING! GradientForceBeamColumn3d::revertToLastCommit() - element: " << this->getTag() << " - coordinate transformation object failed to revert to last committed state\n";
 
 	// Revert the element variables state
 	Kelement = KelementCommit;
@@ -368,10 +370,10 @@ GradientForceBeamColumn2d::revertToLastCommit(void)
 
 //Function to revert to start
 int
-GradientForceBeamColumn2d::revertToStart(void)
+GradientForceBeamColumn3d::revertToStart(void)
 {
 	// revert the sections state variables to start
-	int err;
+	int err = 0;
 
 	for (int i = 0; i < numSections; i++) {
 		err += sections[i]->revertToStart();
@@ -383,7 +385,7 @@ GradientForceBeamColumn2d::revertToStart(void)
 
 	// revert the transformation to start
 	if ((err = crdTransf->revertToStart()) != 0)
-		opserr << "WARNING! GradientForceBeamColumn2d::revertToStart() - element: " << this->getTag() << " - failed to revert to start coordinate transformation object\n";
+		opserr << "WARNING! GradientForceBeamColumn3d::revertToStart() - element: " << this->getTag() << " - failed to revert to start coordinate transformation object\n";
 
 	// revert the element state variables to start
 	qCommit.Zero();
@@ -397,15 +399,16 @@ GradientForceBeamColumn2d::revertToStart(void)
 
 //Function to get initial element stiffness matrix in basic reference frame
 const Matrix&
-GradientForceBeamColumn2d::getInitialStiff(void)
+GradientForceBeamColumn3d::getInitialStiff(void)
 {
 	// check for quick return
 	if (KelementInitial != 0)
 		return *KelementInitial;
 
-	static Matrix f(3, 3);   // element flexibility matrix  
+	static Matrix f(NEBD, NEBD);   // element flexibility matrix  
 	this->getInitialFlexibility(f);
-	static Matrix KvInit(3, 3);
+
+	static Matrix KvInit(NEBD, NEBD);
 	f.Invert(KvInit);
 	KelementInitial = new Matrix(crdTransf->getInitialGlobalStiffMatrix(KvInit));
 	return *KelementInitial;
@@ -413,7 +416,7 @@ GradientForceBeamColumn2d::getInitialStiff(void)
 
 //Function to get the tangent stiffness matrix
 const Matrix&
-GradientForceBeamColumn2d::getTangentStiff(void)
+GradientForceBeamColumn3d::getTangentStiff(void)
 {
 	crdTransf->update();
 	return crdTransf->getGlobalStiffMatrix(Kelement, q);
@@ -421,7 +424,7 @@ GradientForceBeamColumn2d::getTangentStiff(void)
 
 //Method to get reaction due to element loads
 void
-GradientForceBeamColumn2d::computeReactions(double* p0)
+GradientForceBeamColumn3d::computeReactions(double* p0)
 {
 	int type;
 	double L = crdTransf->getInitialLength();
@@ -431,57 +434,63 @@ GradientForceBeamColumn2d::computeReactions(double* p0)
 		double loadFactor = eleLoadFactors[i];
 		const Vector& data = eleLoads[i]->getData(type, loadFactor);
 
-		if (type == LOAD_TAG_Beam2dUniformLoad) {
-			double wa = data(1) * loadFactor;  // Axial
+		if (type == LOAD_TAG_Beam3dUniformLoad) {
 			double wy = data(0) * loadFactor;  // Transverse
+			double wz = data(1) * loadFactor;  // Transverse
+			double wa = data(2) * loadFactor;  // Axial
 
 			p0[0] -= wa * L;
 			double V = 0.5 * wy * L;
 			p0[1] -= V;
 			p0[2] -= V;
+			V = 0.5 * wz * L;
+			p0[3] -= V;
+			p0[4] -= V;
 		}
-		else if (type == LOAD_TAG_Beam2dPartialUniformLoad) {
-			double waa = data(2) * loadFactor;  // Axial
-			double wab = data(3) * loadFactor;  // Axial
-			double wya = data(0) * loadFactor;  // Transverse
-			double wyb = data(1) * loadFactor;  // Transverse      
-			double a = data(4) * L;
-			double b = data(5) * L;
+		else if (type == LOAD_TAG_Beam3dPartialUniformLoad) {
+			double wa = data(2) * loadFactor;  // Axial
+			double wy = data(0) * loadFactor;  // Transverse
+			double wz = data(1) * loadFactor;  // Transverse
+			double a = data(3) * L;
+			double b = data(4) * L;
 
-			p0[0] -= waa * (b - a) + 0.5 * (wab - waa) * (b - a);
-			double Fy = wya * (b - a);
+			p0[0] -= wa * (b - a);
+			double Fy = wy * (b - a);
 			double c = a + 0.5 * (b - a);
 			p0[1] -= Fy * (1 - c / L);
 			p0[2] -= Fy * c / L;
-			Fy = 0.5 * (wyb - wya) * (b - a);
-			c = a + 2.0 / 3.0 * (b - a);
-			p0[1] -= Fy * (1 - c / L);
-			p0[2] -= Fy * c / L;
+			double Fz = wz * (b - a);
+			p0[3] -= Fz * (1 - c / L);
+			p0[4] -= Fz * c / L;
 		}
-		else if (type == LOAD_TAG_Beam2dPointLoad) {
-			double P = data(0) * loadFactor;
-			double N = data(1) * loadFactor;
-			double aOverL = data(2);
+		else if (type == LOAD_TAG_Beam3dPointLoad) {
+			double Py = data(0) * loadFactor;
+			double Pz = data(1) * loadFactor;
+			double N = data(2) * loadFactor;
+			double aOverL = data(3);
 
 			if (aOverL < 0.0 || aOverL > 1.0)
 				continue;
 
-			double V1 = P * (1.0 - aOverL);
-			double V2 = P * aOverL;
-
+			double V1 = Py * (1.0 - aOverL);
+			double V2 = Py * aOverL;
 			p0[0] -= N;
 			p0[1] -= V1;
 			p0[2] -= V2;
+			V1 = Pz * (1.0 - aOverL);
+			V2 = Pz * aOverL;
+			p0[3] -= V1;
+			p0[4] -= V2;
 		}
 	}
 }
 
 //Function to get element resisting force vector global reference frame
 const Vector&
-GradientForceBeamColumn2d::getResistingForce(void)
+GradientForceBeamColumn3d::getResistingForce(void)
 {
-	double p0[3];
-	Vector p0Vec(p0, 3);
+	double p0[5];
+	Vector p0Vec(p0, 5);
 	p0Vec.Zero();
 
 	if (numEleLoads > 0)
@@ -493,7 +502,7 @@ GradientForceBeamColumn2d::getResistingForce(void)
 
 //Method to initialize section state variables
 void
-GradientForceBeamColumn2d::initializeSectionHistoryVariables(void)
+GradientForceBeamColumn3d::initializeSectionHistoryVariables(void)
 {
 	for (int i = 0; i < numSections; i++) {
 		int order = sections[i]->getOrder();
@@ -507,7 +516,7 @@ GradientForceBeamColumn2d::initializeSectionHistoryVariables(void)
 
 //Method to solve for nodal forces
 int
-GradientForceBeamColumn2d::update(void)
+GradientForceBeamColumn3d::update(void)
 {
 	// If have completed a recvSelf() - do a revertToLastCommit to get srSection etc. set correctly
 	if (initialFlag == 2)
@@ -848,7 +857,7 @@ GradientForceBeamColumn2d::update(void)
 						//Set the section deformations for section state determination
 						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
 						{
-							opserr << "GradientForceBeamColumn2d::update() - section failed in setTrial\n";
+							opserr << "GradientForceBeamColumn3d::update() - section failed in setTrial\n";
 							return -1;
 						}
 
@@ -999,7 +1008,7 @@ GradientForceBeamColumn2d::update(void)
 
 					// calculate element stiffness matrix invert3by3Matrix(F, Kelement);	  
 					if (Felement.Solve(I, KelementTrial) < 0) {
-						opserr << "GradientForceBeamColumn2d::update() -- could not invert flexibility\n";
+						opserr << "GradientForceBeamColumn3d::update() -- could not invert flexibility\n";
 						//opserr << "This is Felement:" <<Felement<<endln;
 					}
 
@@ -1090,7 +1099,7 @@ GradientForceBeamColumn2d::update(void)
 	// if fail to converge we return an error flag & print an error message
 	if (converged == false)
 	{
-		opserr << "WARNING - GradientForceBeamColumn2d::update - failed to get compatible ";
+		opserr << "WARNING - GradientForceBeamColumn3d::update - failed to get compatible ";
 		opserr << "element forces & deformations for element: ";
 		opserr << this->getTag() << "(Norm dv: << " << dv.Norm() << ")\n";
 		opserr << this->getTag() << "( dv: << " << dv << ")\n";
@@ -1103,7 +1112,7 @@ GradientForceBeamColumn2d::update(void)
 }
 
 // Method to get force interpolation matrix b
-void GradientForceBeamColumn2d::getForceInterpolatMatrix(double xi, Matrix& b, const ID& code)
+void GradientForceBeamColumn3d::getForceInterpolatMatrix(double xi, Matrix& b, const ID& code)
 {
 	b.Zero();
 
@@ -1122,6 +1131,16 @@ void GradientForceBeamColumn2d::getForceInterpolatMatrix(double xi, Matrix& b, c
 		case SECTION_RESPONSE_VY:		// Shear, Vy, interpolation
 			b(i, 1) = b(i, 2) = 1.0 / L;
 			break;
+		case SECTION_RESPONSE_MY:              // Moment, My, interpolation
+			b(i, 3) = xi - 1.0;
+			b(i, 4) = xi;
+			break;
+		case SECTION_RESPONSE_VZ:              // Shear, Vz, interpolation
+			b(i, 3) = b(i, 4) = 1.0 / L;
+			break;
+		case SECTION_RESPONSE_T:               // Torque, T, interpolation
+			b(i, 5) = 1.0;
+			break;
 		default:
 			break;
 		}
@@ -1129,7 +1148,7 @@ void GradientForceBeamColumn2d::getForceInterpolatMatrix(double xi, Matrix& b, c
 }
 
 // Method to get force interpolation matrix bp due to distributed loads
-void GradientForceBeamColumn2d::getDistrLoadInterpolatMatrix(double xi, Matrix& bp, const ID& code)
+void GradientForceBeamColumn3d::getDistrLoadInterpolatMatrix(double xi, Matrix& bp, const ID& code)
 {
 	bp.Zero();
 
@@ -1147,6 +1166,14 @@ void GradientForceBeamColumn2d::getDistrLoadInterpolatMatrix(double xi, Matrix& 
 		case SECTION_RESPONSE_VY:		// Shear, Vy, interpolation
 			bp(i, 1) = (xi - 0.5) * L;
 			break;
+		case SECTION_RESPONSE_MY:              // Moment, My, interpolation
+			bp(i, 2) = xi * (1 - xi) * L * L / 2;
+			break;
+		case SECTION_RESPONSE_VZ:              // Shear, Vz, interpolation
+			bp(i, 2) = (0.5 - xi) * L;
+			break;
+		case SECTION_RESPONSE_T:               // Torsion, T, interpolation
+			break;
 		default:
 			break;
 		}
@@ -1155,7 +1182,7 @@ void GradientForceBeamColumn2d::getDistrLoadInterpolatMatrix(double xi, Matrix& 
 
 //Method to compute section forces
 void
-GradientForceBeamColumn2d::computeSectionForces(Vector& sp, int isec)
+GradientForceBeamColumn3d::computeSectionForces(Vector& sp, int isec)
 {
 	int type;
 
@@ -1175,10 +1202,11 @@ GradientForceBeamColumn2d::computeSectionForces(Vector& sp, int isec)
 		double loadFactor = eleLoadFactors[i];
 		const Vector& data = eleLoads[i]->getData(type, loadFactor);
 
-		if (type == LOAD_TAG_Beam2dUniformLoad)
+		if (type == LOAD_TAG_Beam3dUniformLoad)
 		{
-			double wa = data(1) * loadFactor;  // Axial
 			double wy = data(0) * loadFactor;  // Transverse
+			double wz = data(1) * loadFactor;  // Transverse
+			double wa = data(2) * loadFactor;  // Axial
 
 			for (int ii = 0; ii < order; ii++)
 			{
@@ -1193,76 +1221,91 @@ GradientForceBeamColumn2d::computeSectionForces(Vector& sp, int isec)
 				case SECTION_RESPONSE_VY:
 					sp(ii) += wy * (x - 0.5 * L);
 					break;
+				case SECTION_RESPONSE_MY:
+					sp(ii) += wz * 0.5 * x * (L - x);
+					break;
+				case SECTION_RESPONSE_VZ:
+					sp(ii) += wz * (0.5 * L - x);
+					break;
 				default:
 					break;
 				}
 			}
 		}
-		else if (type == LOAD_TAG_Beam2dPartialUniformLoad)
+		else if (type == LOAD_TAG_Beam3dPartialUniformLoad)
 		{
-			double waa = data(2) * loadFactor;  // Axial
-			double wab = data(3) * loadFactor;  // Axial
-			double wya = data(0) * loadFactor;  // Transverse
-			double wyb = data(1) * loadFactor;  // Transverse
-			double a = data(4) * L;
-			double b = data(5) * L;
+			double wa = data(2) * loadFactor;  // Axial
+			double wy = data(0) * loadFactor;  // Transverse
+			double wz = data(1) * loadFactor;  // Transverse
+			double a = data(3) * L;
+			double b = data(4) * L;
 
-			double Fa = waa * (b - a) + 0.5 * (wab - waa) * (b - a); // resultant axial load
-			double Fy = wya * (b - a); // resultant transverse load
+			double Fa = wa * (b - a); // resultant axial load
+			double Fy = wy * (b - a); // resultant transverse load
+			double Fz = wz * (b - a); // resultant transverse load
 			double c = a + 0.5 * (b - a);
-			double VI = Fy * (1 - c / L);
-			double VJ = Fy * c / L;
-			Fy = 0.5 * (wyb - wya) * (b - a); // resultant transverse load
-			c = a + 2.0 / 3.0 * (b - a);
-			VI += Fy * (1 - c / L);
-			VJ += Fy * c / L;
+			double VyI = Fy * (1 - c / L);
+			double VyJ = Fy * c / L;
+			double VzI = Fz * (1 - c / L);
+			double VzJ = Fz * c / L;
 
 			for (int ii = 0; ii < order; ii++)
 			{
-				if (x <= a)
-				{
-					switch (code(ii))
-					{
+				if (x <= a) {
+					switch (code(ii)) {
 					case SECTION_RESPONSE_P:
 						sp(ii) += Fa;
 						break;
 					case SECTION_RESPONSE_MZ:
-						sp(ii) -= VI * x;
+						sp(ii) -= VyI * x;
+						break;
+					case SECTION_RESPONSE_MY:
+						sp(ii) += VzI * x;
 						break;
 					case SECTION_RESPONSE_VY:
-						sp(ii) -= VI;
+						sp(ii) -= VyI;
+						break;
+					case SECTION_RESPONSE_VZ:
+						sp(ii) -= VzI;
 						break;
 					default:
 						break;
 					}
 				}
-				else if (x >= b)
-				{
-					switch (code(ii))
-					{
+				else if (x >= b) {
+					switch (code(ii)) {
 					case SECTION_RESPONSE_MZ:
-						sp(ii) += VJ * (x - L);
+						sp(ii) += VyJ * (x - L);
+						break;
+					case SECTION_RESPONSE_MY:
+						sp(ii) -= VzJ * (x - L);
 						break;
 					case SECTION_RESPONSE_VY:
-						sp(ii) += VJ;
+						sp(ii) += VyJ;
+						break;
+					case SECTION_RESPONSE_VZ:
+						sp(ii) += VzJ;
 						break;
 					default:
 						break;
 					}
 				}
-				else
-				{
-					double wx = wya + (wyb - wya) / (b - a) * (x - a);
-					switch (code(ii))
-					{
+				else {
+					switch (code(ii)) {
 					case SECTION_RESPONSE_P:
-						sp(ii) += Fa - waa * (x - a) - 0.5 * (wab - waa) / (b - a) * (x - a) * (x - a);
+						sp(ii) += Fa - wa * (x - a);
 						break;
 					case SECTION_RESPONSE_MZ:
-						sp(ii) += -VI * x + wya * (x - a) * 0.5 * (x - a) + 0.5 * (wx - wya) * (x - a) * (x - a) / 3.0;
+						sp(ii) += -VyI * x + 0.5 * wy * x * x + wy * a * (0.5 * a - x);
+						break;
+					case SECTION_RESPONSE_MY:
+						sp(ii) += VzI * x - 0.5 * wz * x * x - wz * a * (0.5 * a - x);
 						break;
 					case SECTION_RESPONSE_VY:
-						sp(ii) += -VI + wya * (x - a) + 0.5 * (wx - wya) * (x - a);
+						sp(ii) += -VyI + wy * (x - a);
+						break;
+					case SECTION_RESPONSE_VZ:
+						sp(ii) += -VzI + wz * (x - a);
 						break;
 					default:
 						break;
@@ -1270,48 +1313,59 @@ GradientForceBeamColumn2d::computeSectionForces(Vector& sp, int isec)
 				}
 			}
 		}
-		else if (type == LOAD_TAG_Beam2dPointLoad)
-		{
-			double P = data(0) * loadFactor;
-			double N = data(1) * loadFactor;
-			double aOverL = data(2);
+		else if (type == LOAD_TAG_Beam3dPointLoad) {
+			double Py = data(0) * loadFactor;
+			double Pz = data(1) * loadFactor;
+			double N = data(2) * loadFactor;
+			double aOverL = data(3);
 
 			if (aOverL < 0.0 || aOverL > 1.0)
 				continue;
 
 			double a = aOverL * L;
 
-			double V1 = P * (1.0 - aOverL);
-			double V2 = P * aOverL;
+			double Vy1 = Py * (1.0 - aOverL);
+			double Vy2 = Py * aOverL;
 
-			for (int ii = 0; ii < order; ii++)
-			{
-				if (x <= a)
-				{
-					switch (code(ii))
-					{
+			double Vz1 = Pz * (1.0 - aOverL);
+			double Vz2 = Pz * aOverL;
+
+			for (int ii = 0; ii < order; ii++) {
+
+				if (x <= a) {
+					switch (code(ii)) {
 					case SECTION_RESPONSE_P:
 						sp(ii) += N;
 						break;
 					case SECTION_RESPONSE_MZ:
-						sp(ii) -= x * V1;
+						sp(ii) -= x * Vy1;
 						break;
 					case SECTION_RESPONSE_VY:
-						sp(ii) -= V1;
+						sp(ii) -= Vy1;
+						break;
+					case SECTION_RESPONSE_MY:
+						sp(ii) += x * Vz1;
+						break;
+					case SECTION_RESPONSE_VZ:
+						sp(ii) -= Vz1;
 						break;
 					default:
 						break;
 					}
 				}
-				else
-				{
-					switch (code(ii))
-					{
+				else {
+					switch (code(ii)) {
 					case SECTION_RESPONSE_MZ:
-						sp(ii) -= (L - x) * V2;
+						sp(ii) -= (L - x) * Vy2;
 						break;
 					case SECTION_RESPONSE_VY:
-						sp(ii) += V2;
+						sp(ii) += Vy2;
+						break;
+					case SECTION_RESPONSE_MY:
+						sp(ii) += (L - x) * Vz2;
+						break;
+					case SECTION_RESPONSE_VZ:
+						sp(ii) += Vz2;
 						break;
 					default:
 						break;
@@ -1321,7 +1375,7 @@ GradientForceBeamColumn2d::computeSectionForces(Vector& sp, int isec)
 		}
 		else
 		{
-			opserr << "GradientForceBeamColumn2d::addLoad -- load type unknown for element with tag: " <<
+			opserr << "GradientForceBeamColumn3d::addLoad -- load type unknown for element with tag: " <<
 				this->getTag() << endln;
 		}
 	}
@@ -1329,7 +1383,7 @@ GradientForceBeamColumn2d::computeSectionForces(Vector& sp, int isec)
 
 //Method to get the mass matrix
 const Matrix&
-GradientForceBeamColumn2d::getMass(void)
+GradientForceBeamColumn3d::getMass(void)
 {
 	theMatrix.Zero();
 
@@ -1342,7 +1396,7 @@ GradientForceBeamColumn2d::getMass(void)
 
 //Method for zero element loads
 void
-GradientForceBeamColumn2d::zeroLoad(void)
+GradientForceBeamColumn3d::zeroLoad(void)
 {
 	load.Zero();
 
@@ -1353,7 +1407,7 @@ GradientForceBeamColumn2d::zeroLoad(void)
 
 // Method to add element loads
 int
-GradientForceBeamColumn2d::addLoad(ElementalLoad* theLoad, double loadFactor)
+GradientForceBeamColumn3d::addLoad(ElementalLoad* theLoad, double loadFactor)
 {
 	if (numEleLoads == sizeEleLoads)
 	{
@@ -1385,7 +1439,7 @@ GradientForceBeamColumn2d::addLoad(ElementalLoad* theLoad, double loadFactor)
 
 //Method to include inertia forces to element resisting forces
 const Vector&
-GradientForceBeamColumn2d::getResistingForceIncInertia()
+GradientForceBeamColumn3d::getResistingForceIncInertia()
 {
 	// Compute the current resisting force
 	theVector = this->getResistingForce();
@@ -1397,25 +1451,25 @@ GradientForceBeamColumn2d::getResistingForceIncInertia()
 
 //Method for sending itself for parallel processing
 int
-GradientForceBeamColumn2d::sendSelf(int commitTag, Channel& theChannel)
+GradientForceBeamColumn3d::sendSelf(int commitTag, Channel& theChannel)
 {
 	// No parallel processing for now
-	opserr << "WARNING! GradientForceBeamColumn2d::sendSelf() - element: " << this->getTag() << " - no parallel processing for now\n";
+	opserr << "WARNING! GradientForceBeamColumn3d::sendSelf() - element: " << this->getTag() << " - no parallel processing for now\n";
 	return -1;
 }
 
 //Method for receiving itself for parallel processing
 int
-GradientForceBeamColumn2d::recvSelf(int commitTag, Channel& theChannel, FEM_ObjectBroker& theBroker)
+GradientForceBeamColumn3d::recvSelf(int commitTag, Channel& theChannel, FEM_ObjectBroker& theBroker)
 {
 	// No parallel processing for now
-	opserr << "WARNING! GradientForceBeamColumn2d::recvSelf() - element: " << this->getTag() << " - no parallel processing for now\n";
+	opserr << "WARNING! GradientForceBeamColumn3d::recvSelf() - element: " << this->getTag() << " - no parallel processing for now\n";
 	return -1;
 }
 
 //Method for computing initial element flexibility matrix
 int
-GradientForceBeamColumn2d::getInitialFlexibility(Matrix& Fe)
+GradientForceBeamColumn3d::getInitialFlexibility(Matrix& Fe)
 {
 	Fe.Zero();
 
@@ -1446,72 +1500,104 @@ GradientForceBeamColumn2d::getInitialFlexibility(Matrix& Fe)
 		Fb.Zero();
 		double tmp;
 		int ii, jj;
-		for (ii = 0; ii < order; ii++)
-		{
-			switch (code(ii))
-			{
+		for (ii = 0; ii < order; ii++) {
+			switch (code(ii)) {
 			case SECTION_RESPONSE_P:
 				for (jj = 0; jj < order; jj++)
 					Fb(jj, 0) += FSec(jj, ii) * wtL;
 				break;
 			case SECTION_RESPONSE_MZ:
-				for (jj = 0; jj < order; jj++)
-				{
+				for (jj = 0; jj < order; jj++) {
 					tmp = FSec(jj, ii) * wtL;
 					Fb(jj, 1) += xL1 * tmp;
 					Fb(jj, 2) += xL * tmp;
 				}
 				break;
 			case SECTION_RESPONSE_VY:
-				for (jj = 0; jj < order; jj++)
-				{
+				for (jj = 0; jj < order; jj++) {
 					tmp = oneOverL * FSec(jj, ii) * wtL;
 					Fb(jj, 1) += tmp;
 					Fb(jj, 2) += tmp;
 				}
 				break;
+			case SECTION_RESPONSE_MY:
+				for (jj = 0; jj < order; jj++) {
+					tmp = FSec(jj, ii) * wtL;
+					Fb(jj, 3) += xL1 * tmp;
+					Fb(jj, 4) += xL * tmp;
+				}
+				break;
+			case SECTION_RESPONSE_VZ:
+				for (jj = 0; jj < order; jj++) {
+					tmp = oneOverL * FSec(jj, ii) * wtL;
+					Fb(jj, 3) += tmp;
+					Fb(jj, 4) += tmp;
+				}
+				break;
+			case SECTION_RESPONSE_T:
+				for (jj = 0; jj < order; jj++)
+					Fb(jj, 5) += FSec(jj, ii) * wtL;
+				break;
 			default:
 				break;
 			}
 		}
-		for (ii = 0; ii < order; ii++)
-		{
-			switch (code(ii))
-			{
+		for (ii = 0; ii < order; ii++) {
+			switch (code(ii)) {
 			case SECTION_RESPONSE_P:
-				for (jj = 0; jj < 3; jj++)
+				for (jj = 0; jj < NEBD; jj++)
 					Fe(0, jj) += Fb(ii, jj);
 				break;
 			case SECTION_RESPONSE_MZ:
-				for (jj = 0; jj < 3; jj++)
-				{
+				for (jj = 0; jj < NEBD; jj++) {
 					tmp = Fb(ii, jj);
 					Fe(1, jj) += xL1 * tmp;
 					Fe(2, jj) += xL * tmp;
 				}
 				break;
 			case SECTION_RESPONSE_VY:
-				for (jj = 0; jj < 3; jj++)
-				{
+				for (jj = 0; jj < NEBD; jj++) {
 					tmp = oneOverL * Fb(ii, jj);
 					Fe(1, jj) += tmp;
 					Fe(2, jj) += tmp;
 				}
+				break;
+			case SECTION_RESPONSE_MY:
+				for (jj = 0; jj < NEBD; jj++) {
+					tmp = Fb(ii, jj);
+					Fe(3, jj) += xL1 * tmp;
+					Fe(4, jj) += xL * tmp;
+				}
+				break;
+			case SECTION_RESPONSE_VZ:
+				for (jj = 0; jj < NEBD; jj++) {
+					tmp = oneOverL * Fb(ii, jj);
+					Fe(3, jj) += tmp;
+					Fe(4, jj) += tmp;
+				}
+				break;
+			case SECTION_RESPONSE_T:
+				for (jj = 0; jj < NEBD; jj++)
+					Fe(5, jj) += Fb(ii, jj);
 				break;
 			default:
 				break;
 			}
 		}
 	}
+
+	if (!isTorsion)
+		Fe(5, 5) = DefaultLoverGJ;
+
 	return 0;
 }
 
 //Method for printing 
 void
-GradientForceBeamColumn2d::Print(OPS_Stream& s, int flag)
+GradientForceBeamColumn3d::Print(OPS_Stream& s, int flag)
 {
 	s << "Element Tag: " << this->getTag() << endln;
-	s << "Type: GradientForceBeamColumn2d" << endln;
+	s << "Type: GradientForceBeamColumn3d" << endln;
 	s << "Connected Node Tags: iNode " << connectedExternalNodes(0)
 		<< ", jNode " << connectedExternalNodes(1) << endln;
 	s << "Section Tag: " << sections[0]->getTag() << endln;
@@ -1520,7 +1606,7 @@ GradientForceBeamColumn2d::Print(OPS_Stream& s, int flag)
 
 //Method to draw and view the element
 int
-GradientForceBeamColumn2d::displaySelf(Renderer& theViewer, int displayMode, float fact)
+GradientForceBeamColumn3d::displaySelf(Renderer& theViewer, int displayMode, float fact)
 {
 	// first determine the end points of the beam based on the display factor 
 	const Vector& end1Crd = theNodes[0]->getCrds();
@@ -1561,7 +1647,7 @@ GradientForceBeamColumn2d::displaySelf(Renderer& theViewer, int displayMode, flo
 
 //Method to define response parameters
 Response*
-GradientForceBeamColumn2d::setResponse(const char** argv, int argc, OPS_Stream& output)
+GradientForceBeamColumn3d::setResponse(const char** argv, int argc, OPS_Stream& output)
 {
 	// Define and initialize theResponse
 	Response* theResponse = 0;
@@ -1578,9 +1664,15 @@ GradientForceBeamColumn2d::setResponse(const char** argv, int argc, OPS_Stream& 
 	{
 		output.tag("ResponseType", "Px_1");
 		output.tag("ResponseType", "Py_1");
+		output.tag("ResponseType", "Pz_1");
+		output.tag("ResponseType", "Mx_1");
+		output.tag("ResponseType", "My_1");
 		output.tag("ResponseType", "Mz_1");
 		output.tag("ResponseType", "Px_2");
 		output.tag("ResponseType", "Py_2");
+		output.tag("ResponseType", "Pz_2");
+		output.tag("ResponseType", "Mx_2");
+		output.tag("ResponseType", "My_2");
 		output.tag("ResponseType", "Mz_2");
 
 		theResponse = new ElementResponse(this, 1, theVector);
@@ -1589,12 +1681,18 @@ GradientForceBeamColumn2d::setResponse(const char** argv, int argc, OPS_Stream& 
 	// Local forces
 	else if (strcmp(argv[0], "localForce") == 0 || strcmp(argv[0], "localForces") == 0)
 	{
-		output.tag("ResponseType", "N_ 1");
-		output.tag("ResponseType", "My_1");
+		output.tag("ResponseType", "N_1");
 		output.tag("ResponseType", "Vy_1");
+		output.tag("ResponseType", "Vz_1");
+		output.tag("ResponseType", "T_1");
+		output.tag("ResponseType", "My_1");
+		output.tag("ResponseType", "Mz_1");
 		output.tag("ResponseType", "N_2");
-		output.tag("ResponseType", "Mz_2");
 		output.tag("ResponseType", "Vy_2");
+		output.tag("ResponseType", "Vz_2");
+		output.tag("ResponseType", "T_2");
+		output.tag("ResponseType", "My_2");
+		output.tag("ResponseType", "Mz_2");
 
 		theResponse = new ElementResponse(this, 2, theVector);
 	}
@@ -1602,9 +1700,12 @@ GradientForceBeamColumn2d::setResponse(const char** argv, int argc, OPS_Stream& 
 	// Basic forces
 	else if (strcmp(argv[0], "basicForce") == 0 || strcmp(argv[0], "basicForces") == 0)
 	{
-		output.tag("ResponseType", "N_J");
-		output.tag("ResponseType", "Mz_I");
-		output.tag("ResponseType", "Mz_J");
+		output.tag("ResponseType", "N");
+		output.tag("ResponseType", "Mz_1");
+		output.tag("ResponseType", "Mz_2");
+		output.tag("ResponseType", "My_1");
+		output.tag("ResponseType", "My_2");
+		output.tag("ResponseType", "T");
 
 		theResponse = new ElementResponse(this, 3, Vector(3));
 	}
@@ -1613,14 +1714,14 @@ GradientForceBeamColumn2d::setResponse(const char** argv, int argc, OPS_Stream& 
 	else if (strcmp(argv[0], "NonlocalSectionDeformations") == 0)
 	{
 		//int order = sections[0]->getOrder();  //use section 0 to get order
-		theResponse = new ElementResponse(this, 4, Matrix(2, numSections));
+		theResponse = new ElementResponse(this, 4, Matrix(6, numSections));
 	}
 
 	//Local section deformations
 	else if (strcmp(argv[0], "LocalSectionDeformations") == 0)
 	{
 		//int order = sections[0]->getOrder();  //use section 0 to get order
-		theResponse = new ElementResponse(this, 5, Matrix(2, numSections));
+		theResponse = new ElementResponse(this, 5, Matrix(6, numSections));
 	}
 
 	//Section response
@@ -1661,7 +1762,7 @@ GradientForceBeamColumn2d::setResponse(const char** argv, int argc, OPS_Stream& 
 
 //Method to get the response parameters
 int
-GradientForceBeamColumn2d::getResponse(int responseID, Information& eleInfo)
+GradientForceBeamColumn3d::getResponse(int responseID, Information& eleInfo)
 {
 	switch (responseID)
 	{
@@ -1669,17 +1770,38 @@ GradientForceBeamColumn2d::getResponse(int responseID, Information& eleInfo)
 		return eleInfo.setVector(this->getResistingForce());
 
 	case 2: // Local forces
-		double p0[3]; p0[0] = 0.0; p0[1] = 0.0; p0[2] = 0.0;
+		double p0[5]; p0[0] = p0[1] = p0[2] = p0[3] = p0[4] = 0.0;
 		if (numEleLoads > 0)
 			this->computeReactions(p0);
-		theVector(3) = q(0);
-		theVector(0) = -q(0) + p0[0];
-		theVector(2) = q(1);
-		theVector(5) = q(2);
-		double V;
-		V = (q(1) + q(2)) / crdTransf->getInitialLength();
+		// Axial
+		double N = q(0);
+		theVector(6) = N;
+		theVector(0) = -N + p0[0];
+
+		// Torsion
+		double T = q(5);
+		theVector(9) = T;
+		theVector(3) = -T;
+
+		// Moments about z and shears along y
+		double M1 = q(1);
+		double M2 = q(2);
+		theVector(5) = M1;
+		theVector(11) = M2;
+		double L = crdTransf->getInitialLength();
+		double V = (M1 + M2) / L;
 		theVector(1) = V + p0[1];
-		theVector(4) = -V + p0[2];
+		theVector(7) = -V + p0[2];
+
+		// Moments about y and shears along z
+		M1 = q(3);
+		M2 = q(4);
+		theVector(4) = M1;
+		theVector(10) = M2;
+		V = (M1 + M2) / L;
+		theVector(2) = -V + p0[3];
+		theVector(8) = V + p0[4];
+
 		return eleInfo.setVector(theVector);
 
 	case 3: // Basic forces
@@ -1687,14 +1809,18 @@ GradientForceBeamColumn2d::getResponse(int responseID, Information& eleInfo)
 
 	case 4: //nonlocal section deformations
 	{
-		Matrix eNonlocalOutput(2, numSections);
+		Matrix eNonlocalOutput(6, numSections);
 		eNonlocalOutput.Zero();
-		Vector eNonlocalOutput_int(2);  //intermediate vector to fill
+		Vector eNonlocalOutput_int(6);  //intermediate vector to fill
 		for (int i = 0; i < numSections; i++)
 		{
 			eNonlocalOutput_int = eNonlocalCommit[i];
 			eNonlocalOutput(0, i) = eNonlocalOutput_int(0);
 			eNonlocalOutput(1, i) = eNonlocalOutput_int(1);
+			eNonlocalOutput(2, i) = eNonlocalOutput_int(2);
+			eNonlocalOutput(3, i) = eNonlocalOutput_int(3);
+			eNonlocalOutput(4, i) = eNonlocalOutput_int(4);
+			eNonlocalOutput(5, i) = eNonlocalOutput_int(5);
 		}
 		//todo
 		/*opserr << "This is eNonlocalOutput"<< eNonlocalOutput << endln;*/
@@ -1703,7 +1829,7 @@ GradientForceBeamColumn2d::getResponse(int responseID, Information& eleInfo)
 
 	case 5: //local section deformations
 	{
-		Matrix eLocalOutput(2, numSections);
+		Matrix eLocalOutput(6, numSections);
 		this->computeE_local(numSections, eNonlocalCommit, H, eLocalOutput);
 		//todo
 		/*opserr << "This is eLocalOutput" << eLocalOutput << endln;*/
@@ -1717,62 +1843,64 @@ GradientForceBeamColumn2d::getResponse(int responseID, Information& eleInfo)
 
 //Method the set section pointers
 void
-GradientForceBeamColumn2d::setSectionPointers(int numSec, SectionForceDeformation** secPtrs)
+GradientForceBeamColumn3d::setSectionPointers(int numSec, SectionForceDeformation** secPtrs)
 {
 	if (numSec > maxNumSections) {
-		opserr << "GradientError: ForceBeamColumn2d::setSectionPointers -- max number of sections exceeded";
+		opserr << "Error: GradientForceBeamColumn3d::setSectionPointers -- max number of sections exceeded";
 	}
 
 	numSections = numSec;
 
 	if (secPtrs == 0) {
-		opserr << "Error: GradientForceBeamColumn2d::setSectionPointers -- invalid section pointer";
+		opserr << "Error: GradientForceBeamColumn3d::setSectionPointers -- invalid section pointer";
 	}
 
 	sections = new SectionForceDeformation * [numSections];
 	if (sections == 0) {
-		opserr << "Error: GradientForceBeamColumn2d::setSectionPointers -- could not allocate section pointers";
+		opserr << "Error: GradientForceBeamColumn3d::setSectionPointers -- could not allocate section pointers";
 	}
 
 	for (int i = 0; i < numSections; i++) {
 
 		if (secPtrs[i] == 0) {
-			opserr << "Error: GradientForceBeamColumn2d::setSectionPointers -- null section pointer " << i << endln;
+			opserr << "Error: GradientForceBeamColumn3d::setSectionPointers -- null section pointer " << i << endln;
 		}
 
 		sections[i] = secPtrs[i]->getCopy();
 
 		if (sections[i] == 0) {
-			opserr << "Error: GradientForceBeamColumn2d::setSectionPointers -- could not create copy of section " << i << endln;
+			opserr << "Error: GradientForceBeamColumn3d::setSectionPointers -- could not create copy of section " << i << endln;
 		}
 	}
 
 	// allocate section flexibility matrices and section deformation vectors
 	FSection = new Matrix[numSections];
 	if (FSection == 0) {
-		opserr << "GradientForceBeamColumn2d::setSectionPointers -- failed to allocate fs array";
+		opserr << "GradientForceBeamColumn3d::setSectionPointers -- failed to allocate fs array";
 	}
 
 	eNonlocal = new Vector[numSections];
 	if (eNonlocal == 0) {
-		opserr << "GradientForceBeamColumn2d::setSectionPointers -- failed to allocate vs array";
+		opserr << "GradientForceBeamColumn3d::setSectionPointers -- failed to allocate vs array";
 	}
 
 	sr = new Vector[numSections];
 	if (sr == 0) {
-		opserr << "GradientForceBeamColumn2d::setSectionPointers -- failed to allocate Ssr array";
+		opserr << "GradientForceBeamColumn3d::setSectionPointers -- failed to allocate Ssr array";
 	}
 
 	eNonlocalCommit = new Vector[numSections];
 	if (eNonlocalCommit == 0) {
-		opserr << "GradientForceBeamColumn2d::setSectionPointers -- failed to allocate vscommit array";
+		opserr << "GradientForceBeamColumn3d::setSectionPointers -- failed to allocate vscommit array";
 	}
 
 }
 
+// Stopped here 11.09.2022 + still need to do udpate function (main element loop)
+
 //Method to compute matrix H
 void
-GradientForceBeamColumn2d::computeMatrixH(Matrix& H)
+GradientForceBeamColumn3d::computeMatrixH(Matrix& H)
 {
 	H.Zero(); // initialize matrix H
 
@@ -1796,25 +1924,25 @@ GradientForceBeamColumn2d::computeMatrixH(Matrix& H)
 
 	for (int j = 1; j < numSections - 1; j++) {
 		for (int i = 0; i < order; i++) {
-			H(j * order + i, (j - 1) * order + i) = -lc * lc / (dx(j - 1) * (dx(j - 1) + dx(j)));
-			H(j * order + i, j * order + i) = 1 + lc * lc / (dx(j - 1) * dx(j));
-			H(j * order + i, (j + 1) * order + i) = -lc * lc / (dx(j) * (dx(j - 1) + dx(j)));
+			H(j * order + i, (j - 1) * order + i) = -pow(lc, 2) / (dx(j - 1) * (dx(j - 1) + dx(j)));
+			H(j * order + i, j * order + i) = 1 + pow(lc, 2) / (dx(j - 1) * dx(j));
+			H(j * order + i, (j + 1) * order + i) = -pow(lc, 2) / (dx(j) * (dx(j - 1) + dx(j)));
 		}
 	}
 }
 
 //Method to compute H_inv
 void
-GradientForceBeamColumn2d::computeMatrixH_inv(Matrix H, Matrix& H_inv)
+GradientForceBeamColumn3d::computeMatrixH_inv(Matrix H, Matrix& H_inv)
 {
 	H_inv.Zero();
 	if (H.Invert(H_inv) < 0)
-		opserr << "GradientForceBeamColumn2d::update() -- could not invert matrix H\n";
+		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";
 }
 
 //Method to compute deStar_nonlocal[]
 void 
-GradientForceBeamColumn2d::computeDeStar_nonlocal(int numSections, Matrix& deStar_nonlocal, Matrix H_inv, Matrix deStar_local)
+GradientForceBeamColumn3d::computeDeStar_nonlocal(int numSections, Matrix& deStar_nonlocal, Matrix H_inv, Matrix deStar_local)
 {
 	deStar_nonlocal.Zero();
 
@@ -1826,7 +1954,7 @@ GradientForceBeamColumn2d::computeDeStar_nonlocal(int numSections, Matrix& deSta
 		I(i, i) = 1.0;
 	H.Solve(I,H_inv);*/
 	/*if (H.Invert(H_inv) < 0)
-		opserr << "GradientForceBeamColumn2d::update() -- could not invert matrix H\n";*/
+		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
 
 	//Computation of deStar_nonlocal
 	for (int i = 0; i < numSections; i++)
@@ -1845,7 +1973,7 @@ GradientForceBeamColumn2d::computeDeStar_nonlocal(int numSections, Matrix& deSta
 
 //Method to compute e_local[]
 void
-GradientForceBeamColumn2d::computeE_local(int numSections, Vector eNonLocalSubdivide[], Matrix H, Matrix& e_local_tot)
+GradientForceBeamColumn3d::computeE_local(int numSections, Vector eNonLocalSubdivide[], Matrix H, Matrix& e_local_tot)
 {
 	//test.addMatrixVector(0.0, H, eNonLocalSubdivide[i], 1.0);
 
@@ -1879,7 +2007,7 @@ GradientForceBeamColumn2d::computeE_local(int numSections, Vector eNonLocalSubdi
 
 //Method to compute eu_nonlocal_Tot
 void
-GradientForceBeamColumn2d::computeEu_nonlocal(int numSections, Matrix& eu_nonlocal, Matrix H_inv, Matrix eu_local)
+GradientForceBeamColumn3d::computeEu_nonlocal(int numSections, Matrix& eu_nonlocal, Matrix H_inv, Matrix eu_local)
 {
 	eu_nonlocal.Zero();
 
@@ -1890,9 +2018,9 @@ GradientForceBeamColumn2d::computeEu_nonlocal(int numSections, Matrix& eu_nonloc
 	for (int i = 0; i < 2 * numSections; i++)
 		I(i, i) = 1.0;
 	if(H.Solve(I, H_inv) < 0)
-		opserr << "GradientForceBeamColumn2d::update() -- could not invert matrix H\n";*/
+		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
 	/*if (H.Invert(H_inv) < 0)
-		opserr << "GradientForceBeamColumn2d::update() -- could not invert matrix H\n";*/
+		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
 
 	//Computation of deStar_nonlocal
 	for (int i = 0; i < numSections; i++)
@@ -1907,7 +2035,7 @@ GradientForceBeamColumn2d::computeEu_nonlocal(int numSections, Matrix& eu_nonloc
 
 //Method to compute nonlocal element flexibility matrix
 void
-GradientForceBeamColumn2d::computeFelement_nonlocal(int numSections, Matrix& Felement_nonlocal, Matrix H_inv, Matrix FSectionSubdivide[])
+GradientForceBeamColumn3d::computeFelement_nonlocal(int numSections, Matrix& Felement_nonlocal, Matrix H_inv, Matrix FSectionSubdivide[])
 {
 	Felement_nonlocal.Zero();
 	Matrix B_Q(2 * numSections, 3);
@@ -1972,9 +2100,9 @@ GradientForceBeamColumn2d::computeFelement_nonlocal(int numSections, Matrix& Fel
 	for (int j = 0; j < 2 * numSections; j++)
 		I(j, j) = 1.0;*/
 	/*if (H.Solve(I, H_inv) < 0)
-		opserr << "GradientForceBeamColumn2d::update() -- could not invert matrix H\n";*/
+		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
 	/*if (H.Invert(H_inv) < 0)
-			opserr << "GradientForceBeamColumn2d::update() -- could not invert matrix H\n";*/
+			opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
 
 	//compute the matrix multiplication F_element_nonLocal=B_q*inv(H)*Fsection_Tot*B_Q;
 	Felement_nonlocal = B_q * H_inv * Fsection_Tot * B_Q;

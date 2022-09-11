@@ -63,7 +63,7 @@ TclModelBuilder_addGradientForceBeamColumn(ClientData clientData, Tcl_Interp* in
 	}
 	// Works for 2d and 3d simulations
 	else {
-		opserr << "WARNING invalid dimension, only 2d\n";
+		opserr << "WARNING invalid dimension, works for 2d and 3d \n";
 		return TCL_ERROR;
 	}
 
@@ -118,13 +118,28 @@ TclModelBuilder_addGradientForceBeamColumn(ClientData clientData, Tcl_Interp* in
 		return TCL_ERROR;
 	}
 
-	// Check 2d transformation case
-	CrdTransf* theCoordTransf2d = OPS_getCrdTransf(coordTransfTag);
-	if (!theCoordTransf2d) {
-		opserr << "WARNING transformation not found\n";
-		opserr << " - transformation: " << coordTransfTag;
-		opserr << argv[1] << " element: " << eleTag << endln;
-		return TCL_ERROR;
+	// Check 2d or 3d transformation cases
+	CrdTransf* theCoordTransf2d = 0;
+	CrdTransf* theCoordTransf3d = 0;
+	if (ndm==2)
+	{ // Check 2d transformation case
+		theCoordTransf2d = OPS_getCrdTransf(coordTransfTag);
+		if (!theCoordTransf2d) {
+			opserr << "WARNING transformation not found\n";
+			opserr << " - transformation: " << coordTransfTag;
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+	}
+	else
+	{// Check 3d transformation case
+		theCoordTransf3d = OPS_getCrdTransf(coordTransfTag);
+		if (!theCoordTransf3d) {
+			opserr << "WARNING transformation not found\n";
+			opserr << " - transformation: " << coordTransfTag;
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
 	}
 
 	// Check integration type - for now only works for Gauss-Lobatto and Newton-Cotes
@@ -218,6 +233,10 @@ TclModelBuilder_addGradientForceBeamColumn(ClientData clientData, Tcl_Interp* in
 	// Create the 2d or 3d beam element
 	if (ndm == 2) {
 		theElement = new GradientForceBeamColumn2d(eleTag, iNode, jNode, *theCoordTransf2d, *beamIntegr, IntegrSections, numIntegrPts, maxNumIter, tolerance, lc);
+	}
+	else if (ndm == 3)
+	{
+		theElement = new GradientForceBeamColumn2d(eleTag, iNode, jNode, *theCoordTransf3d, *beamIntegr, IntegrSections, numIntegrPts, maxNumIter, tolerance, lc);
 	}
 
 	if (beamIntegr != 0)

@@ -39,7 +39,7 @@ public:
 public:
 
 	// Method to get the class type
-	const char* getClassType(void) const { return "GradientForceBeamColumn2d"; };
+	const char* getClassType(void) const { return "GradientForceBeamColumn3d"; };
 
 	// Method to initialize the domain; base class: DomainComponent
 	void setDomain(Domain* theDomain);
@@ -137,8 +137,11 @@ private:
 	Vector* eNonlocalCommit;              // array of committed section deformation vectors
 
 	enum { maxNumEleLoads = 100 };   // maximum number of element loads
-
 	enum { maxNumSections = 30 };  //maximum number of integration sections
+	enum { NDM = 3 };         // dimension of the problem (3d)
+	enum { NND = 6 };         // number of nodal dof's
+	enum { NEGD = 12 };        // number of element global dof's
+	enum { NEBD = 6 };         // number of element dof's in the basic system
 
 	int numEleLoads; // Number of element load objects
 	int sizeEleLoads;
@@ -159,6 +162,8 @@ private:
 	static Vector eNonLocalSubdivide[];
 	static Vector srSubdivide[];
 	static Matrix FSectionSubdivide[];
+
+	bool isTorsion;
 
 	//static Vector s[];  // array of section forces
 	//static Matrix deStar_local;  // matrix of e_star_local for all sections of element
