@@ -527,7 +527,7 @@ GradientForceBeamColumn3d::update(void)
 
 	//Get element displacements and displacements increments in basic reference frame
 	const Vector& v = crdTransf->getBasicTrialDisp();
-	static Vector dv(3);
+	static Vector dv(NEBD);
 	dv = crdTransf->getBasicIncrDeltaDisp();
 
 	//todo
@@ -537,7 +537,7 @@ GradientForceBeamColumn3d::update(void)
 	if (initialFlag != 0 && dv.Norm() <= DBL_EPSILON && numEleLoads == 0)
 		return 0;
 
-	static Vector vin(3);
+	static Vector vin(NEBD);
 	vin = v;
 	vin -= dv;
 
@@ -566,23 +566,23 @@ GradientForceBeamColumn3d::update(void)
 	//opserr << "Finished\n ";
 	//return -1;
 
-	static Vector vu(3);       // element unbalanced displacements
-	static Matrix Felement(3, 3);   // element flexibility matrix
+	static Vector vu(NEBD);       // element unbalanced displacements
+	static Matrix Felement(NEBD, NEBD);   // element flexibility matrix
 
-	static Matrix I(3, 3);   // an identity matrix for matrix inverse
+	static Matrix I(NEBD, NEBD);   // an identity matrix for matrix inverse
 	int i, j;
 
 	I.Zero();
-	for (i = 0; i < 3; i++)
+	for (i = 0; i < NEBD; i++)
 		I(i, i) = 1.0;
 
 	int numSubdivide = 1;
 	bool converged = false;
-	static Vector dq(3);
-	static Vector dvToDo(3);
-	static Vector dvTrial(3);
-	static Vector qTrial(3);
-	static Matrix KelementTrial(3, 3);
+	static Vector dq(NEBD);
+	static Vector dvToDo(NEBD);
+	static Vector dvTrial(NEBD);
+	static Vector qTrial(NEBD);
+	static Matrix KelementTrial(NEBD, NEBD);
 
 	//Determination of matrix H
 	H.Zero();
@@ -593,23 +593,23 @@ GradientForceBeamColumn3d::update(void)
 	this->computeMatrixH_inv(H,H_inv);
 
 	//todo
-	/*opserr << "This is matrix H: " << H << endln;
-	opserr << "This is matrix H_inv: " << H_inv << endln;*/
+	/*opserr << "this is matrix h: " << H << endln;
+	opserr << "this is matrix h_inv: " << H_inv << endln;*/
 
 	//Initilitation variables for nonlocal formulation
-	static Matrix deStar_local_Tot(2, numSections);
-	static Matrix deStar_nonlocal_Tot(2, numSections);
+	static Matrix deStar_local_Tot(NEBD, numSections);
+	static Matrix deStar_nonlocal_Tot(NEBD, numSections);
 	//static Matrix e_nonlocal_Tot(2, numSections);
-	static Matrix e_local_Tot(2, numSections);
-	static Matrix eu_local_Tot(2, numSections);
-	static Matrix eu_nonlocal_Tot(2, numSections);
+	static Matrix e_local_Tot(NEBD, numSections);
+	static Matrix eu_local_Tot(NEBD, numSections);
+	static Matrix eu_nonlocal_Tot(NEBD, numSections);
 	/*static Vector eLocalSubdivide[maxNumSections];
 	static Vector s_Tot[maxNumSections];*/
 	Vector* eLocalSubdivide;
 	eLocalSubdivide = new Vector[numSections];
 	Vector* s_Tot;
 	s_Tot = new Vector[numSections];
-	static Matrix Felement_nonlocal(3,3);
+	static Matrix Felement_nonlocal(NEBD, NEBD);
 
 	//Initialization of array of vector and matrices for nonlocal formulation
 	for (int ii = 0; ii < numSections; ii++) {
@@ -655,10 +655,10 @@ GradientForceBeamColumn3d::update(void)
 			dq.addMatrixVector(0.0, KelementTrial, dvTrial, 1.0);
 			qTrial += dq;
 
-			////todo
-			//opserr << "This is dvTrial" << dvTrial << endln;
-			//opserr << "This is KelementTrial" << KelementTrial << endln;
-			//opserr << "This is qTrial:" << qTrial<< endln;
+			//todo
+			/*opserr << "This is dvTrial" << dvTrial << endln;
+			opserr << "This is KelementTrial" << KelementTrial << endln;
+			opserr << "This is qTrial:" << qTrial<< endln;*/
 
 			if (initialFlag != 2)
 			{
@@ -705,7 +705,7 @@ GradientForceBeamColumn3d::update(void)
 						s_seci.setData(workArea, order);
 						ds.setData(&workArea[order], order);
 						deStar_local_seci.setData(&workArea[2 * order], order);
-						Fb.setData(&workArea[3 * order], order, 3);
+						Fb.setData(&workArea[3 * order], order, NEBD);
 
 						double xL = xi[i];
 						double xL1 = xL - 1.0;
@@ -713,10 +713,8 @@ GradientForceBeamColumn3d::update(void)
 
 						// calculate total section forces s = b*q + bp*currDistrLoad;
 						int ii;
-						for (ii = 0; ii < order; ii++)
-						{
-							switch (code(ii))
-							{
+						for (ii = 0; ii < order; ii++) {
+							switch (code(ii)) {
 							case SECTION_RESPONSE_P:
 								s_seci(ii) = qTrial(0);
 								break;
@@ -725,6 +723,15 @@ GradientForceBeamColumn3d::update(void)
 								break;
 							case SECTION_RESPONSE_VY:
 								s_seci(ii) = oneOverL * (qTrial(1) + qTrial(2));
+								break;
+							case SECTION_RESPONSE_MY:
+								s_seci(ii) = xL1 * qTrial(3) + xL * qTrial(4);
+								break;
+							case SECTION_RESPONSE_VZ:
+								s_seci(ii) = oneOverL * (qTrial(3) + qTrial(4));
+								break;
+							case SECTION_RESPONSE_T:
+								s_seci(ii) = qTrial(5);
 								break;
 							default:
 								s_seci(ii) = 0.0;
@@ -740,10 +747,8 @@ GradientForceBeamColumn3d::update(void)
 						//ds.addVector(1.0, srSubdivide[i], -1.0);
 
 						// calculate increment section forces ds = b*dq;
-						for (ii = 0; ii < order; ii++)
-						{
-							switch (code(ii))
-							{
+						for (ii = 0; ii < order; ii++) {
+							switch (code(ii)) {
 							case SECTION_RESPONSE_P:
 								ds(ii) = dq(0);
 								break;
@@ -752,6 +757,15 @@ GradientForceBeamColumn3d::update(void)
 								break;
 							case SECTION_RESPONSE_VY:
 								ds(ii) = oneOverL * (dq(1) + dq(2));
+								break;
+							case SECTION_RESPONSE_MY:
+								ds(ii) = xL1 * dq(3) + xL * dq(4);
+								break;
+							case SECTION_RESPONSE_VZ:
+								ds(ii) = oneOverL * (dq(3) + dq(4));
+								break;
+							case SECTION_RESPONSE_T:
+								ds(ii) = dq(5);
 								break;
 							default:
 								ds(ii) = 0.0;
@@ -797,32 +811,40 @@ GradientForceBeamColumn3d::update(void)
 						//opserr << "This is deStar_local_sec:" << deStar_local_seci << endln;
 
 						//Add each delta e_star_local to matrix containing all sections
-						deStar_local_Tot(0, i) = deStar_local_seci(0);
-						deStar_local_Tot(1, i) = deStar_local_seci(1);
+						/*deStar_local_Tot(0, i) = deStar_local_seci(0);
+						deStar_local_Tot(1, i) = deStar_local_seci(1);*/
+						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
+						{
+							deStar_local_Tot(iiLineComponent, i) = deStar_local_seci(iiLineComponent);
+						}
 
 					}
 
 					//Compute deStar_nonlocal[]
 					this->computeDeStar_nonlocal(numSections, deStar_nonlocal_Tot, H_inv,  deStar_local_Tot);
 
-					////todo
-					/*opserr << "This is deStar_local_Tot:" << deStar_local_Tot << endln;
-					opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot << endln;*/
-					//opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot << endln;
+					/*//todo
+					opserr << "This is deStar_local_Tot:" << deStar_local_Tot << endln;
+					opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot << endln;
+					opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot << endln;*/
 
 					for (i = 0; i < numSections; i++)
 					{
 
 						//Initilization variables needed in this loop
-						static Vector deStar_nonlocal_isec(2);
-						static Vector eu_nonlocal_isec(2);
+						static Vector deStar_nonlocal_isec(NEBD);
+						static Vector eu_nonlocal_isec(NEBD);
 
 						//Fil the vector with actual values
-						deStar_nonlocal_isec(0) = deStar_nonlocal_Tot(0, i);
+						/*deStar_nonlocal_isec(0) = deStar_nonlocal_Tot(0, i);
 						deStar_nonlocal_isec(1) = deStar_nonlocal_Tot(1, i);
-
 						eu_nonlocal_isec(0) = eu_nonlocal_Tot(0, i);
-						eu_nonlocal_isec(1) = eu_nonlocal_Tot(1, i);
+						eu_nonlocal_isec(1) = eu_nonlocal_Tot(1, i);*/
+						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
+						{
+							deStar_nonlocal_isec(iiLineComponent) = deStar_nonlocal_Tot(iiLineComponent,i);
+							eu_nonlocal_isec(iiLineComponent) = eu_nonlocal_Tot(iiLineComponent, i);
+						}
 
 						// set section deformations
 						if (initialFlag != 0)
@@ -835,15 +857,21 @@ GradientForceBeamColumn3d::update(void)
 					//Compute the local section deformations for section state determination
 					this->computeE_local(numSections, eNonLocalSubdivide, H, e_local_Tot);
 
+					opserr << "This is e_local_Tot:" << e_local_Tot << endln;
+
 					//Loop to fill the eLocalSUbdivide vector from the matrix E_local
-					static Vector eLocalSubdivide_isec(2);  //intermediate vector to fill eLocalSUbdivide
+					static Vector eLocalSubdivide_isec(NEBD);  //intermediate vector to fill eLocalSUbdivide
 					for (i = 0; i < numSections; i++)
 					{
 						eLocalSubdivide_isec.Zero();
 
 						//Fill the intermediate vector
-						eLocalSubdivide_isec(0) = e_local_Tot(0, i);
-						eLocalSubdivide_isec(1) = e_local_Tot(1, i);
+						/*eLocalSubdivide_isec(0) = e_local_Tot(0, i);
+						eLocalSubdivide_isec(1) = e_local_Tot(1, i);*/
+						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
+						{
+							eLocalSubdivide_isec(iiLineComponent) = e_local_Tot(iiLineComponent, i);
+						}
 
 						//Put the intermediate vector in the final vector
 						eLocalSubdivide[i] = eLocalSubdivide_isec;
@@ -851,7 +879,7 @@ GradientForceBeamColumn3d::update(void)
 
 					for (i = 0; i < numSections; i++)
 					{
-						static Vector eu_local_interm(2);  //intermediate vector to fill eu_local_tot
+						static Vector eu_local_interm(NEBD);  //intermediate vector to fill eu_local_tot
 						eu_local_interm.Zero();
 
 						//Set the section deformations for section state determination
@@ -867,9 +895,11 @@ GradientForceBeamColumn3d::update(void)
 						// get section flexibility matrix
 						FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 
+						opserr << "This is FSectionSubdivide:" << FSectionSubdivide[i] << endln;
+
 						// calculate section residual deformations de = FSection * (s - sr);
-						static Vector s_seci(2); // initialize vector s_secii
-						static Vector ds(2);
+						static Vector s_seci(NEBD); // initialize vector s_secii
+						static Vector ds(NEBD);
 
 						ds = s_Tot[i];  //take the corresponding section force from matrix with all section forces
 						ds.addVector(1.0, srSubdivide[i], -1.0);  // ds = s - sr[i];
@@ -878,8 +908,12 @@ GradientForceBeamColumn3d::update(void)
 						eu_local_interm.addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0);
 
 						//Fill matrix eu_local_tot with eu_local for section i
-						eu_local_Tot(0, i) = eu_local_interm(0);
-						eu_local_Tot(1, i) = eu_local_interm(1);
+						/*eu_local_Tot(0, i) = eu_local_interm(0);
+						eu_local_Tot(1, i) = eu_local_interm(1);*/
+						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
+						{
+							eu_local_Tot(iiLineComponent, i) = eu_local_interm(iiLineComponent);
+						}
 
 					}
 
@@ -891,7 +925,7 @@ GradientForceBeamColumn3d::update(void)
 					Felement = Felement_nonlocal;
 
 					//Initilization of integrale_BeuNL
-					static Vector integrale_BeuNL(3);
+					static Vector integrale_BeuNL(NEBD);
 					integrale_BeuNL.Zero();
 
 					for (i = 0; i < numSections; i++)
@@ -979,23 +1013,32 @@ GradientForceBeamColumn3d::update(void)
 						dei_interm = eNonLocalSubdivide[i];*/
 						double tmp;
 
-						for (int ii = 0; ii < order; ii++)
-						{
-							//dei = dei_interm(ii) * wtL;
-							dei = eu_nonlocal_Tot(ii,i) * wtL;
-							switch (code(ii))
-							{
+						for (int ii = 0; ii < order; ii++) {
+							dei = eu_nonlocal_Tot(ii, i) * wtL;
+							switch (code(ii)) {
 							case SECTION_RESPONSE_P:
 								integrale_BeuNL(0) += dei;
 								break;
 							case SECTION_RESPONSE_MZ:
-								integrale_BeuNL(1) += xL1 * dei;
+								integrale_BeuNL(1) += xL1 * dei; 
 								integrale_BeuNL(2) += xL * dei;
 								break;
 							case SECTION_RESPONSE_VY:
 								tmp = oneOverL * dei;
 								integrale_BeuNL(1) += tmp;
 								integrale_BeuNL(2) += tmp;
+								break;
+							case SECTION_RESPONSE_MY:
+								integrale_BeuNL(3) += xL1 * dei; 
+								integrale_BeuNL(4) += xL * dei;
+								break;
+							case SECTION_RESPONSE_VZ:
+								tmp = oneOverL * dei;
+								integrale_BeuNL(3) += tmp; 
+								integrale_BeuNL(4) += tmp;
+								break;
+							case SECTION_RESPONSE_T:
+								integrale_BeuNL(5) += dei;
 								break;
 							default:
 								break;
@@ -1013,9 +1056,8 @@ GradientForceBeamColumn3d::update(void)
 					}
 
 					//todo 
-					//opserr << "This is the element flexibility matrix:" << Felement << endln;
-					//opserr << "This is the element stiffness matrix:" << KelementTrial << endln;
-					//return -1;
+					opserr << "This is the element flexibility matrix:" << Felement << endln;
+					opserr << "This is the element stiffness matrix:" << KelementTrial << endln;
 
 					//// dv = vin + dvTrial  - vu
 					//dv = vin;
@@ -1774,31 +1816,24 @@ GradientForceBeamColumn3d::getResponse(int responseID, Information& eleInfo)
 		if (numEleLoads > 0)
 			this->computeReactions(p0);
 		// Axial
-		double N = q(0);
-		theVector(6) = N;
-		theVector(0) = -N + p0[0];
+		theVector(6) = q(0);
+		theVector(0) = -q(0) + p0[0];
 
 		// Torsion
-		double T = q(5);
-		theVector(9) = T;
-		theVector(3) = -T;
+		theVector(3) = -q(5);
 
 		// Moments about z and shears along y
-		double M1 = q(1);
-		double M2 = q(2);
-		theVector(5) = M1;
-		theVector(11) = M2;
-		double L = crdTransf->getInitialLength();
-		double V = (M1 + M2) / L;
+		theVector(5) = q(1);
+		theVector(11) = q(2);
+		double V;
+		V = (q(1) + q(2)) / crdTransf->getInitialLength();
 		theVector(1) = V + p0[1];
 		theVector(7) = -V + p0[2];
 
 		// Moments about y and shears along z
-		M1 = q(3);
-		M2 = q(4);
-		theVector(4) = M1;
-		theVector(10) = M2;
-		V = (M1 + M2) / L;
+		theVector(4) = q(3);
+		theVector(10) = q(4);
+		V = (q(3) + q(4)) / crdTransf->getInitialLength();
 		theVector(2) = -V + p0[3];
 		theVector(8) = V + p0[4];
 
@@ -1896,8 +1931,6 @@ GradientForceBeamColumn3d::setSectionPointers(int numSec, SectionForceDeformatio
 
 }
 
-// Stopped here 11.09.2022 + still need to do udpate function (main element loop)
-
 //Method to compute matrix H
 void
 GradientForceBeamColumn3d::computeMatrixH(Matrix& H)
@@ -1946,23 +1979,28 @@ GradientForceBeamColumn3d::computeDeStar_nonlocal(int numSections, Matrix& deSta
 {
 	deStar_nonlocal.Zero();
 
-	//Computation of H_inv
-	//static Matrix H_inv(2 * numSections, 2 * numSections);   //identity matrix
-	/*static Matrix I(2*numSections, 2*numSections);
-	I.Zero();
-	for (int i = 0; i < 2*numSections; i++)
-		I(i, i) = 1.0;
-	H.Solve(I,H_inv);*/
-	/*if (H.Invert(H_inv) < 0)
-		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
+	Vector deStarLocal_MatrixFormALLSections = Vector(NEBD * numSections);
+	Vector deStarNonLocal_MatrixFormALLSections = Vector(NEBD * numSections);
 
-	//Computation of deStar_nonlocal
+
+	// Fill the vector with all the local section deformations
 	for (int i = 0; i < numSections; i++)
 	{
-		for (int j = 0; j < numSections; j++)
+		for (int j = 0; j < NEBD; j++)
 		{
-			deStar_nonlocal(0, i) += H_inv(2 * i, 2 * j) * deStar_local(0, j);
-			deStar_nonlocal(1, i) += H_inv(2 * i + 1, 2 * j + 1) * deStar_local(1, j);
+			deStarLocal_MatrixFormALLSections(i * NEBD + j) = deStar_local(j, i);
+		}
+	}
+
+	// Compute the vector with all the nonlocal section deformations
+	deStarNonLocal_MatrixFormALLSections = H_inv * deStarLocal_MatrixFormALLSections;
+
+	//Fill the matrix eu_nonlocal
+	for (int i = 0; i < numSections; i++)
+	{
+		for (int j = 0; j < NEBD; j++)
+		{
+			deStar_nonlocal(j, i) = deStarNonLocal_MatrixFormALLSections(i * NEBD + j);
 		}
 	}
 
@@ -1975,34 +2013,40 @@ GradientForceBeamColumn3d::computeDeStar_nonlocal(int numSections, Matrix& deSta
 void
 GradientForceBeamColumn3d::computeE_local(int numSections, Vector eNonLocalSubdivide[], Matrix H, Matrix& e_local_tot)
 {
-	//test.addMatrixVector(0.0, H, eNonLocalSubdivide[i], 1.0);
-
 	e_local_tot.Zero(); 
-	static Vector e_int(2); // intermediate vector used for the conversion
-	static Matrix H_int(2, 2); // intermediate matrix used for the computations
+	Vector eNonLocal_SectionI_temp = Vector(NEBD);
+	Vector eNonLocal_MatrixFormALLSections = Vector(NEBD * numSections);
+	Vector eLocal_MatrixFormALLSections = Vector(NEBD * numSections);
 
-	//Computation of e_local_tot
+	// Fill the vector with all the nonlocal section deformations
+	for (int i = 0; i < numSections; i++)
+	{	
+		eNonLocal_SectionI_temp = eNonLocalSubdivide[i];
+
+		for (int j = 0; j < NEBD; j++)
+		{
+			eNonLocal_MatrixFormALLSections(i * NEBD + j) = eNonLocal_SectionI_temp(NEBD);
+		}
+	}
+
+	//opserr << "This is eNonLocal_MatrixFormALLSections:" << eNonLocal_MatrixFormALLSections << endln; 
+
+	// Compute the vector with all the local section deformations
+	eLocal_MatrixFormALLSections = H * eNonLocal_MatrixFormALLSections;
+
+	//opserr << "This is eLocal_MatrixFormALLSections:" << eLocal_MatrixFormALLSections << endln; 
+
+	//Fill the matrix e_local_tot
 	for (int i = 0; i < numSections; i++)
 	{
-		e_int.Zero();   // put to zero the intermediate vector
-
-		for (int j = 0; j < numSections; j++)
+		for (int j = 0; j < NEBD; j++)
 		{
-			//Fill matrix H_int with values from H
-			H_int(0, 0) = H(2*i,2*j);
-			H_int(0, 1) = H(2 * i, 2 * j + 1);
-			H_int(1, 0) = H(2 * i + 1, 2 * j);
-			H_int(1, 1) = H(2 * i + 1, 2 * j + 1);
-
-			//Compute int e_int
-			e_int.addMatrixVector(1.0, H_int, eNonLocalSubdivide[j], 1.0);
+			e_local_tot(j, i) = eLocal_MatrixFormALLSections(i * NEBD + j);
 		}
-
-		//Put the vector e_int in matrix e_local_tot
-		e_local_tot(0, i) = e_int(0);
-		e_local_tot(1, i) = e_int(1);
-
 	}
+
+	/*opserr << "This is e_local_tot:" << e_local_tot << endln;
+	double test = 0.;*/
 }
 
 //Method to compute eu_nonlocal_Tot
@@ -2011,24 +2055,28 @@ GradientForceBeamColumn3d::computeEu_nonlocal(int numSections, Matrix& eu_nonloc
 {
 	eu_nonlocal.Zero();
 
-	//Computation of H_inv
-	//static Matrix H_inv(2 * numSections, 2* numSections);   //identity matrix
-	/*static Matrix I(2 * numSections, 2 * numSections);
-	I.Zero();
-	for (int i = 0; i < 2 * numSections; i++)
-		I(i, i) = 1.0;
-	if(H.Solve(I, H_inv) < 0)
-		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
-	/*if (H.Invert(H_inv) < 0)
-		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
+	Vector euLocal_MatrixFormALLSections = Vector(NEBD * numSections);
+	Vector euNonLocal_MatrixFormALLSections = Vector(NEBD * numSections);
 
-	//Computation of deStar_nonlocal
+
+	// Fill the vector with all the local section deformations
 	for (int i = 0; i < numSections; i++)
 	{
-		for (int j = 0; j < numSections; j++)
+		for (int j = 0; j < NEBD; j++)
 		{
-			eu_nonlocal(0, i) += H_inv(2 * i, 2 * j) * eu_local(0, j);
-			eu_nonlocal(1, i) += H_inv(2 * i + 1, 2 * j + 1) * eu_local(1, j);
+			euLocal_MatrixFormALLSections(i * NEBD + j) = eu_local(j, i);
+		}
+	}
+
+	// Compute the vector with all the nonlocal section deformations
+	euNonLocal_MatrixFormALLSections = H_inv * euLocal_MatrixFormALLSections;
+
+	//Fill the matrix eu_nonlocal
+	for (int i = 0; i < numSections; i++)
+	{
+		for (int j = 0; j < NEBD; j++)
+		{
+			eu_nonlocal(j, i) = euNonLocal_MatrixFormALLSections(i * NEBD + j);
 		}
 	}
 }
@@ -2038,9 +2086,10 @@ void
 GradientForceBeamColumn3d::computeFelement_nonlocal(int numSections, Matrix& Felement_nonlocal, Matrix H_inv, Matrix FSectionSubdivide[])
 {
 	Felement_nonlocal.Zero();
-	Matrix B_Q(2 * numSections, 3);
-	Matrix B_q(3, 2 * numSections);
-	Matrix Fsection_Tot(2 * numSections, 2 * numSections);
+	Matrix b(NEBD,NEBD);
+	Matrix B_Q(NEBD * numSections, NEBD);
+	Matrix B_q(NEBD, NEBD * numSections);
+	Matrix Fsection_Tot(NEBD * numSections, NEBD * numSections);
 	B_Q.Zero();
 	B_q.Zero();
 	Fsection_Tot.Zero();
@@ -2058,51 +2107,39 @@ GradientForceBeamColumn3d::computeFelement_nonlocal(int numSections, Matrix& Fel
 	for (int i = 0; i < numSections; i++)
 	{
 		//compute matrix b
-		Matrix b(2, 3);
 		b.Zero();
 		const ID& code = sections[i]->getType();
 		this->getForceInterpolatMatrix(xi[i], b, code);
 
 		//compute matrices B_Q and B_q
-		B_Q(2 * i, 0) = b(0, 0);
-		B_Q(2 * i, 1) = b(0, 1);
-		B_Q(2 * i, 2) = b(0, 2);
-		B_Q(2 * i +1, 0) = b(1, 0);
-		B_Q(2 * i +1, 1) = b(1, 1);
-		B_Q(2 * i + 1, 2) = b(1, 2);
+			double wtL = wt[i] * L;
 
-		double wtL = wt[i] * L;
-
-		//todo
-		//opserr << "This is wtL: " << wtL << " for section " << i <<endln;
-
-		B_q(0, 2 * i) = b(0, 0) * wtL;
-		B_q(0, 2 * i +1) = b(0, 1) * wtL;
-		B_q(1, 2 * i) = b(1, 0) * wtL;
-		B_q(1, 2 * i +1) = b(1, 1) * wtL;
-		B_q(2, 2 * i) = b(0, 2) * wtL;
-		B_q(2, 2 * i + 1) = b(1, 2) * wtL;
+			for (int j = 0; j < NEBD; j++) //loop to over the lines of b
+			{
+				for (int k = 0; k < NEBD; k++) //loop to over the columns of b
+				{
+					B_Q(i * NEBD + j, k) = b(j, k);
+					B_q(k, i * NEBD + j) = wtL * b(k, j);
+				}
+			}
 
 		//assemble matrix Fsection_Tot
-		Matrix Fsection_interm(2, 2); //intermediate matrix to fill Fsection_Tot
+		Matrix Fsection_interm(NEBD, NEBD); //intermediate matrix to fill Fsection_Tot
 		Fsection_interm = FSectionSubdivide[i];
 
-		Fsection_Tot(2 * i, 2 * i) = Fsection_interm(0, 0);
-		Fsection_Tot(2 * i, 2 * i + 1) = Fsection_interm(0, 1);
-		Fsection_Tot(2 * i + 1, 2 * i) = Fsection_interm(1, 0);
-		Fsection_Tot(2 * i + 1 , 2 * i +1) = Fsection_interm(1, 1);
+		for (int j = 0; j < NEBD; j++) //loop to over the lines of Fsection_interm
+		{
+			for (int k = 0; k < NEBD; k++) //loop to over the columns of Fsection_interm
+			{
+				Fsection_Tot(i * NEBD + j, i * NEBD + k) = Fsection_interm(j, k);
+			}
+		}
 	}
 
-	//Computation of H_inv
-	//Matrix H_inv(2 * numSections, 2 * numSections);   //identity matrix
-	/*static Matrix I(2 * numSections, 2 * numSections);
-	I.Zero();
-	for (int j = 0; j < 2 * numSections; j++)
-		I(j, j) = 1.0;*/
-	/*if (H.Solve(I, H_inv) < 0)
-		opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
-	/*if (H.Invert(H_inv) < 0)
-			opserr << "GradientForceBeamColumn3d::update() -- could not invert matrix H\n";*/
+	opserr << "This is b:" << b << endln;
+	opserr << "This is B_Q:" << B_Q << endln;
+	opserr << "This is B_q:" << B_q << endln;
+	opserr << "This is Fsection_Tot:" << Fsection_Tot << endln;
 
 	//compute the matrix multiplication F_element_nonLocal=B_q*inv(H)*Fsection_Tot*B_Q;
 	Felement_nonlocal = B_q * H_inv * Fsection_Tot * B_Q;

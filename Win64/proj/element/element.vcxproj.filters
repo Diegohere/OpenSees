@@ -998,6 +998,9 @@
     <ClCompile Include="..\..\..\SRC\element\gradientForceBeamColumn\TclGradientForceBeamColumnCommand.cpp">
       <Filter>gradientForceBeamColumn</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\NewtonCotesBeamIntegrationUpdated.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\element\Element.h">
@@ -1761,6 +1764,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\element\gradientForceBeamColumn\GradientForceBeamColumn3d.h">
       <Filter>gradientForceBeamColumn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\NewtonCotesBeamIntegrationUpdated.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

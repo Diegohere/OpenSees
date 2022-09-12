@@ -54,7 +54,7 @@ TclModelBuilder_addGradientForceBeamColumn(ClientData clientData, Tcl_Interp* in
 	}
 	else if (ndm == 3) {
 		// 3d simulation --> check if 6 DOF per node
-		if (ndf != 3) {
+		if (ndf != 6) {
 			opserr << "WARNING invalid number of DOF: " << ndf;
 			opserr << ", for 3d simulation nDOF must be 6 - gradientForceBeamColumn\n";
 			return TCL_ERROR;
@@ -236,7 +236,7 @@ TclModelBuilder_addGradientForceBeamColumn(ClientData clientData, Tcl_Interp* in
 	}
 	else if (ndm == 3)
 	{
-		theElement = new GradientForceBeamColumn2d(eleTag, iNode, jNode, *theCoordTransf3d, *beamIntegr, IntegrSections, numIntegrPts, maxNumIter, tolerance, lc);
+		theElement = new GradientForceBeamColumn3d(eleTag, iNode, jNode, *theCoordTransf3d, *beamIntegr, IntegrSections, numIntegrPts, maxNumIter, tolerance, lc);
 	}
 
 	if (beamIntegr != 0)

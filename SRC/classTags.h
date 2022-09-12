@@ -852,6 +852,7 @@
 #define BEAM_INTEGRATION_TAG_HingeRadauTwo3d    33
 #define BEAM_INTEGRATION_TAG_UserHinge3d     34
 #define BEAM_INTEGRATION_TAG_DistHinge3d     35
+#define BEAM_INTEGRATION_TAG_NewtonCotesUpdated 36 // by Diego Heredia
 
 
 #define CRDTR_TAG_LinearCrdTransf2d 1

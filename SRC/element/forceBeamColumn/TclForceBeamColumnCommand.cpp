@@ -191,7 +191,9 @@ TclModelBuilder_addForceBeamColumn(ClientData clientData, Tcl_Interp *interp,
       (strcmp(argv[6],"FixedLocation") != 0) &&
       (strcmp(argv[6],"LowOrder") != 0) &&
       (strcmp(argv[6],"GaussQ") != 0) &&
-      (strcmp(argv[6],"MidDistance") != 0)) {
+      (strcmp(argv[6],"MidDistance") != 0) &&
+      (strcmp(argv[6], "NewtonCotesUpdated") != 0))  //Added by Diego Heredia
+  {
 
     int nIP, secTag;
 
