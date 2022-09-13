@@ -649,6 +649,8 @@ GradientForceBeamColumn3d::update(void)
 				eNonLocalSubdivide[i] = eNonlocal[i];
 				FSectionSubdivide[i] = FSection[i];
 				srSubdivide[i] = sr[i];
+
+				//opserr << "This is FSectionSubdivide:" << FSectionSubdivide[i] << endln;
 			}
 
 			// calculate nodal force increments and update nodal forces dq=KelementTrial*dvTrial
@@ -823,8 +825,8 @@ GradientForceBeamColumn3d::update(void)
 					//Compute deStar_nonlocal[]
 					this->computeDeStar_nonlocal(numSections, deStar_nonlocal_Tot, H_inv,  deStar_local_Tot);
 
-					/*//todo
-					opserr << "This is deStar_local_Tot:" << deStar_local_Tot << endln;
+					//todo
+					/*opserr << "This is deStar_local_Tot:" << deStar_local_Tot << endln;
 					opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot << endln;
 					opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot << endln;*/
 
@@ -852,12 +854,13 @@ GradientForceBeamColumn3d::update(void)
 							eNonLocalSubdivide[i] += deStar_nonlocal_isec;  //e_NL += deStar_nonlocal
 							eNonLocalSubdivide[i] += eu_nonlocal_isec;  //e_NL += eu_nonlocal
 						}
+						//opserr << "This is eNonLocalSubdivide:" << eNonLocalSubdivide[i] << endln;
 					}
 
 					//Compute the local section deformations for section state determination
 					this->computeE_local(numSections, eNonLocalSubdivide, H, e_local_Tot);
 
-					opserr << "This is e_local_Tot:" << e_local_Tot << endln;
+					//opserr << "This is e_local_Tot:" << e_local_Tot << endln;
 
 					//Loop to fill the eLocalSUbdivide vector from the matrix E_local
 					static Vector eLocalSubdivide_isec(NEBD);  //intermediate vector to fill eLocalSUbdivide
@@ -875,6 +878,8 @@ GradientForceBeamColumn3d::update(void)
 
 						//Put the intermediate vector in the final vector
 						eLocalSubdivide[i] = eLocalSubdivide_isec;
+
+
 					}
 
 					for (i = 0; i < numSections; i++)
@@ -894,8 +899,6 @@ GradientForceBeamColumn3d::update(void)
 
 						// get section flexibility matrix
 						FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-
-						opserr << "This is FSectionSubdivide:" << FSectionSubdivide[i] << endln;
 
 						// calculate section residual deformations de = FSection * (s - sr);
 						static Vector s_seci(NEBD); // initialize vector s_secii
@@ -923,6 +926,7 @@ GradientForceBeamColumn3d::update(void)
 					//Compute Felement_nonlocal
 					this->computeFelement_nonlocal(numSections, Felement_nonlocal, H_inv, FSectionSubdivide);
 					Felement = Felement_nonlocal;
+					//opserr << "This is Felement:" << Felement << endln;
 
 					//Initilization of integrale_BeuNL
 					static Vector integrale_BeuNL(NEBD);
@@ -1056,8 +1060,8 @@ GradientForceBeamColumn3d::update(void)
 					}
 
 					//todo 
-					opserr << "This is the element flexibility matrix:" << Felement << endln;
-					opserr << "This is the element stiffness matrix:" << KelementTrial << endln;
+					/*opserr << "This is the element flexibility matrix:" << Felement << endln;
+					opserr << "This is the element stiffness matrix:" << KelementTrial << endln;*/
 
 					//// dv = vin + dvTrial  - vu
 					//dv = vin;
@@ -1159,6 +1163,7 @@ void GradientForceBeamColumn3d::getForceInterpolatMatrix(double xi, Matrix& b, c
 	b.Zero();
 
 	double L = crdTransf->getInitialLength();
+
 	for (int i = 0; i < code.Size(); i++)
 	{
 		switch (code(i))
@@ -1532,7 +1537,7 @@ GradientForceBeamColumn3d::getInitialFlexibility(Matrix& Fe)
 		int order = sections[i]->getOrder();
 		const ID& code = sections[i]->getType();
 
-		Matrix Fb(workArea, order, 3);
+		Matrix Fb(workArea, order, NEBD);
 
 		double xL = xi[i];
 		double xL1 = xL - 1.0;
@@ -1630,6 +1635,8 @@ GradientForceBeamColumn3d::getInitialFlexibility(Matrix& Fe)
 
 	if (!isTorsion)
 		Fe(5, 5) = DefaultLoverGJ;
+
+	//opserr << "This is Fe:" << Fe << endln;
 
 	return 0;
 }
@@ -2022,10 +2029,12 @@ GradientForceBeamColumn3d::computeE_local(int numSections, Vector eNonLocalSubdi
 	for (int i = 0; i < numSections; i++)
 	{	
 		eNonLocal_SectionI_temp = eNonLocalSubdivide[i];
+		//opserr << "This is eNonLocal_SectionI_temp:" << eNonLocal_SectionI_temp << endln;
 
 		for (int j = 0; j < NEBD; j++)
 		{
-			eNonLocal_MatrixFormALLSections(i * NEBD + j) = eNonLocal_SectionI_temp(NEBD);
+			eNonLocal_MatrixFormALLSections(i * NEBD + j) = eNonLocal_SectionI_temp(j);
+			//opserr << "This is eNonLocal_MatrixFormALLSections:" << eNonLocal_MatrixFormALLSections << endln;
 		}
 	}
 
@@ -2119,7 +2128,7 @@ GradientForceBeamColumn3d::computeFelement_nonlocal(int numSections, Matrix& Fel
 				for (int k = 0; k < NEBD; k++) //loop to over the columns of b
 				{
 					B_Q(i * NEBD + j, k) = b(j, k);
-					B_q(k, i * NEBD + j) = wtL * b(k, j);
+					B_q(k, i * NEBD + j) = wtL * b(j,k);
 				}
 			}
 
@@ -2136,18 +2145,14 @@ GradientForceBeamColumn3d::computeFelement_nonlocal(int numSections, Matrix& Fel
 		}
 	}
 
-	opserr << "This is b:" << b << endln;
-	opserr << "This is B_Q:" << B_Q << endln;
-	opserr << "This is B_q:" << B_q << endln;
-	opserr << "This is Fsection_Tot:" << Fsection_Tot << endln;
-
 	//compute the matrix multiplication F_element_nonLocal=B_q*inv(H)*Fsection_Tot*B_Q;
 	Felement_nonlocal = B_q * H_inv * Fsection_Tot * B_Q;
 
 	/*opserr << "This matrix B_q:" << B_q << endln;
-	opserr << "This matrix I:" << I << endln;
 	opserr << "This matrix H:" << H << endln;
 	opserr << "This matrix H_inv:" << H_inv << endln;
 	opserr << "This matrix Fsection_Tot:" << Fsection_Tot << endln;
-	opserr << "This matrix B_Q:" << B_Q << endln;*/
+	opserr << "This matrix B_Q:" << B_Q << endln;
+	opserr << "This matrix Felement_nonlocal:" << Felement_nonlocal << endln;
+	double test = 0.;*/
 }
