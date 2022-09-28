@@ -200,6 +200,12 @@ private:
 	// Sets the consistent tangent modulus for UVC recovery stage
 	void calculateConsistentTangentModulusUVCRecov(Vector strain_nPlus1, double consistParam_plastic, double fBar, Vector relativeStressNPlus1);
 
+	// Initialize value of reference energy capacity Erc and sigmaC=sigmaC
+	void initializeErc();
+
+	// Compute capping stress with cyclic degradation rule
+	void computeSigmaCDegradation();
+
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
 
@@ -269,6 +275,9 @@ private:
 	std::vector<Vector> alphaPBKTrial;
 	Matrix stiffnessConverged;
 	Matrix stiffnessTrial;
+	double sumEjConverged; //Total energy dissipated
+	double sumEjTrial; 
+
 	int elasticLoading;
 	int plasticLoading;
 	int postBucklingLoading;
@@ -291,6 +300,8 @@ private:
 	double rAlphaBackstress1 = 0.;
 	double rAlphaBackstress2 = 0.;
 	double c1cUnload = 0.;
+	double Erc = 0.;
+	double sigmaC = 0.;
 
 
 	// Projection matrices and their eigendecomposition
@@ -345,6 +356,9 @@ private:
 	const double beta1RegressionAlphaYrBezier = 3.0429;
 	const double beta2RegressionAlphaYrBezier = -0.8248;
 	const double beta3RegressionAlphaYrBezier = 0.7856;
+
+	const double beta1RegressionErc = 8.2427e5;
+	const double beta2RegressionErc = -2.1489;
 
 };
 

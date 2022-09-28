@@ -154,6 +154,8 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	strainPBEqTrial(0.),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
+	sumEjConverged(0.),
+	sumEjTrial(0.),
 	/*chi1cConverged(0.),
 	chi1cTrial(0.),*/
 	elasticLoading(0),
@@ -199,6 +201,9 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 
 	// Set the value of sigmaYrO
 	initializeSigmaYrO();
+
+	// Set the value of Erc
+	initializeErc();
 };
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -232,6 +237,8 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 	strainPBEqTrial(0.),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
+	sumEjConverged(0.),
+	sumEjTrial(0.),
 	elasticLoading(0),
 	plasticLoading(0),
 	postBucklingLoading(0),
@@ -276,6 +283,9 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 
 	// Set the value of sigmaYrO
 	initializeSigmaYrO();
+
+	// Set the value of Erc
+	initializeErc();
 
 }
 
@@ -333,6 +343,14 @@ int LocalBucklingWebPlate::timeIntegration() {
 	strain_previous = strainConverged;
 	deltaStrain_converged4Peak.Zero(); // works for both capping and switch El-Pl Recov stages
 	deltaStrain_remaining4Peak = deltaStrain_trial; // works for both capping and switch El-Pl Recov stages
+
+	//// Initialize sumEjTrial
+	//sumEjTrial = sumEjConverged;
+
+	// Compute previous stress vector
+	Vector stressPrevious = Vector(N_DIMS);
+	etaTangent = calculateEtaTangentReduce();
+	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
 	/*if (strainTrial(0) >= 0.0199) {
 		double testBreak = 0.;
@@ -408,7 +426,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 						} // end check if point swich Pl recov stage UVC is reached
 
 						// Check if the full strain increment has been done
-						if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -454,7 +473,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 						} // end check if point swich Pl recov stage UVC is reached
 
 						// Check if the full strain increment has been done
-						if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -491,7 +511,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 				retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial, switchUVCRecovUVCPoint);
 
 				// Check if the full strain increment has been done
-				if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+				//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+				if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
 					convergedMatLaw = true;
 				}
 				else { // converged but there is more strain increment to do
@@ -500,7 +521,11 @@ int LocalBucklingWebPlate::timeIntegration() {
 				} // end check if full strain increment has been done
 
 				} // end hardening stage
-			} // end if not elastic			
+			} // end if not elastic		
+
+			// Cyclic degradation part:
+			sumEjTrial = sumEjConverged + 0.5 * (stressPrevious(0) + stressTrial(0)) * (strain_nPlus1(0) - strainConverged(0));
+			computeSigmaCDegradation();
 
 		} // end if in tension
 		else { // if in compression
@@ -516,12 +541,14 @@ int LocalBucklingWebPlate::timeIntegration() {
 				calculateConsistentTangentModulusElastic(etaTangent);
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if the full strain increment has been done
-					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
@@ -530,7 +557,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 					}
 
 					// Check if capping point is reached
-					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 						cappingPoint = 1;
 						if (convergedMatLaw == 0)
 						{
@@ -565,12 +593,14 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if capping point is reached
-					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 						cappingPoint = 1;
 						//chi1c = RETURN_MAP_TOL;
 						if (convergedMatLaw == 0)
@@ -581,7 +611,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 					}
 
 					// Check if the full strain increment has been done
-					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
@@ -606,6 +637,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 			// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
 			setTensileEllipsoidYieldSurf(yieldStress, alphaTot);
+
+			// Cyclic degradation part:
+			sumEjTrial = sumEjConverged + 0.5 * (stressPrevious(0) + stressTrial(0)) * (strain_nPlus1(0) - strainConverged(0));
 
 		} // end IF compression
 
@@ -1831,6 +1865,7 @@ int LocalBucklingWebPlate::commitState() {
 	alphaPKConverged = alphaPKTrial;
 	alphaPBKConverged = alphaPBKTrial;
 	stiffnessConverged = stiffnessTrial;
+	sumEjConverged = sumEjTrial;
 	return 0;
 }
 
@@ -1851,6 +1886,7 @@ int LocalBucklingWebPlate::revertToLastCommit() {
 	alphaPKTrial = alphaPKConverged;
 	alphaPBKTrial = alphaPBKConverged;
 	stiffnessTrial = stiffnessConverged;
+	sumEjTrial = sumEjConverged;
 	return 0;
 }
 
@@ -1870,6 +1906,7 @@ int LocalBucklingWebPlate::revertToBeforeCapping(bool cappingPoint) {
 		alphaPKTrial = alphaPKConverged;
 		alphaPBKTrial = alphaPBKConverged;
 		stiffnessTrial = stiffnessConverged;
+		sumEjTrial = sumEjConverged;
 	}
 	return 0;
 }
@@ -1886,6 +1923,7 @@ int LocalBucklingWebPlate::revertToBeforeSwitchPlRecovUVC(bool switchPlRecovUVCP
 		alphaPKTrial = alphaPKConverged;
 		alphaPBKTrial = alphaPBKConverged;
 		stiffnessTrial = stiffnessConverged;
+		sumEjTrial = sumEjConverged;
 	}
 	return 0;
 }
@@ -1902,6 +1940,7 @@ int LocalBucklingWebPlate::revertToBeforeSwitchUVCRecovUVC(bool switchUVCRecovUV
 		alphaPKTrial = alphaPKConverged;
 		alphaPBKTrial = alphaPBKConverged;
 		stiffnessTrial = stiffnessConverged;
+		sumEjTrial = sumEjConverged;
 	}
 	return 0;
 }
@@ -1927,6 +1966,8 @@ int LocalBucklingWebPlate::revertToStart() {
 		alphaPKConverged[i].Zero();
 		alphaPBKConverged[i].Zero();
 	}
+	sumEjConverged = 0.;
+	sumEjTrial = 0.;
 	revertToLastCommit();
 	return 0;
 }
@@ -1968,6 +2009,8 @@ NDMaterial* LocalBucklingWebPlate::getCopy() {
 	theCopy->elasticLoading = elasticLoading;
 	theCopy->plasticLoading = plasticLoading;
 	theCopy->postBucklingLoading = postBucklingLoading;
+	theCopy->sumEjConverged = sumEjConverged;
+	theCopy->sumEjTrial = sumEjTrial;
 
 	return theCopy;
 }
@@ -2611,6 +2654,23 @@ void LocalBucklingWebPlate::calculateRatioAlphaBackstress(double yieldstress) {
 	// Compute ratios for update of post-buckling backstress during plastic recovery stage
 	rAlphaBackstress1 = 1 / (backstressPb11_endPlRecovStage * (gammaK[0] - gammaK[1])) * (cK[0] + cK[1] - gammaK[0] * backstressP1(0) - gammaK[1] * backstressP2(0) - gammaK[1] * backstressPb11_endPlRecovStage - sqrt(3. / 2.) * hPrime11);
 	rAlphaBackstress2 = 1. - rAlphaBackstress1;
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+void LocalBucklingWebPlate::initializeErc() {
+	Erc = beta1RegressionErc * pow(bPlateWidth / tPlateThickness, beta2RegressionErc);
+
+	sigmaC = sigmaC0Stress;
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+void LocalBucklingWebPlate::computeSigmaCDegradation() {
+	double betaDegradationParam = 0.;
+
+	betaDegradationParam = sumEjTrial / Erc;
+	sigmaC = (1 - betaDegradationParam) * sigmaC0Stress;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
