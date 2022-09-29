@@ -427,7 +427,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 						// Check if the full strain increment has been done
 						//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
-						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL/1000.) { // full strain increment has been done
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -492,8 +492,10 @@ int LocalBucklingWebPlate::timeIntegration() {
 					else
 					{ // if we have reduced epsiPb11 too much 
 						revertToBeforeSwitchUVCRecovUVC(switchUVCRecovUVCPoint);
-						deltaStrain_remaining4Peak /= 2.;
-						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
+						/*deltaStrain_remaining4Peak /= 2.;
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
+						deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
 					} // end if we have reduced epsiPb11 too much
 
 
@@ -965,31 +967,30 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	yieldStress = calculateYieldStress();
 	chi1t = calculateChi1t(yieldStress,backstressTot(0));
 
-	///*if (strainConverged(0) <= -0.0501 && strainTrial(0) >= -0.0498)*/ // LPSCSuzuki HSS300x12
-	//if (strainConverged(0) <= -0.07417 && strainConverged(0) > -0.07418 && strainTrial(0) >= -0.038766 && strainTrial(0) < -0.038765) 
-	//{
-	//	opserr << "This is stressTrial: " << stressTrial << endln;
-	//	opserr << "This is backstressTot: " << backstressTot << endln;
-	//	opserr << "This is strainTrial: " << strainTrial << endln;
-	//	opserr << "This is epsiPConverged: " << strainPlasticConverged << endln;
-	//	opserr << "This is epsiPBEqConverged: " << strainPBEqConverged<< endln;
-	//	opserr << "This is epsiPbConverged: " << strainPostBucklingConverged << endln;
-	//	opserr << "This is chi1t: " << chi1t << endln;
-	//	opserr << "This is sigmaY: " << yieldStress << endln;
-	//	opserr << "This is bPlate: " << bPlateWidth << endln;
-	//	opserr << "This is tPlate: " << tPlateThickness << endln;
-	//	opserr << "This is b_chi1tO: " << b_1tO << endln;
-	//	opserr << "This is b_chi1tS: " << b_1tS << endln;
-	//	opserr << "This is epsilonPB11Unload: " << epsilonPB11Unload << endln;
-	//	opserr << "This is sigmaPrO: " << sigmaPrBezierO << endln;
-	//	opserr << "This is sigmaPrS: " << sigmaPrBezierS << endln;
-	//	opserr << "This is sigmaYrUnscaled: " << sigmaYrBezierO<< endln;
-	//	opserr << "This is backstressPlasticTot: " << backstressPTot << endln;
-	//	opserr << "This is backstressAfterCompression: " << backstressAfterCompression << endln;
-	//	opserr << "This is alphaNormBezierStress: " << (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) << endln;
+	/*if (strainConverged(0) <= -0.032385 && strainConverged(0) > -0.032386 && strainTrial(0) >= -0.032177 && strainTrial(0) < -0.032176) 
+	{
+		opserr << "This is stressTrial: " << stressTrial << endln;
+		opserr << "This is backstressTot: " << backstressTot << endln;
+		opserr << "This is strainTrial: " << strainTrial << endln;
+		opserr << "This is epsiPConverged: " << strainPlasticConverged << endln;
+		opserr << "This is epsiPBEqConverged: " << strainPBEqConverged<< endln;
+		opserr << "This is epsiPbConverged: " << strainPostBucklingConverged << endln;
+		opserr << "This is chi1t: " << chi1t << endln;
+		opserr << "This is sigmaY: " << yieldStress << endln;
+		opserr << "This is bPlate: " << bPlateWidth << endln;
+		opserr << "This is tPlate: " << tPlateThickness << endln;
+		opserr << "This is b_chi1tO: " << b_1tO << endln;
+		opserr << "This is b_chi1tS: " << b_1tS << endln;
+		opserr << "This is epsilonPB11Unload: " << epsilonPB11Unload << endln;
+		opserr << "This is sigmaPrO: " << sigmaPrBezierO << endln;
+		opserr << "This is sigmaPrS: " << sigmaPrBezierS << endln;
+		opserr << "This is sigmaYrUnscaled: " << sigmaYrBezierO<< endln;
+		opserr << "This is backstressPlasticTot: " << backstressPTot << endln;
+		opserr << "This is backstressAfterCompression: " << backstressAfterCompression << endln;
+		opserr << "This is alphaNormBezierStress: " << (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) << endln;
 
-	//	double testError = 1.;
-	//}
+		double testError = 1.;
+	}*/
 
 	tBezier = calculateTBezier();
 	sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
@@ -1158,12 +1159,19 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 	double dEtaTangentdEpsiPb11 = 0.;
 	Vector dCdLambdaP = Vector(N_DIMS);
 	Vector dXidLambda = Vector(N_DIMS);
+	Vector PMatMultrelativeStressNPlus1 = Vector(N_DIMS);
 
 	// Fill alphaTot_Vector with the two vector
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
 		/*alpha12Tot_Vector.push_back(alphaPKConverged[i]+ alphaPBKConverged[i]);*/
 		alpha12Tot_Vector.push_back(alphaPKConverged[i] + alphaPBKTrial[i]);
 	}
+
+
+	//if (strainConverged(0) <= -0.032323 && strainConverged(0) > -0.032324 && strainTrial(0) >= -0.03186 && strainTrial(0) < -0.031859)
+	//{
+	//	double testError = 1.;
+	//}
 
 	// Do the return mapping algorithm for plastic loading
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
@@ -1236,7 +1244,8 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + RETURN_MAP_TOL);
 		strainPEqTrial = strainPEqConverged + sqrt(2. / 3.) * consistParam_plastic * fBar;
 
-		strainPostBucklingTrial(0) = strainPostBucklingConverged(0) + sqrt(2. / 3.) * consistParam_plastic * fBar;
+		PMatMultrelativeStressNPlus1 = PMat * relativeStressNPlus1;
+		strainPostBucklingTrial(0) = strainPostBucklingConverged(0) + consistParam_plastic * PMatMultrelativeStressNPlus1(0);
 
 		// Check convergence
 		if (fabs(phiVM) < RETURN_MAP_TOL) {
