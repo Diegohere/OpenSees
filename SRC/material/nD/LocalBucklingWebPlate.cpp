@@ -199,8 +199,8 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	// Set the value of b_chi1c
 	initializeBChi1c();
 
-	// Set the value of sigmaYrO
-	initializeSigmaYrO();
+	//// Set the value of sigmaYrO
+	//initializeSigmaYrO();
 
 	// Set the value of Erc
 	initializeErc();
@@ -281,8 +281,8 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 	// Set the value of b_chi1c
 	initializeBChi1c();
 
-	// Set the value of sigmaYrO
-	initializeSigmaYrO();
+	//// Set the value of sigmaYrO
+	//initializeSigmaYrO();
 
 	// Set the value of Erc
 	initializeErc();
@@ -2414,10 +2414,10 @@ void LocalBucklingWebPlate::initializeBChi1c() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::initializeSigmaYrO() {
-	/*sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * initialYield;*/
-	sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO);
-}
+//void LocalBucklingWebPlate::initializeSigmaYrO() {
+//	/*sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * initialYield;*/
+//	sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO);
+//}
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
@@ -2534,6 +2534,7 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStress, Vec
 	alphaYrBezier = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
 	kPrBezierS = beta1RegressionKPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezierS) * scaleFactorBezierStress;
 	kYrBezierS = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezierS) * scaleFactorBezierStress;
+	sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezierO);
 
 	//Compute ratios for backstress update during plastic recovery stage
 	calculateRatioAlphaBackstress(yieldStress);

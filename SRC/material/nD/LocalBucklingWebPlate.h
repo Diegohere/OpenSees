@@ -152,8 +152,8 @@ private:
 	// Reverts to before the capping point
 	int revertToBeforeCapping(bool cappingPoint);
 
-	// Initialize value of sigmaYrO
-	void initializeSigmaYrO(void);
+	//// Initialize value of sigmaYrO
+	//void initializeSigmaYrO(void);
 
 	// Computes elastic stiffness matrix 
 	double calculateEtaTangentReduce(void);
@@ -338,27 +338,48 @@ private:
 	//const double beta2RegressionAlphaYrBezier = -1.04;
 	//const double beta3RegressionAlphaYrBezier = 0.817;
 
-	// Including shift in epsiYr due to elastic unloading
-	const double beta1RegressionSigmaPrBezierS = 0.0212;
-	const double beta2RegressionSigmaPrBezierS = -0.4589;
-	const double beta3RegressionSigmaPrBezierS = -0.9931;
-	const double beta1RegressionSigmaYrBezierO = 617.1178; //Remember to update function to compute it (no \sigmaY0)
-	const double beta2RegressionSigmaYrBezierO = -0.1429;
-	const double beta1RegressionKPrBezierS = -751.315;
-	const double beta2RegressionKPrBezierS = -0.8368;
-	const double beta3RegressionKPrBezierS = -0.4062;
-	const double beta1RegressionKYrBezierS = -0.1672;
-	const double beta2RegressionKYrBezierS = 1.536;
-	const double beta3RegressionKYrBezierS = 0.;
-	const double beta1RegressionAlphaPrBezier = -0.0081;
-	const double beta2RegressionAlphaPrBezier = 0.3719;
-	const double beta3RegressionAlphaPrBezier = 0.6748;
-	const double beta1RegressionAlphaYrBezier = 3.0429;
-	const double beta2RegressionAlphaYrBezier = -0.8248;
-	const double beta3RegressionAlphaYrBezier = 0.7856;
+	//// Including shift in epsiYr due to elastic unloading
+	//const double beta1RegressionSigmaPrBezierS = 0.0212;
+	//const double beta2RegressionSigmaPrBezierS = -0.4589;
+	//const double beta3RegressionSigmaPrBezierS = -0.9931;
+	//const double beta1RegressionSigmaYrBezierO = 617.1178; //Remember to update function to compute it (no \sigmaY0)
+	//const double beta2RegressionSigmaYrBezierO = -0.1429;
+	//const double beta1RegressionKPrBezierS = -751.315;
+	//const double beta2RegressionKPrBezierS = -0.8368;
+	//const double beta3RegressionKPrBezierS = -0.4062;
+	//const double beta1RegressionKYrBezierS = -0.1672;
+	//const double beta2RegressionKYrBezierS = 1.536;
+	//const double beta3RegressionKYrBezierS = 0.;
+	//const double beta1RegressionAlphaPrBezier = -0.0081;
+	//const double beta2RegressionAlphaPrBezier = 0.3719;
+	//const double beta3RegressionAlphaPrBezier = 0.6748;
+	//const double beta1RegressionAlphaYrBezier = 3.0429;
+	//const double beta2RegressionAlphaYrBezier = -0.8248;
+	//const double beta3RegressionAlphaYrBezier = 0.7856;
+	//const double beta1RegressionErc = 8.2427e5;
+	//const double beta2RegressionErc = -2.1489;
 
-	const double beta1RegressionErc = 8.2427e5;
-	const double beta2RegressionErc = -2.1489;
+	// Including small amplitude load reversals for Bezier
+	const double beta1RegressionSigmaPrBezierS = 0.026;
+	const double beta2RegressionSigmaPrBezierS = -0.4193;
+	const double beta3RegressionSigmaPrBezierS = -0.8691;
+	const double beta1RegressionSigmaYrBezierO = 679.1948; 
+	const double beta2RegressionSigmaYrBezierO = -0.1341;
+	const double beta3RegressionSigmaYrBezierO = 0.045;
+	const double beta1RegressionKPrBezierS = -736.6779;
+	const double beta2RegressionKPrBezierS = -0.8082;
+	const double beta3RegressionKPrBezierS = -0.3793;
+	const double beta1RegressionKYrBezierS = -0.1825;
+	const double beta2RegressionKYrBezierS = 1.3574;
+	const double beta3RegressionKYrBezierS = -0.1707;
+	const double beta1RegressionAlphaPrBezier = -0.0199;
+	const double beta2RegressionAlphaPrBezier = 0.2066;
+	const double beta3RegressionAlphaPrBezier = 0.8283;
+	const double beta1RegressionAlphaYrBezier = 5.7878;
+	const double beta2RegressionAlphaYrBezier = -0.7409;
+	const double beta3RegressionAlphaYrBezier = 1.1362;
+	const double beta1RegressionErc = 5.5295e5;
+	const double beta2RegressionErc = -2.0496;
 
 };
 
