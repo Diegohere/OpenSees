@@ -967,7 +967,7 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	yieldStress = calculateYieldStress();
 	chi1t = calculateChi1t(yieldStress,backstressTot(0));
 
-	/*if (strainConverged(0) <= -0.032385 && strainConverged(0) > -0.032386 && strainTrial(0) >= -0.032177 && strainTrial(0) < -0.032176) 
+	/*if (strainConverged(0) <= -0.10971 && strainConverged(0) > -0.10972 && strainTrial(0) >= -0.109186 && strainTrial(0) < -0.109185) 
 	{
 		opserr << "This is stressTrial: " << stressTrial << endln;
 		opserr << "This is backstressTot: " << backstressTot << endln;
@@ -1087,7 +1087,7 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 		chi1t = b_1tO * pow((1 - f1t), expA);
 
-		if (iterationNumber_ReturnMapping>100)
+		if (iterationNumber_ReturnMapping>500)
 		{
 			//double errorNb = 1.0;
 			strainPostBucklingTrial(0) = -strainPostBucklingConverged(0); // Trick to divide strain increment by 2
@@ -1168,10 +1168,10 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 	}
 
 
-	//if (strainConverged(0) <= -0.032323 && strainConverged(0) > -0.032324 && strainTrial(0) >= -0.03186 && strainTrial(0) < -0.031859)
-	//{
-	//	double testError = 1.;
-	//}
+	/*if (strainConverged(0) <= -0.011138 && strainConverged(0) > -0.011139 && strainTrial(0) >= -0.01078 && strainTrial(0) < -0.01077)
+	{
+		double testError = 1.;
+	}*/
 
 	// Do the return mapping algorithm for plastic loading
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
@@ -1196,8 +1196,8 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 
 		// Update the relative stress and eta
 		gammaDiag(0) = 1. / (beta + consistParam_plastic * 4. / 3. * LambdaC_nPlus1Diag(0));
-		gammaDiag(1) = 1. / (beta + consistParam_plastic * LambdaC_nPlus1Diag(1));
-		gammaDiag(2) = 1. / (beta + consistParam_plastic * LambdaC_nPlus1Diag(2));
+		gammaDiag(1) = 1. / (beta + consistParam_plastic * 2 * LambdaC_nPlus1Diag(1));
+		gammaDiag(2) = 1. / (beta + consistParam_plastic * 2 * LambdaC_nPlus1Diag(2));
 
 		SumEKAlphaKTerm.Zero();
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
@@ -2486,61 +2486,62 @@ double LocalBucklingWebPlate::calculateDEtaTangentdEpsiPb11() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 void LocalBucklingWebPlate::calculateC1c(double yieldStress, double alphaTot11) {
-	c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);
+	/*c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);*/
+	c1c = (pow(yieldStress, 2) - pow((-sigmaC - alphaTot11), 2)) / pow((-sigmaC), 2);
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStress, Vector alphaTot) {
-	double sigmaPrS_regression = 0.;
-	double epsilonPb11MinS = 0.;
-	double epsilonPb11MinO = 0.;
-	double scaleFactorBezierStress = 0.;
+		double sigmaPrS_regression = 0.;
+		double epsilonPb11MinS = 0.;
+		double epsilonPb11MinO = 0.;
+		double scaleFactorBezierStress = 0.;
 
-	//Determine the stress at wich would reach Von-Mises yield surface
-	scaleFactorBezierStress = 2 * yieldStress - (yieldStress - alphaTot(0));
+		//Determine the stress at wich would reach Von-Mises yield surface
+		scaleFactorBezierStress = 2 * yieldStress - (yieldStress - alphaTot(0));
 
-	// Determine different stresses sigmaPr
-	sigmaPrS_regression = beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaPrBezierS);
-	sigmaPrBezierS = std::min(scaleFactorBezierStress, sigmaPrS_regression / 1. * scaleFactorBezierStress);
-	sigmaPrBezierO = std::min(scaleFactorBezierStress, sigmaPrS_regression * sigmaYrBezierO);
+		// Determine different stresses sigmaPr
+		sigmaPrS_regression = beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaPrBezierS);
+		sigmaPrBezierS = std::min(scaleFactorBezierStress, sigmaPrS_regression / 1. * scaleFactorBezierStress);
+		sigmaPrBezierO = std::min(scaleFactorBezierStress, sigmaPrS_regression * sigmaYrBezierO);
 
-	// Determine epsiPb11Min
-	epsilonPb11MinS = -pow((1. / beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrBezierS)), (1. / beta3RegressionSigmaPrBezierS));
-	epsilonPb11MinO = -pow((1. / sigmaYrBezierO * scaleFactorBezierStress * 1. / beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrBezierS)), (1. / beta3RegressionSigmaPrBezierS));
-	epsilonPB11Min = std::min(epsilonPb11MinS, epsilonPb11MinO);
+		// Determine epsiPb11Min
+		epsilonPb11MinS = -pow((1. / beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrBezierS)), (1. / beta3RegressionSigmaPrBezierS));
+		epsilonPb11MinO = -pow((1. / sigmaYrBezierO * scaleFactorBezierStress * 1. / beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrBezierS)), (1. / beta3RegressionSigmaPrBezierS));
+		epsilonPB11Min = std::min(epsilonPb11MinS, epsilonPb11MinO);
 
-	// Compute b_1t
-	if (strainPostBucklingTrial(0)<epsilonPB11Min)
-	{
-		b_1tO = (pow(yieldStress, 2) - pow((sigmaPrBezierO - alphaTot(0)), 2)) / pow(sigmaPrBezierO, 2);
-		b_1tS = (pow(yieldStress, 2) - pow((sigmaPrBezierS - alphaTot(0)), 2)) / pow(sigmaPrBezierS, 2);
-	}
-	else
-	{
-		b_1tO = 0.;
-		b_1tS = 0.;
-	}
+		// Compute b_1t
+		if (strainPostBucklingTrial(0) < epsilonPB11Min)
+		{
+			b_1tO = (pow(yieldStress, 2) - pow((sigmaPrBezierO - alphaTot(0)), 2)) / pow(sigmaPrBezierO, 2);
+			b_1tS = (pow(yieldStress, 2) - pow((sigmaPrBezierS - alphaTot(0)), 2)) / pow(sigmaPrBezierS, 2);
+		}
+		else
+		{
+			b_1tO = 0.;
+			b_1tS = 0.;
+		}
 
-	// Set epsilonPb11Unload
-	epsilonPB11Unload = strainPostBucklingTrial(0);
+		// Set epsilonPb11Unload
+		epsilonPB11Unload = strainPostBucklingTrial(0);
 
-	// Compute yield surface center after compression stage
-	backstressAfterCompression = alphaTot;
+		// Compute yield surface center after compression stage
+		backstressAfterCompression = alphaTot;
 
-	// Set quantities for Bezier curve
-	sigmaYrBezierS = scaleFactorBezierStress;
-	alphaPrBezier = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaPrBezier);
-	alphaYrBezier = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
-	kPrBezierS = beta1RegressionKPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezierS) * scaleFactorBezierStress;
-	kYrBezierS = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezierS) * scaleFactorBezierStress;
-	sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezierO);
+		// Set quantities for Bezier curve
+		sigmaYrBezierS = scaleFactorBezierStress;
+		alphaPrBezier = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaPrBezier);
+		alphaYrBezier = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
+		kPrBezierS = beta1RegressionKPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezierS) * scaleFactorBezierStress;
+		kYrBezierS = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezierS) * scaleFactorBezierStress;
+		sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezierO);
 
-	//Compute ratios for backstress update during plastic recovery stage
-	calculateRatioAlphaBackstress(yieldStress);
+		//Compute ratios for backstress update during plastic recovery stage
+		calculateRatioAlphaBackstress(yieldStress);
 
-	// Set c1cUnload
-	c1cUnload = c1c;
+		// Set c1cUnload
+		c1cUnload = c1c;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
