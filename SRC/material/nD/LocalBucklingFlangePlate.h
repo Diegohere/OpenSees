@@ -213,6 +213,7 @@ private:
 	// Plate stress properties (fixed for now, could be set by the constructor)
 	const double alpha_chi1c = 1. / 3.;
 	const double sigmaDMStress = 10;
+	//const double sigmaDMStress = 1.45; // in ksi
 	double b_chi1c;
 
 	// Internal variables

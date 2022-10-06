@@ -317,6 +317,11 @@ int LocalBucklingFlangePlate::timeIntegration() {
 	deltaStrain_converged4Peak.Zero();
 	deltaStrain_remaining4Peak = deltaStrain_trial;
 
+	/*if (strainConverged(0) <= -0.00107 && strainConverged(0) > -0.04697 && strainTrial(0) >= -0.04745 && strainTrial(0) < -0.04744)
+	{
+		double testError = 1.;
+	}*/
+
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		iterationNumber_timeIntegration++;
@@ -635,6 +640,11 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 	chi1c = calculateChi1c();
 	yieldStress = calculateYieldStress();
 	sigmaSurSigmaY = calculateSigmaSurSigmaY();
+
+	/*if (strainConverged(0) <= -0.04693 && strainConverged(0) > -0.04694 && strainTrial(0) >= -0.04745 && strainTrial(0) < -0.04744)
+	{
+		double testError = 1.;
+	}*/
 
 	// Do the return mapping algorithm for post buckling loading
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
