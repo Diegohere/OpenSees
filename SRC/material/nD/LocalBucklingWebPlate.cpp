@@ -399,11 +399,22 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 			// Check if trial state is elastic or if need return map approach
 			if (phiTension <= RETURN_MAP_TOL) { //loading is elastic
-				convergedMatLaw = true;
+				//convergedMatLaw = true;
 				elasticLoading = 1;
 
 				// Update the stiffness for elastic loading
 				calculateConsistentTangentModulusElastic(etaTangent);
+
+				// Check if we have done the full strain increment
+				deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
+				deltaStrain_converged4Peak = deltaStrain_trial;
+				if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+					convergedMatLaw = true;
+				}
+				else { // converged but there is more strain increment to do
+					revertToBeforeSwitchPlRecovUVC(switchPlRecovUVCPoint);
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2.;
+				} // end check if full strain increment has been done
 				
 			}
 			else { //if not elastic
@@ -653,6 +664,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	// Warn the user if the algorithm did not converge and return -1
 	if (iterationNumber_timeIntegration >= MAXIMUM_ITERATIONS_TIMEINTEGRATION ) {
 		opserr << "LocalBucklingWebPlate::timeIntegration time integration did not converge!" << endln;
+		opserr << "This is strainTrial: " << strainTrial << endln;
 		retVal = -1;
 	}
 	
