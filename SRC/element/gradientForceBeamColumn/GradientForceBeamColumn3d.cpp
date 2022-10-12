@@ -1491,7 +1491,9 @@ GradientForceBeamColumn3d::getResistingForceIncInertia()
 	// Compute the current resisting force
 	theVector = this->getResistingForce();
 
-	// For now rho=0, if want to change this add rho to .h file and modifiy this method
+	// add the damping forces if rayleigh damping
+	if (betaK != 0.0 || betaK0 != 0.0 || betaKc != 0.0)
+		theVector += this->getRayleighDampingForces();
 
 	return theVector;
 }
@@ -1806,6 +1808,11 @@ GradientForceBeamColumn3d::setResponse(const char** argv, int argc, OPS_Stream& 
 		}
 	}
 
+	// Global Damping Forces
+	else if (strcmp(argv[0], "dampingForce") == 0 || strcmp(argv[0], "dampingForces") == 0) {
+		theResponse = new ElementResponse(this, 6, theVector);
+	}
+
 	return theResponse;
 }
 
@@ -1877,6 +1884,9 @@ GradientForceBeamColumn3d::getResponse(int responseID, Information& eleInfo)
 		/*opserr << "This is eLocalOutput" << eLocalOutput << endln;*/
 		return eleInfo.setMatrix(eLocalOutput);
 	}
+
+	case 6:
+		return eleInfo.setVector(this->getRayleighDampingForces());
 
 	default:
 		return -1;
