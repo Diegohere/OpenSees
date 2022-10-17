@@ -352,10 +352,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainTrial(0) >= 0.0199) {
-		double testBreak = 0.;
-	}
-	if (strainConverged(0) <= -0.0501 && strainTrial(0) >= -0.0498) {
+	/*if (strainConverged(0) <= -0.00144 && strainConverged(0) > -0.00145 && strainTrial(0) >= -0.00155 && strainTrial(0) < -0.00154) {
 		double testBreak = 0.;
 	}*/
 
@@ -883,6 +880,7 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		dSigmaSurSigmaYdEpsilonPB11 = calculateDSigmaSurSigmaYdEpsilonPB11();
 
 		dChi1cDLambdaPB = dPhiCompdXi(0) * 2.  * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
+		//dChi1cDLambdaPB = -dPhiCompdXi(0) * 2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
 
 		dCdLambdaPB = calculateDCdLambdaPB(etaTangent, dPhiCompdXi(0));
 
@@ -2499,7 +2497,11 @@ double LocalBucklingWebPlate::calculateDEtaTangentdEpsiPb11() {
 
 void LocalBucklingWebPlate::calculateC1c(double yieldStress, double alphaTot11) {
 	/*c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);*/
-	c1c = (pow(yieldStress, 2) - pow((-sigmaC - alphaTot11), 2)) / pow((-sigmaC), 2);
+	//c1c = (pow(yieldStress, 2) - pow((-sigmaC - alphaTot11), 2)) / pow((-sigmaC), 2);
+
+	double stressTol = elasticMatrix(0,0)* RETURN_MAP_TOL; // Additional stress component due to tolerance
+	double stress4C1c = -sigmaC + stressTol;
+	c1c = (pow(yieldStress, 2) - pow((-stress4C1c - alphaTot11), 2)) / pow((-stress4C1c), 2);
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
