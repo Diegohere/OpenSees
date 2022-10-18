@@ -221,7 +221,7 @@ private:
 	const unsigned int N_HARDENING_PARAMS = 7;
 	const unsigned int N_SOFTENING_PARAMS = 3;
 	const unsigned int N_PARAM_PER_BACK = 2;
-	const double RETURN_MAP_TOL = 1.0e-6;
+	const double RETURN_MAP_TOL = 5.0e-6;
 	const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 1000;
 	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 1000;
 	const unsigned int N_DIRECT = 1;
@@ -277,13 +277,15 @@ private:
 	Matrix stiffnessTrial;
 	double sumEjConverged; //Total energy dissipated
 	double sumEjTrial; 
+	double c1cConverged;
+	double c1cTrial;
 
 	int elasticLoading;
 	int plasticLoading;
 	int postBucklingLoading;
 	int PlRecoveryLoading;
 	int UVCRecoveryLoading;
-	double c1c = 0.;
+	/*double c1c = 0.;*/
 	double b_1tO = 0.;
 	double b_1tS = 0.;
 	double sigmaPrBezierO = 0.;

@@ -156,6 +156,8 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	stressTrial(N_DIMS),
 	sumEjConverged(0.),
 	sumEjTrial(0.),
+	c1cConverged(0.),
+	c1cTrial(0.),
 	/*chi1cConverged(0.),
 	chi1cTrial(0.),*/
 	elasticLoading(0),
@@ -239,6 +241,8 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 	stressTrial(N_DIMS),
 	sumEjConverged(0.),
 	sumEjTrial(0.),
+	c1cConverged(0.),
+	c1cTrial(0.),
 	elasticLoading(0),
 	plasticLoading(0),
 	postBucklingLoading(0),
@@ -352,7 +356,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainConverged(0) <= -0.00144 && strainConverged(0) > -0.00145 && strainTrial(0) >= -0.00155 && strainTrial(0) < -0.00154) {
+	/*if (strainConverged(0) <= -0.00173475 && strainConverged(0) > -0.00173476 && strainTrial(0) >= -0.00195118 && strainTrial(0) < -0.00195117) {
 		double testBreak = 0.;
 	}*/
 
@@ -551,7 +555,6 @@ int LocalBucklingWebPlate::timeIntegration() {
 				calculateConsistentTangentModulusElastic(etaTangent);
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
@@ -567,7 +570,6 @@ int LocalBucklingWebPlate::timeIntegration() {
 					}
 
 					// Check if capping point is reached
-					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 						cappingPoint = 1;
 						if (convergedMatLaw == 0)
@@ -581,8 +583,10 @@ int LocalBucklingWebPlate::timeIntegration() {
 				else { // the capping point has been passed
 					//deltaStrain_trial /= 2.;
 					revertToBeforeCapping(cappingPoint);
-					deltaStrain_remaining4Peak /= 2.;
-					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
+					/*deltaStrain_remaining4Peak /= 2.;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
+					deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
 				}
 			}
 			else { // if not elastic
@@ -603,14 +607,14 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				//if (stressTrial(0) - sigmaC <= RETURN_MAP_TOL) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if capping point is reached
-					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC0Stress, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+					//if (stressTrial(0) - sigmaC >= RETURN_MAP_TOL) { // capping point is reached
 						cappingPoint = 1;
 						//chi1c = RETURN_MAP_TOL;
 						if (convergedMatLaw == 0)
@@ -1120,7 +1124,7 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	alphaPBKTrial[1] = backstress2PB_nPlus1;
 
 	// Update c1c for compressive yield surface
-	c1c = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
+	c1cTrial = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
 
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusPlRecovStage(strain_nPlus1, consistParam_plRecov, yieldStress, relativeStressNPlus1,backstressTot);
@@ -1277,7 +1281,7 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 	stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 
 	// Update c1c for compressive yield surface
-	c1c = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
+	c1cTrial = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
 
 	// Calculate the consistent tangent modulus for hardening stage
 	calculateConsistentTangentModulusUVCRecov(strain_nPlus1, consistParam_plastic, fBar, relativeStressNPlus1);
@@ -1885,6 +1889,7 @@ int LocalBucklingWebPlate::commitState() {
 	alphaPBKConverged = alphaPBKTrial;
 	stiffnessConverged = stiffnessTrial;
 	sumEjConverged = sumEjTrial;
+	c1cConverged = c1cTrial;
 	return 0;
 }
 
@@ -1906,6 +1911,7 @@ int LocalBucklingWebPlate::revertToLastCommit() {
 	alphaPBKTrial = alphaPBKConverged;
 	stiffnessTrial = stiffnessConverged;
 	sumEjTrial = sumEjConverged;
+	c1cTrial = c1cConverged;
 	return 0;
 }
 
@@ -1926,6 +1932,7 @@ int LocalBucklingWebPlate::revertToBeforeCapping(bool cappingPoint) {
 		alphaPBKTrial = alphaPBKConverged;
 		stiffnessTrial = stiffnessConverged;
 		sumEjTrial = sumEjConverged;
+		c1cTrial = c1cConverged;
 	}
 	return 0;
 }
@@ -1943,6 +1950,7 @@ int LocalBucklingWebPlate::revertToBeforeSwitchPlRecovUVC(bool switchPlRecovUVCP
 		alphaPBKTrial = alphaPBKConverged;
 		stiffnessTrial = stiffnessConverged;
 		sumEjTrial = sumEjConverged;
+		c1cTrial = c1cConverged;
 	}
 	return 0;
 }
@@ -1960,6 +1968,7 @@ int LocalBucklingWebPlate::revertToBeforeSwitchUVCRecovUVC(bool switchUVCRecovUV
 		alphaPBKTrial = alphaPBKConverged;
 		stiffnessTrial = stiffnessConverged;
 		sumEjTrial = sumEjConverged;
+		c1cTrial = c1cConverged;
 	}
 	return 0;
 }
@@ -1987,6 +1996,7 @@ int LocalBucklingWebPlate::revertToStart() {
 	}
 	sumEjConverged = 0.;
 	sumEjTrial = 0.;
+	c1cTrial = 0.;
 	revertToLastCommit();
 	return 0;
 }
@@ -2030,6 +2040,8 @@ NDMaterial* LocalBucklingWebPlate::getCopy() {
 	theCopy->postBucklingLoading = postBucklingLoading;
 	theCopy->sumEjConverged = sumEjConverged;
 	theCopy->sumEjTrial = sumEjTrial;
+	theCopy->c1cConverged = c1cConverged;
+	theCopy->c1cTrial = c1cTrial;
 
 	return theCopy;
 }
@@ -2283,7 +2295,7 @@ double LocalBucklingWebPlate::calculateChi1c() {
 	sigmaSurSigmaY = calculateSigmaSurSigmaY();
 
 	/*chi1c = b_chi1c * pow((1.0 - sigmaSurSigmaY), 2);*/
-	chi1c = b_chi1c * pow((1.0 - sigmaSurSigmaY), 2) + c1c;
+	chi1c = b_chi1c * pow((1.0 - sigmaSurSigmaY), 2) + c1cTrial;
 
 	return chi1c;
 }
@@ -2499,9 +2511,19 @@ void LocalBucklingWebPlate::calculateC1c(double yieldStress, double alphaTot11) 
 	/*c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);*/
 	//c1c = (pow(yieldStress, 2) - pow((-sigmaC - alphaTot11), 2)) / pow((-sigmaC), 2);
 
+	//double stressTol = elasticMatrix(0,0)* RETURN_MAP_TOL; // Additional stress component due to tolerance
+	//double stress4C1c = -sigmaC + stressTol;
+	//c1cTrial = (pow(yieldStress, 2) - pow((-stress4C1c - alphaTot11), 2)) / pow((-stress4C1c), 2);
+
 	double stressTol = elasticMatrix(0,0)* RETURN_MAP_TOL; // Additional stress component due to tolerance
-	double stress4C1c = -sigmaC + stressTol;
-	c1c = (pow(yieldStress, 2) - pow((-stress4C1c - alphaTot11), 2)) / pow((-stress4C1c), 2);
+	double stress4C1c = stressTrial(0) + stressTol;
+	c1cTrial = (pow(yieldStress, 2) - pow((-sigmaC + stressTol), 2)) / pow(stress4C1c, 2);
+
+	if (c1cTrial<0)
+	{
+		int errorNeg = 1;
+	}
+
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2555,7 +2577,7 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStress, Vec
 		calculateRatioAlphaBackstress(yieldStress);
 
 		// Set c1cUnload
-		c1cUnload = c1c;
+		c1cUnload = c1cTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
