@@ -575,7 +575,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 						if (convergedMatLaw == 0)
 						{
 							strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
-							calculateC1c(yieldStress, alphaTot(0));
+							//calculateC1c(yieldStress, alphaTot(0));
+							calculateC1c(yieldStress, alphaTot);
 						}
 						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
@@ -2507,7 +2508,7 @@ double LocalBucklingWebPlate::calculateDEtaTangentdEpsiPb11() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingWebPlate::calculateC1c(double yieldStress, double alphaTot11) {
+void LocalBucklingWebPlate::calculateC1c(double yieldStress, Vector alphaTot) {
 	/*c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);*/
 	//c1c = (pow(yieldStress, 2) - pow((-sigmaC - alphaTot11), 2)) / pow((-sigmaC), 2);
 
@@ -2515,14 +2516,20 @@ void LocalBucklingWebPlate::calculateC1c(double yieldStress, double alphaTot11) 
 	//double stress4C1c = -sigmaC + stressTol;
 	//c1cTrial = (pow(yieldStress, 2) - pow((-stress4C1c - alphaTot11), 2)) / pow((-stress4C1c), 2);
 
-	double stressTol = elasticMatrix(0,0)* RETURN_MAP_TOL; // Additional stress component due to tolerance
-	double stress4C1c = stressTrial(0) + stressTol;
-	c1cTrial = (pow(yieldStress, 2) - pow((-sigmaC + stressTol), 2)) / pow(stress4C1c, 2);
+	//double stressTol = elasticMatrix(0,0)* RETURN_MAP_TOL; // Additional stress component due to tolerance
+	//double stress4C1c = stressTrial(0) + stressTol;
+	//c1cTrial = (pow(yieldStress, 2) - pow((-sigmaC + stressTol), 2)) / pow(stress4C1c, 2);
 
-	if (c1cTrial<0)
+	double stressTol = elasticMatrix(0, 0) * RETURN_MAP_TOL; // Additional stress component due to tolerance
+	double sigma11UpdatedTol = stressTrial(0) + stressTol;
+	Vector xiTrial = (stressTrial + pVect * stressTol) - alphaTot;
+	double xiVonMisesSquared = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2));
+	c1cTrial = (pow(yieldStress, 2) - xiVonMisesSquared) / pow(sigma11UpdatedTol, 2);
+
+	/*if (c1cTrial<0)
 	{
 		int errorNeg = 1;
-	}
+	}*/
 
 }
 

@@ -124,7 +124,7 @@
 	patch rect 1 10 1 $yIW2 $zIW2 $yJW2 $zJW2;
 	}
 
-	set lc [expr 1.0*$bPlate];
+	set lc [expr 2.5*$bPlate];
 	#set integration "NewtonCotes 1 5"
 	#element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 20 1e-6
 	element gradientForceBeamColumn 12 1 2 $ColTransfTag NewtonCotesUpdated 1 9  20 1e-6 $lc
@@ -136,54 +136,54 @@
 puts "Recorders ..."
 
 # Record displacements 
-	recorder Node -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_Disp.txt -node 2 -dof 1 2 disp;
+	recorder Node -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_Disp.txt -node 2 -dof 1 2 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_RBase.txt -node 1 -dof 1 2 6 reaction;
+	recorder Node -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_RBase.txt -node 1 -dof 1 2 6 reaction;
 	
 # Record stress and strains for the external fibers in the flanges
-	recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerPos7.txt -ele 12 section 1 fiber 144 -85.5 1 stress;
-	recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerPos7.txt -ele 12 section 1 fiber 144 -85.5 1 strain;
+	recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerPos7.txt -ele 12 section 1 fiber 144 -85.5 1 stress;
+	recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerPos7.txt -ele 12 section 1 fiber 144 -85.5 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerPos6.txt -ele 12 section 1 fiber 135.2 -135.2 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerPos6.txt -ele 12 section 1 fiber 135.2 -135.2 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerPos6.txt -ele 12 section 1 fiber 135.2 -135.2 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerPos6.txt -ele 12 section 1 fiber 135.2 -135.2 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerPos5.txt -ele 12 section 1 fiber 102.6 -144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerPos5.txt -ele 12 section 1 fiber 102.6 -144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerPos5.txt -ele 12 section 1 fiber 102.6 -144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerPos5.txt -ele 12 section 1 fiber 102.6 -144 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerPos4.txt -ele 12 section 1 fiber 79.8 -144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerPos4.txt -ele 12 section 1 fiber 79.8 -144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerPos4.txt -ele 12 section 1 fiber 79.8 -144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerPos4.txt -ele 12 section 1 fiber 79.8 -144 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerPos3.txt -ele 12 section 1 fiber 57 -144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerPos3.txt -ele 12 section 1 fiber 57 -144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerPos3.txt -ele 12 section 1 fiber 57 -144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerPos3.txt -ele 12 section 1 fiber 57 -144 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerPos2.txt -ele 12 section 1 fiber 34.2 -144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerPos2.txt -ele 12 section 1 fiber 34.2 -144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerPos2.txt -ele 12 section 1 fiber 34.2 -144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerPos2.txt -ele 12 section 1 fiber 34.2 -144 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerPos1.txt -ele 12 section 1 fiber 11.4 -144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerPos1.txt -ele 12 section 1 fiber 11.4 -144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerPos1.txt -ele 12 section 1 fiber 11.4 -144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerPos1.txt -ele 12 section 1 fiber 11.4 -144 1 strain;
 	
 	
-	recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerNeg7.txt -ele 12 section 1 fiber -144 -85.5 1 stress;
-	recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerNeg7.txt -ele 12 section 1 fiber -144 -85.5 1 strain;
+	recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerNeg7.txt -ele 12 section 1 fiber -144 -85.5 1 stress;
+	recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerNeg7.txt -ele 12 section 1 fiber -144 -85.5 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerNeg6.txt -ele 12 section 1 fiber -135.2 -135.2 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerNeg6.txt -ele 12 section 1 fiber -135.2 -135.2 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerNeg6.txt -ele 12 section 1 fiber -135.2 -135.2 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerNeg6.txt -ele 12 section 1 fiber -135.2 -135.2 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerNeg5.txt -ele 12 section 1 fiber -102.6 144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerNeg5.txt -ele 12 section 1 fiber -102.6 144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerNeg5.txt -ele 12 section 1 fiber -102.6 144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerNeg5.txt -ele 12 section 1 fiber -102.6 144 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerNeg4.txt -ele 12 section 1 fiber -79.8 144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerNeg4.txt -ele 12 section 1 fiber -79.8 144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerNeg4.txt -ele 12 section 1 fiber -79.8 144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerNeg4.txt -ele 12 section 1 fiber -79.8 144 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerNeg3.txt -ele 12 section 1 fiber -57 144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerNeg3.txt -ele 12 section 1 fiber -57 144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerNeg3.txt -ele 12 section 1 fiber -57 144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerNeg3.txt -ele 12 section 1 fiber -57 144 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerNeg2.txt -ele 12 section 1 fiber -34.2 144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerNeg2.txt -ele 12 section 1 fiber -34.2 144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerNeg2.txt -ele 12 section 1 fiber -34.2 144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerNeg2.txt -ele 12 section 1 fiber -34.2 144 1 strain;
 	
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_stressFiberLayerNeg1.txt -ele 12 section 1 fiber -11.4 144 1 stress;
-	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc1D_strainFiberLayerNeg1.txt -ele 12 section 1 fiber -11.4 144 1 strain;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_stressFiberLayerNeg1.txt -ele 12 section 1 fiber -11.4 144 1 stress;
+	#recorder Element -file $dataDir/HSS300x6p5_Monotonic_NoAxialLoad_nonlocal9IpLc25D_strainFiberLayerNeg1.txt -ele 12 section 1 fiber -11.4 144 1 strain;
 
 	
 	

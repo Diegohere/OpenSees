@@ -165,7 +165,8 @@ private:
 	double calculateDEtaTangentdEpsiPb11(void);
 
 	// Computes the values of constant c1c needed for buckling prior to yielding
-	void calculateC1c(double yieldStress, double alphaTot11);
+	//void calculateC1c(double yieldStress, double alphaTot11);
+	void calculateC1c(double yieldStress, Vector alphaTot);
 
 	// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
 	void setTensileEllipsoidYieldSurf(double yieldStress, Vector alphaTot);
