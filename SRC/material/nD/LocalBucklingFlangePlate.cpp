@@ -154,6 +154,8 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poi
 	strainPBEqTrial(0.),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
+	c1cConverged(0.),
+	c1cTrial(0.),
 	/*chi1cConverged(0.),
 	chi1cTrial(0.),*/
 	elasticLoading(0),
@@ -226,6 +228,8 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate()
 	strainPBEqTrial(0.),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
+	c1cConverged(0.),
+	c1cTrial(0.),
 	/*chi1cConverged(0.),
 	chi1cTrial(0.),*/
 	elasticLoading(0),
@@ -301,7 +305,8 @@ int LocalBucklingFlangePlate::timeIntegration() {
 	Vector strain_nPlus1 = Vector(N_DIMS);
 	double triaxiality = 0.;
 	Vector xiTrial = Vector(N_DIMS);
-	double phiVM = 0., phiELL = 0.;
+	double phiTension = 0.;
+	double phiCompression = 0.;
 	double yieldStress = 0.;
 	double f2bar = 0.;
 	double chi1c = 0.;
@@ -354,18 +359,19 @@ int LocalBucklingFlangePlate::timeIntegration() {
 			}*/
 
 		xiTrial = stressTrial - alpha;
-		triaxiality = 1. / 3. * xiTrial[0];
+		//triaxiality = 1. / 3. * xiTrial[0];
+		triaxiality = 1. / 3. * stressTrial(0);
 		etaTrial = qMatT * xiTrial;
 		yieldStress = calculateYieldStress();
 
 		// Select which return mapping to do
 		if (triaxiality >= 0) { // if in tension
 			f2bar = 2. / 3. * pow(etaTrial(0), 2) + 2. * pow(etaTrial(1), 2) + 2. * pow(etaTrial(2), 2);
-			phiVM = 1. / 2. * f2bar - 1. / 3. * pow(yieldStress, 2);
+			phiTension = 1. / 2. * f2bar - 1. / 3. * pow(yieldStress, 2);
 			convergedMatLaw = true;
 
 			// Check if trial state is elastic or if need return map approach
-			if (phiVM <= RETURN_MAP_TOL) { //loading is elastic
+			if (phiTension <= RETURN_MAP_TOL) { //loading is elastic
 				elasticLoading = 1;
 
 				// Update the stiffness for elastic loading
@@ -380,10 +386,10 @@ int LocalBucklingFlangePlate::timeIntegration() {
 		else { // if in compression
 			// Compute value of phiELL
 			chi1c = calculateChi1c();
-			phiELL = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2)) + chi1c * pow(stressTrial(0), 2) - pow(yieldStress, 2);
+			phiCompression = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2)) + chi1c * pow(stressTrial(0), 2) - pow(yieldStress, 2);
 
 			// Check if trial state is elastic or if need return map approach
-			if (phiELL <= RETURN_MAP_TOL) { //loading is elastic
+			if (phiCompression <= RETURN_MAP_TOL) { //loading is elastic
 				elasticLoading = 1;
 
 				// Update the stiffness for elastic loading
@@ -396,12 +402,11 @@ int LocalBucklingFlangePlate::timeIntegration() {
 					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if the full strain increment has been done
-					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
-						/*strain_previous += deltaStrain_trial;
-						deltaStrain_trial = deltaStrain_todo;*/
 						revertToBeforeCapping(cappingPoint);
 						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2.;
 					}
@@ -413,7 +418,8 @@ int LocalBucklingFlangePlate::timeIntegration() {
 						if (convergedMatLaw == 0)
 						{
 							strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
-							calculateC1c(yieldStress, alpha(0));
+							//calculateC1c(yieldStress, alpha(0));
+							calculateC1c(yieldStress, alpha);
 						}
 						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
 					}
@@ -421,14 +427,17 @@ int LocalBucklingFlangePlate::timeIntegration() {
 				else { // the capping point has been passed
 					//deltaStrain_trial /= 2.;
 					revertToBeforeCapping(cappingPoint);
-					deltaStrain_remaining4Peak /= 2.;
-					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
+					/*deltaStrain_remaining4Peak /= 2.;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
+					deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
 				}
 			}
 			else { // if not elastic
 
 				// Check if hardening or softening response
-				if (abs(strainPostBucklingTrial(0)) < RETURN_MAP_TOL && c1c <= RETURN_MAP_TOL) {
+				//if (abs(strainPostBucklingTrial(0)) < RETURN_MAP_TOL && c1c <= RETURN_MAP_TOL) {
+				if (abs(strainPostBucklingTrial(0)) < RETURN_MAP_TOL) {
 					// Do a step in the hardening direction
 					plasticLoading = 1;
 					retVal = returnMappingHardening(strain_nPlus1, alpha, etaTrial);
@@ -459,7 +468,8 @@ int LocalBucklingFlangePlate::timeIntegration() {
 					}
 
 					// Check if the full strain increment has been done
-					if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+					if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
@@ -475,8 +485,10 @@ int LocalBucklingFlangePlate::timeIntegration() {
 				else { // the capping point has been passed
 					//deltaStrain_trial /= 2.;
 					revertToBeforeCapping(cappingPoint);
-					deltaStrain_remaining4Peak /= 2.;
-					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;
+					/*deltaStrain_remaining4Peak /= 2.;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
+					deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
+					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
 				}
 			}
 		}
@@ -485,6 +497,7 @@ int LocalBucklingFlangePlate::timeIntegration() {
 	// Warn the user if the algorithm did not converge and return -1
 	if (iterationNumber_timeIntegration >= MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		opserr << "LocalBucklingFlangePlate::timeIntegration time integration did not converge!" << endln;
+		opserr << "This is strainTrial: " << strainTrial << endln;
 		retVal = -1;
 	}
 
@@ -1033,6 +1046,7 @@ int LocalBucklingFlangePlate::commitState() {
 	stressConverged = stressTrial;
 	alphaKConverged = alphaKTrial;
 	stiffnessConverged = stiffnessTrial;
+	c1cConverged = c1cTrial;
 	return 0;
 }
 
@@ -1052,6 +1066,7 @@ int LocalBucklingFlangePlate::revertToLastCommit() {
 	stressTrial = stressConverged;
 	alphaKTrial = alphaKConverged;
 	stiffnessTrial = stiffnessConverged;
+	c1cTrial = c1cConverged;
 	return 0;
 }
 
@@ -1070,6 +1085,7 @@ int LocalBucklingFlangePlate::revertToBeforeCapping(bool cappingPoint) {
 		strainPBEqTrial = strainPBEqConverged;
 		alphaKTrial = alphaKConverged;
 		stiffnessTrial = stiffnessConverged;
+		c1cTrial = c1cConverged;
 	}
 	return 0;
 }
@@ -1096,6 +1112,7 @@ int LocalBucklingFlangePlate::revertToStart() {
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
 		alphaKConverged[i].Zero();
 	}
+	c1cTrial = 0.;
 	revertToLastCommit();
 	return 0;
 }
@@ -1135,6 +1152,8 @@ NDMaterial* LocalBucklingFlangePlate::getCopy() {
 	theCopy->elasticLoading = elasticLoading;
 	theCopy->plasticLoading = plasticLoading;
 	theCopy->postBucklingLoading = postBucklingLoading;
+	theCopy->c1cConverged = c1cConverged;
+	theCopy->c1cTrial = c1cTrial;
 
 	return theCopy;
 }
@@ -1388,7 +1407,7 @@ double LocalBucklingFlangePlate::calculateChi1c() {
 	sigmaSurSigmaY = calculateSigmaSurSigmaY();
 
 	/*chi1c = b_chi1c * pow((1.0 - sigmaSurSigmaY), 2);*/
-	chi1c = b_chi1c * pow((1.0 - sigmaSurSigmaY), 2) + c1c;
+	chi1c = b_chi1c * pow((1.0 - sigmaSurSigmaY), 2) + c1cTrial;
 
 	return chi1c;
 }
@@ -1554,8 +1573,14 @@ double LocalBucklingFlangePlate::calculateDEtaTangentdEpsiPb11() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingFlangePlate::calculateC1c(double yieldStress, double alphaTot11) {
-	c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);
+void LocalBucklingFlangePlate::calculateC1c(double yieldStress, Vector alphaTot) {
+	//c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);
+
+	double stressTol = elasticMatrix(0, 0) * RETURN_MAP_TOL; // Additional stress component due to tolerance
+	double sigma11UpdatedTol = stressTrial(0) + stressTol;
+	Vector xiTrial = (stressTrial + pVect * stressTol) - alphaTot;
+	double xiVonMisesSquared = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2));
+	c1cTrial = (pow(yieldStress, 2) - xiVonMisesSquared) / pow(sigma11UpdatedTol, 2);
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */

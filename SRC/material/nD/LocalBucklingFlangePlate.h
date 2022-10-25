@@ -169,7 +169,8 @@ private:
 	double calculateDEtaTangentdEpsiPb11(void);
 
 	// Computes the values of constant c1c needed for buckling prior to yielding
-	void calculateC1c(double yieldStress, double alphaTot11);
+	//void calculateC1c(double yieldStress, double alphaTot11);
+	void calculateC1c(double yieldStress, Vector alphaTot);
 
 	/* ------------------------------------------------------------------------ */
 	/* Members                                                                  */
@@ -235,10 +236,13 @@ private:
 	std::vector<Vector> alphaKTrial;
 	Matrix stiffnessConverged;
 	Matrix stiffnessTrial;
+	double c1cConverged;
+	double c1cTrial;
+
 	int elasticLoading;
 	int plasticLoading;
 	int postBucklingLoading;
-	double c1c = 0.;
+	//double c1c = 0.;
 
 	// Projection matrices and their eigendecomposition
 	Vector pVect;
