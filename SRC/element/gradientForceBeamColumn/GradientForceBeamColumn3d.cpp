@@ -29,8 +29,8 @@
 #define DefaultLoverGJ 1.0e-10
 
 // Initialize class wide variables
-Matrix GradientForceBeamColumn3d::theMatrix(6, 6);
-Vector GradientForceBeamColumn3d::theVector(6);
+Matrix GradientForceBeamColumn3d::theMatrix(12, 12);
+Vector GradientForceBeamColumn3d::theVector(12);
 double GradientForceBeamColumn3d::workArea[200];
 
 Vector GradientForceBeamColumn3d::eNonLocalSubdivide[maxNumSections];
@@ -1657,43 +1657,58 @@ GradientForceBeamColumn3d::Print(OPS_Stream& s, int flag)
 
 //Method to draw and view the element
 int
-GradientForceBeamColumn3d::displaySelf(Renderer& theViewer, int displayMode, float fact)
+GradientForceBeamColumn3d::displaySelf(Renderer& theViewer, int displayMode, float fact, const char** displayModes, int numMode)
 {
-	// first determine the end points of the beam based on the display factor 
-	const Vector& end1Crd = theNodes[0]->getCrds();
-	const Vector& end2Crd = theNodes[1]->getCrds();
+	//// first determine the end points of the beam based on the display factor 
+	//const Vector& end1Crd = theNodes[0]->getCrds();
+	//const Vector& end2Crd = theNodes[1]->getCrds();
+
+	//static Vector v1(3);
+	//static Vector v2(3);
+
+	//if (displayMode >= 0) {
+	//	const Vector& end1Disp = theNodes[0]->getDisp();
+	//	const Vector& end2Disp = theNodes[1]->getDisp();
+
+	//	for (int i = 0; i < 2; i++) {
+	//		v1(i) = end1Crd(i) + end1Disp(i) * fact;
+	//		v2(i) = end2Crd(i) + end2Disp(i) * fact;
+	//	}
+	//}
+	//else {
+	//	int mode = displayMode * -1;
+	//	const Matrix& eigen1 = theNodes[0]->getEigenvectors();
+	//	const Matrix& eigen2 = theNodes[1]->getEigenvectors();
+	//	if (eigen1.noCols() >= mode) {
+	//		for (int i = 0; i < 2; i++) {
+	//			v1(i) = end1Crd(i) + eigen1(i, mode - 1) * fact;
+	//			v2(i) = end2Crd(i) + eigen2(i, mode - 1) * fact;
+	//		}
+	//	}
+	//	else {
+	//		for (int i = 0; i < 2; i++) {
+	//			v1(i) = end1Crd(i);
+	//			v2(i) = end2Crd(i);
+	//		}
+	//	}
+	//}
+
+	//return theViewer.drawLine(v1, v2, 1.0, 1.0);
 
 	static Vector v1(3);
 	static Vector v2(3);
 
-	if (displayMode >= 0) {
-		const Vector& end1Disp = theNodes[0]->getDisp();
-		const Vector& end2Disp = theNodes[1]->getDisp();
+	theNodes[0]->getDisplayCrds(v1, fact, displayMode);
+	theNodes[1]->getDisplayCrds(v2, fact, displayMode);
+	float d1 = 0.0;
+	float d2 = 0.0;
+	int res = 0;
 
-		for (int i = 0; i < 2; i++) {
-			v1(i) = end1Crd(i) + end1Disp(i) * fact;
-			v2(i) = end2Crd(i) + end2Disp(i) * fact;
-		}
-	}
-	else {
-		int mode = displayMode * -1;
-		const Matrix& eigen1 = theNodes[0]->getEigenvectors();
-		const Matrix& eigen2 = theNodes[1]->getEigenvectors();
-		if (eigen1.noCols() >= mode) {
-			for (int i = 0; i < 2; i++) {
-				v1(i) = end1Crd(i) + eigen1(i, mode - 1) * fact;
-				v2(i) = end2Crd(i) + eigen2(i, mode - 1) * fact;
-			}
-		}
-		else {
-			for (int i = 0; i < 2; i++) {
-				v1(i) = end1Crd(i);
-				v2(i) = end2Crd(i);
-			}
-		}
-	}
+	if (displayMode > 0 && numMode == 0)
+		res += theViewer.drawLine(v1, v2, d1, d1, this->getTag(), 0);
+	else if (displayMode < 0)
+		return theViewer.drawLine(v1, v2, 0.0, 0.0, this->getTag(), 0);
 
-	return theViewer.drawLine(v1, v2, 1.0, 1.0);
 }
 
 //Method to define response parameters
