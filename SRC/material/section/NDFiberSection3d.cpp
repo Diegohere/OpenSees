@@ -415,6 +415,11 @@ NDFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
       fiberArea[i] = matData[3*i+2];
     }
   }
+
+  /*opserr << "This is coord fibers:"<< endln;
+  for (int i = 0; i < numFibers; i++) {
+      opserr << yLocs[i] << " and " << zLocs[i] << endln;
+  }*/
   
   static Vector eps(3);
 

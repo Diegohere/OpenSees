@@ -356,7 +356,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainConverged(0) <= -0.00173475 && strainConverged(0) > -0.00173476 && strainTrial(0) >= -0.00195118 && strainTrial(0) < -0.00195117) {
+	/*if (strainConverged(0) <= -0.00056279 && strainConverged(0) > -0.0005628 && strainTrial(0) >= -0.00040858 && strainTrial(0) < -0.00040857) {
 		double testBreak = 0.;
 	}*/
 
@@ -605,6 +605,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 					retVal = returnMappingSoftening(strain_nPlus1, xiTrial, alphaTot);
 
 					convergedMatLaw = true;
+
+					// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
+					setTensileEllipsoidYieldSurf(yieldStress, alphaTot);
 				}
 
 				// Check if the initial capping stress sigmaC0 has been passed
@@ -650,8 +653,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 			}
 
-			// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
-			setTensileEllipsoidYieldSurf(yieldStress, alphaTot);
+			//// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
+			//setTensileEllipsoidYieldSurf(yieldStress, alphaTot);
 
 			// Cyclic degradation part:
 			sumEjTrial = sumEjConverged + 0.5 * (stressPrevious(0) + stressTrial(0)) * (strain_nPlus1(0) - strainConverged(0));
@@ -666,6 +669,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	// Warn the user if the algorithm did not converge and return -1
 	if (iterationNumber_timeIntegration >= MAXIMUM_ITERATIONS_TIMEINTEGRATION ) {
 		opserr << "LocalBucklingWebPlate::timeIntegration time integration did not converge!" << endln;
+		opserr << "This is strainConverged: " << strainConverged << endln;
 		opserr << "This is strainTrial: " << strainTrial << endln;
 		retVal = -1;
 	}
