@@ -356,7 +356,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainConverged(0) <= -0.00056279 && strainConverged(0) > -0.0005628 && strainTrial(0) >= -0.00040858 && strainTrial(0) < -0.00040857) {
+	/*if (strainConverged(0) <= 0.00271326 && strainConverged(0) > 0.00271324 && strainTrial(0) >= 0.00273840 && strainTrial(0) < 0.00273842) {
 		double testBreak = 0.;
 	}*/
 
@@ -2525,6 +2525,7 @@ void LocalBucklingWebPlate::calculateC1c(double yieldStress, Vector alphaTot) {
 	//c1cTrial = (pow(yieldStress, 2) - pow((-sigmaC + stressTol), 2)) / pow(stress4C1c, 2);
 
 	double stressTol = elasticMatrix(0, 0) * RETURN_MAP_TOL; // Additional stress component due to tolerance
+	//double stressTol = 0.; // Additional stress component due to tolerance
 	double sigma11UpdatedTol = stressTrial(0) + stressTol;
 	Vector xiTrial = (stressTrial + pVect * stressTol) - alphaTot;
 	double xiVonMisesSquared = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2));
@@ -2584,6 +2585,20 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStress, Vec
 		kYrBezierS = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezierS) * scaleFactorBezierStress;
 		sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezierO);
 
+		// Check if Bezier curve becomes larger than sigmaY + alphaAfterCompression(1) this fixes issue with f1t > 1
+		double AderivSigmaBezierS = 6. * sigmaPrBezierS - 6. * sigmaYrBezierS + 9. * alphaPrBezier * kPrBezierS - 9. * alphaYrBezier * kYrBezierS;
+		double BderivSigmaBezierS = 6. * sigmaYrBezierS - 6. * sigmaPrBezierS - 12. * alphaPrBezier * kPrBezierS + 6. * alphaYrBezier * kYrBezierS;
+		double CderivSigmaBezierS = 3. * alphaPrBezier * kPrBezierS;
+		double tHat1 = (-BderivSigmaBezierS + sqrt(pow(BderivSigmaBezierS, 2.) - 4. * AderivSigmaBezierS * CderivSigmaBezierS)) / (2. * AderivSigmaBezierS);
+		double tHat2 = (-BderivSigmaBezierS - sqrt(pow(BderivSigmaBezierS, 2.) - 4. * AderivSigmaBezierS * CderivSigmaBezierS)) / (2. * AderivSigmaBezierS);
+		double sigmaBezierSAtTHat1 = pow((1. - tHat1), 3) * sigmaPrBezierS + 3. * pow((1. - tHat1), 2) * tHat1 * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tHat1) * pow(tHat1, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tHat1, 3) * sigmaYrBezierS;
+		double sigmaBezierSAtTHat2 = pow((1. - tHat2), 3) * sigmaPrBezierS + 3. * pow((1. - tHat2), 2) * tHat2 * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tHat2) * pow(tHat2, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tHat2, 3) * sigmaYrBezierS;
+		if (sigmaBezierSAtTHat1 > yieldStress + backstressAfterCompression(0) || sigmaBezierSAtTHat2 > yieldStress + backstressAfterCompression(0))
+		{
+			alphaPrBezier = 0;
+			alphaYrBezier = 0;
+		}
+
 		//Compute ratios for backstress update during plastic recovery stage
 		calculateRatioAlphaBackstress(yieldStress);
 
@@ -2632,6 +2647,10 @@ double LocalBucklingWebPlate::calculateF1t(double yieldStress, double alphaTot11
 	}
 
 	return f1t;
+
+	/*if (f1t > 1) {
+		int testError = 1;
+	}*/
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
