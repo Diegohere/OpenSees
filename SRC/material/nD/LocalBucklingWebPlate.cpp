@@ -356,7 +356,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainConverged(0) <= 0.00271326 && strainConverged(0) > 0.00271324 && strainTrial(0) >= 0.00273840 && strainTrial(0) < 0.00273842) {
+	/*if (strainConverged(0) <= -0.001783951426358603 && strainConverged(0) > -0.001783951426358604 && strainTrial(0) >= -0.001788916222122188 && strainTrial(0) < -0.001788916222122187) {
 		double testBreak = 0.;
 	}*/
 
@@ -439,7 +439,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 						// Check if the full strain increment has been done
 						//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
-						if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL/1000.) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL/1000000.) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -570,6 +571,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 					}
 
 					// Check if capping point is reached
+					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					//double diffStress = 3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2);
 					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 						cappingPoint = 1;
 						if (convergedMatLaw == 0)
@@ -611,6 +614,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 				}
 
 				// Check if the initial capping stress sigmaC0 has been passed
+				//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
 				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 				//if (stressTrial(0) - sigmaC <= RETURN_MAP_TOL) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
@@ -863,6 +867,15 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 	yieldStress = calculateYieldStress();
 	sigmaSurSigmaY = calculateSigmaSurSigmaY();
 
+	Vector strainPostBucklingConvergedWithAddedTol = Vector(N_DIMS);
+	if (abs(strainPostBucklingConverged(0)) < RETURN_MAP_TOL)
+	{ // Try to solve issue with epsiPb11<tol after softening stage
+		strainPostBucklingConvergedWithAddedTol = strainPostBucklingConverged - pVect * RETURN_MAP_TOL;
+	}
+	else {
+		strainPostBucklingConvergedWithAddedTol = strainPostBucklingConverged;
+	}
+
 	// Do the return mapping algorithm for post buckling loading
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
 		iterationNumber_ReturnMapping++;
@@ -874,9 +887,9 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_postBuckling * 6.);
 		gammaDiag(2) = gammaDiag(1);
 
-		relativeStressNPlus1(0) = gammaDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - gammaDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
-		relativeStressNPlus1(1) = gammaDiag(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiag(1) / LambdaC_nPlus1Diag(1) * backstressTot(1);
-		relativeStressNPlus1(2) = gammaDiag(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiag(2) / LambdaC_nPlus1Diag(2) * backstressTot(2);
+		relativeStressNPlus1(0) = gammaDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConvergedWithAddedTol(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - gammaDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
+		relativeStressNPlus1(1) = gammaDiag(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConvergedWithAddedTol(1)) - gammaDiag(1) / LambdaC_nPlus1Diag(1) * backstressTot(1);
+		relativeStressNPlus1(2) = gammaDiag(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConvergedWithAddedTol(2)) - gammaDiag(2) / LambdaC_nPlus1Diag(2) * backstressTot(2);
 		stressTrial = relativeStressNPlus1 + backstressTot;
 
 		phiComp = 3. / 2. * (2. / 3. * pow(relativeStressNPlus1(0), 2) + 2. * pow(relativeStressNPlus1(1), 2) + 2. * pow(relativeStressNPlus1(2), 2)) + chi1c * pow(stressTrial(0), 2) - pow(yieldStress, 2);
@@ -897,9 +910,9 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		gammaDiagPrime(1) = -pow(gammaDiag(1), 2) * (dCdLambdaPB(1) + 6.);
 		gammaDiagPrime(2) = -pow(gammaDiag(2), 2) * (dCdLambdaPB(2) + 6.);
 
-		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - 2 * chi1c * gammaDiag(0) * backstressTot(0) - 2 * consistParam_postBuckling * gammaDiag(0) * backstressTot(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * backstressTot(0) - gammaDiag(0) * dCdLambdaPB(0) * backstressTot(0);
-		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * backstressTot(1) - gammaDiag(1) * dCdLambdaPB(1) * backstressTot(1);
-		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * backstressTot(2) - gammaDiag(2) * dCdLambdaPB(2) * backstressTot(2);
+		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConvergedWithAddedTol(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - 2 * chi1c * gammaDiag(0) * backstressTot(0) - 2 * consistParam_postBuckling * gammaDiag(0) * backstressTot(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * backstressTot(0) - gammaDiag(0) * dCdLambdaPB(0) * backstressTot(0);
+		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConvergedWithAddedTol(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * backstressTot(1) - gammaDiag(1) * dCdLambdaPB(1) * backstressTot(1);
+		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConvergedWithAddedTol(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * backstressTot(2) - gammaDiag(2) * dCdLambdaPB(2) * backstressTot(2);
 
 		dPhiCompdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0),2) * dChi1cDLambdaPB;
 
@@ -907,7 +920,11 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		consistParam_postBuckling = consistParam_postBuckling - phiComp / dPhiCompdLambdaPB;
 
 		strainPBEqTrial = strainPBEqConverged + psi * consistParam_postBuckling;
-		strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiCompdXi;
+		strainPostBucklingTrial = strainPostBucklingConvergedWithAddedTol + consistParam_postBuckling * dPhiCompdXi;
+		//if (strainPostBucklingConverged.Norm() == 0.)
+		//{ // Try to solve issue with epsiPb11<tol after softening stage
+		//	strainPostBucklingTrial = pVect * (strainPostBucklingConverged(0)+RETURN_MAP_TOL) + consistParam_postBuckling * dPhiCompdXi;
+		//}
 
 		sigmaSurSigmaY = calculateSigmaSurSigmaY();
 		chi1c = calculateChi1c();
@@ -917,6 +934,11 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 			convergedReturnMapping = true;
 		}
 	}
+
+	/*if (abs(strainPostBucklingTrial(0))<=abs(strainPostBucklingConverged(0)) || abs(strainPostBucklingTrial(0))<=RETURN_MAP_TOL)
+	{
+		double testError = 0.;
+	}*/
 
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusSoftening(strain_nPlus1, backstressTot, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
@@ -1130,6 +1152,10 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 	// Update c1c for compressive yield surface
 	c1cTrial = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
+	//if (abs(strainPostBucklingTrial(0)) < RETURN_MAP_TOL)
+	//{ // Try to fix if very small epsiPb11 unload
+	//	c1cTrial = 0.;
+	//}
 
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusPlRecovStage(strain_nPlus1, consistParam_plRecov, yieldStress, relativeStressNPlus1,backstressTot);
@@ -1287,6 +1313,10 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 
 	// Update c1c for compressive yield surface
 	c1cTrial = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
+	//if (abs(strainPostBucklingTrial(0))<RETURN_MAP_TOL)
+	//{ // Try to fix if very small epsiPb11 unload
+	//	c1cTrial = 0.;
+	//}
 
 	// Calculate the consistent tangent modulus for hardening stage
 	calculateConsistentTangentModulusUVCRecov(strain_nPlus1, consistParam_plastic, fBar, relativeStressNPlus1);
@@ -2593,7 +2623,7 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStress, Vec
 		double tHat2 = (-BderivSigmaBezierS - sqrt(pow(BderivSigmaBezierS, 2.) - 4. * AderivSigmaBezierS * CderivSigmaBezierS)) / (2. * AderivSigmaBezierS);
 		double sigmaBezierSAtTHat1 = pow((1. - tHat1), 3) * sigmaPrBezierS + 3. * pow((1. - tHat1), 2) * tHat1 * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tHat1) * pow(tHat1, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tHat1, 3) * sigmaYrBezierS;
 		double sigmaBezierSAtTHat2 = pow((1. - tHat2), 3) * sigmaPrBezierS + 3. * pow((1. - tHat2), 2) * tHat2 * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tHat2) * pow(tHat2, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tHat2, 3) * sigmaYrBezierS;
-		if (sigmaBezierSAtTHat1 > yieldStress + backstressAfterCompression(0) || sigmaBezierSAtTHat2 > yieldStress + backstressAfterCompression(0))
+		if (sigmaBezierSAtTHat1 > yieldStress + backstressAfterCompression(0) || sigmaBezierSAtTHat2 > yieldStress + backstressAfterCompression(0) || sigmaBezierSAtTHat1 < -yieldStress + backstressAfterCompression(0) || sigmaBezierSAtTHat2 < -yieldStress + backstressAfterCompression(0))
 		{
 			alphaPrBezier = 0;
 			alphaYrBezier = 0;

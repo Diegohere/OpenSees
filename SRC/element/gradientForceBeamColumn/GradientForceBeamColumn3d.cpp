@@ -419,6 +419,9 @@ const Matrix&
 GradientForceBeamColumn3d::getTangentStiff(void)
 {
 	crdTransf->update();
+
+	//opserr << "This is Kelement:" << Kelement << endln;
+
 	return crdTransf->getGlobalStiffMatrix(Kelement, q);
 }
 
@@ -2137,6 +2140,16 @@ GradientForceBeamColumn3d::computeFelement_nonlocal(int numSections, Matrix& Fel
 	double* wt;
 	wt = new double[numSections];
 	beamIntegr->getSectionWeights(numSections, L, wt);
+
+	/*for (int i = 0; i < numSections; i++) {
+		opserr << "This xi:" << xi[i] << endln;
+	}
+	double sumWt = 0.;
+	for (int i = 0; i < numSections; i++) {
+		opserr << "This wt:" << wt[i] << endln;
+		sumWt = sumWt + wt[i];
+	}
+	opserr << "This sum(wt):" << sumWt << endln;*/
 	
 	for (int i = 0; i < numSections; i++)
 	{
@@ -2161,6 +2174,8 @@ GradientForceBeamColumn3d::computeFelement_nonlocal(int numSections, Matrix& Fel
 		Matrix Fsection_interm(NEBD, NEBD); //intermediate matrix to fill Fsection_Tot
 		Fsection_interm = FSectionSubdivide[i];
 
+		//opserr << "This matrix Fsection_interm:" << Fsection_interm << endln;
+
 		for (int j = 0; j < NEBD; j++) //loop to over the lines of Fsection_interm
 		{
 			for (int k = 0; k < NEBD; k++) //loop to over the columns of Fsection_interm
@@ -2173,11 +2188,12 @@ GradientForceBeamColumn3d::computeFelement_nonlocal(int numSections, Matrix& Fel
 	//compute the matrix multiplication F_element_nonLocal=B_q*inv(H)*Fsection_Tot*B_Q;
 	Felement_nonlocal = B_q * H_inv * Fsection_Tot * B_Q;
 
-	/*opserr << "This matrix B_q:" << B_q << endln;
-	opserr << "This matrix H:" << H << endln;
-	opserr << "This matrix H_inv:" << H_inv << endln;
-	opserr << "This matrix Fsection_Tot:" << Fsection_Tot << endln;
-	opserr << "This matrix B_Q:" << B_Q << endln;
-	opserr << "This matrix Felement_nonlocal:" << Felement_nonlocal << endln;
-	double test = 0.;*/
+	//opserr << "This matrix B_q:" << B_q << endln;
+	//opserr << "This matrix H:" << H << endln;
+	//opserr << "This matrix H_inv:" << H_inv << endln;
+	//opserr << "This matrix H_inv*Fsection_Tot:" << H_inv * Fsection_Tot << endln;
+	//opserr << "This matrix Fsection_Tot:" << Fsection_Tot << endln;
+	//opserr << "This matrix B_Q:" << B_Q << endln;
+	//opserr << "This matrix Felement_nonlocal:" << Felement_nonlocal << endln;
+	double test = 0.;
 }

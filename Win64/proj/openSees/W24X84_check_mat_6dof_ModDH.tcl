@@ -116,7 +116,7 @@ set IDsteelFlange 4;
 #nDMaterial LocalBucklingWebPlate $IDsteelWeb 29000.0 0.3 50.0 13.0 12.0 0.0 1.0 1 490.0 20.0 20.75 0.625 58.0 1;
 #nDMaterial LocalBucklingFlangePlate $IDsteelFlange 29000.0 0.3 50.0 13.0 12.0 0.0 1.0 1 490.0 20.0 5.325 0.9375 58.0 1;
 
-nDMaterial LocalBucklingWebPlate $IDsteelWeb 29000.0 0.3 55.0 17.8 19.74 20.81 248.14 2 4589.0 277.32 224.6 9.04 20.75 0.5 60.0 1;
+nDMaterial LocalBucklingWebPlate $IDsteelWeb 29000.0 0.3 55.0 17.8 19.74 20.81 248.14 2 4589.0 277.32 224.6 9.04 20.75 0.5 65.0 1;
 nDMaterial LocalBucklingFlangePlate $IDsteelFlange 29000.0 0.3 54.0 20.45 15.20 19.72 211.16 2 3716.0 235.12 136.62 3.16 2.8125 0.75 75.0 1;
 
 # FIBER SECTION properties -------------------------------------------------------------
@@ -129,7 +129,7 @@ nDMaterial LocalBucklingFlangePlate $IDsteelFlange 29000.0 0.3 54.0 20.45 15.20 
 	
 	#Torsion part
 	set G 	[expr $E/2.0/(1+$nu)]; # shear modulus
-	set J   [expr 3700.]; 		# torsional constant   
+	set J   [expr 3.7]; 		# torsional constant   
 	set GJ 	[expr $G*$J];  			# torsional stiffness 
     
 	
