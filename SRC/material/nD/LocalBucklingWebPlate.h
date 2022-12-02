@@ -288,24 +288,44 @@ private:
 	int PlRecoveryLoading;
 	int UVCRecoveryLoading;
 	/*double c1c = 0.;*/
-	double b_1tO = 0.;
-	double b_1tS = 0.;
-	double sigmaPrBezierO = 0.;
-	double sigmaPrBezierS = 0.;
-	double sigmaYrBezierS = 1.;
-	double sigmaYrBezierO = 0.;
-	double epsilonPB11Unload = 0.;
-	Vector backstressAfterCompression;
-	double epsilonPB11Min = 1000.; // big number so that works for start with tension
-	double alphaPrBezier = 0.;
-	double alphaYrBezier = 0.;
-	double kPrBezierS = 0.;
-	double kYrBezierS = 0.;
-	double rAlphaBackstress1 = 0.;
-	double rAlphaBackstress2 = 0.;
-	double c1cUnload = 0.;
-	double Erc = 0.;
-	double sigmaC = 0.;
+
+	double b_1tOConverged;
+	double b_1tSConverged;
+	double sigmaPrBezierOConverged;
+	double sigmaPrBezierSConverged;
+	double sigmaYrBezierSConverged;
+	double sigmaYrBezierOConverged;
+	double epsilonPB11UnloadConverged;
+	Vector backstressAfterCompressionConverged;
+	double epsilonPB11MinConverged;
+	double alphaPrBezierConverged;
+	double alphaYrBezierConverged;
+	double kPrBezierSConverged;
+	double kYrBezierSConverged;
+	double rAlphaBackstress1Converged;
+	double rAlphaBackstress2Converged;
+	double c1cUnloadConverged;
+	double ErcConverged;
+	double sigmaCConverged;
+
+	double b_1tOTrial;
+	double b_1tSTrial;
+	double sigmaPrBezierOTrial;
+	double sigmaPrBezierSTrial;
+	double sigmaYrBezierSTrial;
+	double sigmaYrBezierOTrial;
+	double epsilonPB11UnloadTrial;
+	Vector backstressAfterCompressionTrial;
+	double epsilonPB11MinTrial;
+	double alphaPrBezierTrial;
+	double alphaYrBezierTrial;
+	double kPrBezierSTrial;
+	double kYrBezierSTrial;
+	double rAlphaBackstress1Trial;
+	double rAlphaBackstress2Trial;
+	double c1cUnloadTrial;
+	double ErcTrial;
+	double sigmaCTrial;
 
 
 	// Projection matrices and their eigendecomposition

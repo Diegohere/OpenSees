@@ -160,6 +160,43 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	c1cTrial(0.),
 	/*chi1cConverged(0.),
 	chi1cTrial(0.),*/
+	b_1tOConverged(0.),
+	b_1tSConverged(0.),
+	sigmaPrBezierOConverged(0.),
+	sigmaPrBezierSConverged(0.),
+	sigmaYrBezierSConverged(0.),
+	sigmaYrBezierOConverged(0.),
+	epsilonPB11UnloadConverged(0.),
+	backstressAfterCompressionConverged(N_DIMS),
+	epsilonPB11MinConverged(0.),
+	alphaPrBezierConverged(0.),
+	alphaYrBezierConverged(0.),
+	kPrBezierSConverged(0.),
+	kYrBezierSConverged(0.),
+	rAlphaBackstress1Converged(0.),
+	rAlphaBackstress2Converged(0.),
+	c1cUnloadConverged(0.),
+	ErcConverged(0.),
+	sigmaCConverged(0.),
+
+	b_1tOTrial(0.),
+	b_1tSTrial(0.),
+	sigmaPrBezierOTrial(0.),
+	sigmaPrBezierSTrial(0.),
+	sigmaYrBezierSTrial(0.),
+	sigmaYrBezierOTrial(0.),
+	epsilonPB11UnloadTrial(0.),
+	backstressAfterCompressionTrial(N_DIMS),
+	epsilonPB11MinTrial(0.),
+	alphaPrBezierTrial(0.),
+	alphaYrBezierTrial(0.),
+	kPrBezierSTrial(0.),
+	kYrBezierSTrial(0.),
+	rAlphaBackstress1Trial(0.),
+	rAlphaBackstress2Trial(0.),
+	c1cUnloadTrial(0.),
+	sigmaCTrial(0.),
+
 	elasticLoading(0),
 	plasticLoading(0),
 	postBucklingLoading(0),
@@ -243,6 +280,43 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 	sumEjTrial(0.),
 	c1cConverged(0.),
 	c1cTrial(0.),
+
+	b_1tOConverged(0.),
+	b_1tSConverged(0.),
+	sigmaPrBezierOConverged(0.),
+	sigmaPrBezierSConverged(0.),
+	sigmaYrBezierSConverged(0.),
+	sigmaYrBezierOConverged(0.),
+	epsilonPB11UnloadConverged(0.),
+	backstressAfterCompressionConverged(N_DIMS),
+	epsilonPB11MinConverged(0.),
+	alphaPrBezierConverged(0.),
+	alphaYrBezierConverged(0.),
+	kPrBezierSConverged(0.),
+	kYrBezierSConverged(0.),
+	rAlphaBackstress1Converged(0.),
+	rAlphaBackstress2Converged(0.),
+	c1cUnloadConverged(0.),
+	ErcConverged(0.),
+	sigmaCConverged(0.),
+	b_1tOTrial(0.),
+	b_1tSTrial(0.),
+	sigmaPrBezierOTrial(0.),
+	sigmaPrBezierSTrial(0.),
+	sigmaYrBezierSTrial(0.),
+	sigmaYrBezierOTrial(0.),
+	epsilonPB11UnloadTrial(0.),
+	backstressAfterCompressionTrial(N_DIMS),
+	epsilonPB11MinTrial(0.),
+	alphaPrBezierTrial(0.),
+	alphaYrBezierTrial(0.),
+	kPrBezierSTrial(0.),
+	kYrBezierSTrial(0.),
+	rAlphaBackstress1Trial(0.),
+	rAlphaBackstress2Trial(0.),
+	c1cUnloadTrial(0.),
+	sigmaCTrial(0.),
+
 	elasticLoading(0),
 	plasticLoading(0),
 	postBucklingLoading(0),
@@ -419,7 +493,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 				
 			}
 			else { //if not elastic
-				if (abs(strainPostBucklingTrial(0)) > RETURN_MAP_TOL && abs(epsilonPB11Unload)>=abs(epsilonPB11Min))
+				if (abs(strainPostBucklingTrial(0)) > RETURN_MAP_TOL && abs(epsilonPB11UnloadTrial)>=abs(epsilonPB11MinTrial))
 				{ // Plastic recovery stage
 					PlRecoveryLoading = 1;
 
@@ -467,7 +541,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 				} // end Plastic recovery stage
 
-				else if (abs(strainPostBucklingTrial(0)) > RETURN_MAP_TOL && abs(epsilonPB11Unload) < abs(epsilonPB11Min))
+				else if (abs(strainPostBucklingTrial(0)) > RETURN_MAP_TOL && abs(epsilonPB11UnloadTrial) < abs(epsilonPB11MinTrial))
 				{//UVC recovery stage
 					UVCRecoveryLoading = 1;
 
@@ -556,7 +630,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 				calculateConsistentTangentModulusElastic(etaTangent);
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
 
@@ -573,7 +647,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 					// Check if capping point is reached
 					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
 					//double diffStress = 3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2);
-					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 						cappingPoint = 1;
 						if (convergedMatLaw == 0)
 						{
@@ -615,13 +689,13 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 				// Check if the initial capping stress sigmaC0 has been passed
 				//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
-				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= RETURN_MAP_TOL) { // not yet at capping point
 				//if (stressTrial(0) - sigmaC <= RETURN_MAP_TOL) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
 					deltaStrain_converged4Peak = deltaStrain_trial;
 
 					// Check if capping point is reached
-					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -RETURN_MAP_TOL) { // capping point is reached
 					//if (stressTrial(0) - sigmaC >= RETURN_MAP_TOL) { // capping point is reached
 						cappingPoint = 1;
 						//chi1c = RETURN_MAP_TOL;
@@ -929,8 +1003,16 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		sigmaSurSigmaY = calculateSigmaSurSigmaY();
 		chi1c = calculateChi1c();
 
-		// Check convergence
-		if (fabs(phiComp) < RETURN_MAP_TOL) {
+		//// Check convergence
+		//if (fabs(phiComp) < RETURN_MAP_TOL) {
+		//	convergedReturnMapping = true;
+		//}
+		if (iterationNumber_ReturnMapping<=MAXIMUM_ITERATIONS_RETURNMAPPING/2 && fabs(phiComp) < RETURN_MAP_TOL)
+		{
+			convergedReturnMapping = true;
+		}
+		else if (iterationNumber_ReturnMapping > MAXIMUM_ITERATIONS_RETURNMAPPING/2 && fabs(phiComp) < 50*RETURN_MAP_TOL)
+		{
 			convergedReturnMapping = true;
 		}
 	}
@@ -1034,15 +1116,15 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	}*/
 
 	tBezier = calculateTBezier();
-	sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
-	sigmaBezierO = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * sigmaBezierS;
-	backstress11Pb_nPlus1 = (-2. * sigmaBezierO + sqrt(pow((2. * sigmaBezierO),2) + 4. * (-pow(sigmaBezierO,2) + pow(yieldStress,2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS),2) * (pow(yieldStress,2) - pow((sigmaBezierS - backstressAfterCompression(0)),2))))) / (-2.) - backstressPTot(0);
-	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))) < 0) // catch if sqrt is negative
+	sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierSTrial + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierSTrial + alphaPrBezierTrial * kPrBezierSTrial) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierSTrial + alphaYrBezierTrial * kYrBezierSTrial) + pow(tBezier, 3) * sigmaYrBezierSTrial;
+	sigmaBezierO = sigmaYrBezierOTrial / (2. * yieldStress - (yieldStress - backstressAfterCompressionTrial(0))) * sigmaBezierS;
+	backstress11Pb_nPlus1 = (-2. * sigmaBezierO + sqrt(pow((2. * sigmaBezierO),2) + 4. * (-pow(sigmaBezierO,2) + pow(yieldStress,2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS),2) * (pow(yieldStress,2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)),2))))) / (-2.) - backstressPTot(0);
+	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))) < 0) // catch if sqrt is negative
 	{
 		backstress11Pb_nPlus1 = sigmaBezierO - backstressPTot(0);
 	}
 	backstressTot(0) = backstressPTot(0) + backstress11Pb_nPlus1;
-	f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)), 2)) / (b_1tO * pow(sigmaBezierO, 2));
+	f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)), 2)) / (b_1tOTrial * pow(sigmaBezierO, 2));
 
 	// Do the return mapping algorithm for plastic recovery stage
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING)
@@ -1068,20 +1150,20 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		dPhiTensdXi(1) = 6. * relativeStressNPlus1(1);
 		dPhiTensdXi(2) = 6. * relativeStressNPlus1(2);
 
-		dSigmaBezierSDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierS + 3. * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierS;
-		dSigmaBezierODtBezier = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * dSigmaBezierSDtBezier;
-		dEpsiBezierdtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11Unload) + 3. * (abs(epsilonPB11Unload) + alphaPrBezier) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezier) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
+		dSigmaBezierSDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierSTrial + 3. * (sigmaPrBezierSTrial + alphaPrBezierTrial * kPrBezierSTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierSTrial + alphaYrBezierTrial * kYrBezierSTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierSTrial;
+		dSigmaBezierODtBezier = sigmaYrBezierOTrial / (2. * yieldStress - (yieldStress - backstressAfterCompressionTrial(0))) * dSigmaBezierSDtBezier;
+		dEpsiBezierdtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11UnloadTrial) + 3. * (abs(epsilonPB11UnloadTrial) + alphaPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
 		/*dSigmaBezierSDEpsiPb11 = dSigmaBezierSDtBezier / dEpsiBezierdtBezier;
 		dSigmaBezierODEpsiPb11 = dSigmaBezierODtBezier / dEpsiBezierdtBezier;*/
 		dSigmaBezierSDEpsiPb11 = -dSigmaBezierSDtBezier / dEpsiBezierdtBezier;
 		dSigmaBezierODEpsiPb11 = -dSigmaBezierODtBezier / dEpsiBezierdtBezier;
 		dBQuadraticDEpsiPb11 = 2. * dSigmaBezierODEpsiPb11;
-		dCQuadraticDEpsiPb11 = -2. * dSigmaBezierODEpsiPb11 * sigmaBezierO - b_1tO / b_1tS * (2. * (dSigmaBezierODEpsiPb11 * sigmaBezierS - dSigmaBezierSDEpsiPb11 * sigmaBezierO)
-			/ (pow(sigmaBezierS, 2))*(sigmaBezierO / sigmaBezierS)*(pow(yieldStress,2) - pow((sigmaBezierS - backstressAfterCompression(0)),2)) + pow((sigmaBezierO / sigmaBezierS), 2) * (-2. * dSigmaBezierSDEpsiPb11*(sigmaBezierS - backstressAfterCompression(0))));
+		dCQuadraticDEpsiPb11 = -2. * dSigmaBezierODEpsiPb11 * sigmaBezierO - b_1tOTrial / b_1tSTrial * (2. * (dSigmaBezierODEpsiPb11 * sigmaBezierS - dSigmaBezierSDEpsiPb11 * sigmaBezierO)
+			/ (pow(sigmaBezierS, 2))*(sigmaBezierO / sigmaBezierS)*(pow(yieldStress,2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)),2)) + pow((sigmaBezierO / sigmaBezierS), 2) * (-2. * dSigmaBezierSDEpsiPb11*(sigmaBezierS - backstressAfterCompressionTrial(0))));
 		dDiscriminantQuadraticDEpsiPb11 = 2. * dBQuadraticDEpsiPb11 * 2. * sigmaBezierO + 4. * dCQuadraticDEpsiPb11;
 		dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11 / (2. * sqrt(pow((2. * sigmaBezierO), 2)
-			+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))))));
-		if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))) < 0) // catch if sqrt is negative
+			+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))))));
+		if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))) < 0) // catch if sqrt is negative
 		{
 			dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11 );
 		}
@@ -1089,9 +1171,9 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		dSigmaBezierODLambdaPb = -dSigmaBezierODEpsiPb11 * dPhiTensdXi(0);*/
 		dAlpha11TotDLambdaPb = dAlpha11TotDEpsiPb11 * dPhiTensdXi(0);
 		dSigmaBezierODLambdaPb = dSigmaBezierODEpsiPb11 * dPhiTensdXi(0);
-		dFchi1tdLambdaPb = -(-2. * (dSigmaBezierODLambdaPb - dAlpha11TotDLambdaPb) * (sigmaBezierO - backstressTot(0)) * (b_1tO * pow(sigmaBezierO,2)) - (pow(yieldStress,2) - pow((sigmaBezierO - backstressTot(0)),2)) * 2. * b_1tO * dSigmaBezierODLambdaPb * sigmaBezierO)/ pow((b_1tO * pow(sigmaBezierO,2)),2);
+		dFchi1tdLambdaPb = -(-2. * (dSigmaBezierODLambdaPb - dAlpha11TotDLambdaPb) * (sigmaBezierO - backstressTot(0)) * (b_1tOTrial * pow(sigmaBezierO,2)) - (pow(yieldStress,2) - pow((sigmaBezierO - backstressTot(0)),2)) * 2. * b_1tOTrial * dSigmaBezierODLambdaPb * sigmaBezierO)/ pow((b_1tOTrial * pow(sigmaBezierO,2)),2);
 
-		dChi1tDLambdaPB = -expA * b_1tO * pow((1 - f1t), (expA - 1.)) * dFchi1tdLambdaPb;
+		dChi1tDLambdaPB = -expA * b_1tOTrial * pow((1 - f1t), (expA - 1.)) * dFchi1tdLambdaPb;
 
 		dCdLambdaPB = calculateDCdLambdaPB(etaTangent, dPhiTensdXi(0));
 
@@ -1116,17 +1198,17 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		}*/
 
 		tBezier = calculateTBezier();
-		sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
-		sigmaBezierO = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * sigmaBezierS;
-		backstress11Pb_nPlus1 = (-2. * sigmaBezierO + sqrt(pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))))) / (-2.) - backstressPTot(0);
-		if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2)))<0) // catch if sqrt is negative
+		sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierSTrial + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierSTrial + alphaPrBezierTrial * kPrBezierSTrial) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierSTrial + alphaYrBezierTrial * kYrBezierSTrial) + pow(tBezier, 3) * sigmaYrBezierSTrial;
+		sigmaBezierO = sigmaYrBezierOTrial / (2. * yieldStress - (yieldStress - backstressAfterCompressionTrial(0))) * sigmaBezierS;
+		backstress11Pb_nPlus1 = (-2. * sigmaBezierO + sqrt(pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))))) / (-2.) - backstressPTot(0);
+		if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2)))<0) // catch if sqrt is negative
 		{
 			backstress11Pb_nPlus1 = sigmaBezierO - backstressPTot(0);
 		}
 		backstressTot(0) = backstressPTot(0) + backstress11Pb_nPlus1;
-		f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)), 2)) / (b_1tO * pow(sigmaBezierO, 2));
+		f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)), 2)) / (b_1tOTrial * pow(sigmaBezierO, 2));
 
-		chi1t = b_1tO * pow((1 - f1t), expA);
+		chi1t = b_1tOTrial * pow((1 - f1t), expA);
 
 		if (iterationNumber_ReturnMapping>500)
 		{
@@ -1145,13 +1227,13 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	// Update each post-buckling backstress
 	Vector backstress1PB_nPlus1 = Vector(N_DIMS);
 	Vector backstress2PB_nPlus1 = Vector(N_DIMS);
-	backstress1PB_nPlus1(0) = rAlphaBackstress1 * backstress11Pb_nPlus1;
-	backstress2PB_nPlus1(0) = rAlphaBackstress2 * backstress11Pb_nPlus1;
+	backstress1PB_nPlus1(0) = rAlphaBackstress1Trial * backstress11Pb_nPlus1;
+	backstress2PB_nPlus1(0) = rAlphaBackstress2Trial * backstress11Pb_nPlus1;
 	alphaPBKTrial[0] = backstress1PB_nPlus1;
 	alphaPBKTrial[1] = backstress2PB_nPlus1;
 
 	// Update c1c for compressive yield surface
-	c1cTrial = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
+	c1cTrial = c1cUnloadTrial * (strainPostBucklingTrial(0) / epsilonPB11UnloadTrial);
 	//if (abs(strainPostBucklingTrial(0)) < RETURN_MAP_TOL)
 	//{ // Try to fix if very small epsiPb11 unload
 	//	c1cTrial = 0.;
@@ -1312,7 +1394,7 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 	stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 
 	// Update c1c for compressive yield surface
-	c1cTrial = c1cUnload * (strainPostBucklingTrial(0) / epsilonPB11Unload);
+	c1cTrial = c1cUnloadTrial * (strainPostBucklingTrial(0) / epsilonPB11UnloadTrial);
 	//if (abs(strainPostBucklingTrial(0))<RETURN_MAP_TOL)
 	//{ // Try to fix if very small epsiPb11 unload
 	//	c1cTrial = 0.;
@@ -1580,30 +1662,30 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusPlRecovStage(Vector
 	LambdaC_nPlus1Diag = etaTangent * lambdaC;
 
 	tBezier = calculateTBezier();
-	sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1 - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1 - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
-	sigmaBezierO = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * sigmaBezierS;
-	dSigmaBezierSDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierS + 3. * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierS + alphaYrBezier *kYrBezierS) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierS;
-	dSigmaBezierODtBezier = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * dSigmaBezierSDtBezier;
-	dEpsiBezierdtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11Unload) + 3. * (abs(epsilonPB11Unload) + alphaPrBezier) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezier) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
+	sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierSTrial + 3. * pow((1 - tBezier), 2) * tBezier * (sigmaPrBezierSTrial + alphaPrBezierTrial * kPrBezierSTrial) + 3. * (1 - tBezier) * pow(tBezier, 2) * (sigmaYrBezierSTrial + alphaYrBezierTrial * kYrBezierSTrial) + pow(tBezier, 3) * sigmaYrBezierSTrial;
+	sigmaBezierO = sigmaYrBezierOTrial / (2. * yieldStress - (yieldStress - backstressAfterCompressionTrial(0))) * sigmaBezierS;
+	dSigmaBezierSDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierSTrial + 3. * (sigmaPrBezierSTrial + alphaPrBezierTrial * kPrBezierSTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierSTrial + alphaYrBezierTrial *kYrBezierSTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierSTrial;
+	dSigmaBezierODtBezier = sigmaYrBezierOTrial / (2. * yieldStress - (yieldStress - backstressAfterCompressionTrial(0))) * dSigmaBezierSDtBezier;
+	dEpsiBezierdtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11UnloadTrial) + 3. * (abs(epsilonPB11UnloadTrial) + alphaPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
 	dSigmaBezierSDEpsiPb11 = -dSigmaBezierSDtBezier / dEpsiBezierdtBezier;
 	dSigmaBezierODEpsiPb11 = -dSigmaBezierODtBezier / dEpsiBezierdtBezier;
 
-	discriminantQuadratic = 4. * pow(yieldStress, 2) - (4. * b_1tO * pow(sigmaBezierO, 2) * (pow(yieldStress, 2) - pow((backstressAfterCompression(0) - sigmaBezierS), 2))) / (b_1tS * pow(sigmaBezierS, 2));
+	discriminantQuadratic = 4. * pow(yieldStress, 2) - (4. * b_1tOTrial * pow(sigmaBezierO, 2) * (pow(yieldStress, 2) - pow((backstressAfterCompressionTrial(0) - sigmaBezierS), 2))) / (b_1tSTrial * pow(sigmaBezierS, 2));
 	dBQuadraticDEpsiPb11 = 2. * dSigmaBezierODEpsiPb11;
-	dCQuadraticDEpsiPb11 = -2. * dSigmaBezierODEpsiPb11 * sigmaBezierO - b_1tO / b_1tS * (2. * (dSigmaBezierODEpsiPb11 * sigmaBezierS - dSigmaBezierSDEpsiPb11 * sigmaBezierO)
-		/ (pow(sigmaBezierS, 2)) * (sigmaBezierO / sigmaBezierS) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2)) + pow((sigmaBezierO / sigmaBezierS), 2) * (-2. * dSigmaBezierSDEpsiPb11 * (sigmaBezierS - backstressAfterCompression(0))));
+	dCQuadraticDEpsiPb11 = -2. * dSigmaBezierODEpsiPb11 * sigmaBezierO - b_1tOTrial / b_1tSTrial * (2. * (dSigmaBezierODEpsiPb11 * sigmaBezierS - dSigmaBezierSDEpsiPb11 * sigmaBezierO)
+		/ (pow(sigmaBezierS, 2)) * (sigmaBezierO / sigmaBezierS) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2)) + pow((sigmaBezierO / sigmaBezierS), 2) * (-2. * dSigmaBezierSDEpsiPb11 * (sigmaBezierS - backstressAfterCompressionTrial(0))));
 	dDiscriminantQuadraticDEpsiPb11 = 2. * dBQuadraticDEpsiPb11 * 2. * sigmaBezierO + 4. * dCQuadraticDEpsiPb11;
 	dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11 / (2. * sqrt(pow((2. * sigmaBezierO), 2)
-		+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))))));
-	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))) < 0) // catch if sqrt is negative
+		+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))))));
+	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))) < 0) // catch if sqrt is negative
 	{
 		dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11);
 	}
 
-	dBQuadraticDSigmaBS = 2. * (sigmaYrBezierO / (yieldStress + backstressAfterCompression(0)));
-	dDiscriminantQuadraticDSigmaBS = 8. * b_1tO / b_1tS * pow((sigmaYrBezierO / (yieldStress + backstressAfterCompression(0))),2 ) * (sigmaBezierS - backstressAfterCompression(0));
+	dBQuadraticDSigmaBS = 2. * (sigmaYrBezierOTrial / (yieldStress + backstressAfterCompressionTrial(0)));
+	dDiscriminantQuadraticDSigmaBS = 8. * b_1tOTrial / b_1tSTrial * pow((sigmaYrBezierOTrial / (yieldStress + backstressAfterCompressionTrial(0))),2 ) * (sigmaBezierS - backstressAfterCompressionTrial(0));
 	dAlpha11DSigmaBezierS = -1. / 2. * (-dBQuadraticDSigmaBS + dDiscriminantQuadraticDSigmaBS * 1. / (2. * sqrt(discriminantQuadratic)));
-	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tO / b_1tS * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompression(0)), 2))) < 0) // catch if sqrt is negative
+	if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))) < 0) // catch if sqrt is negative
 	{
 		dAlpha11DSigmaBezierS = -1. / 2. * (-dBQuadraticDSigmaBS + dDiscriminantQuadraticDSigmaBS);
 	}
@@ -1618,9 +1700,9 @@ void LocalBucklingWebPlate::calculateConsistentTangentModulusPlRecovStage(Vector
 	dXiDChi1t.Zero();
 	dXiDChi1t(0) = dGammaDChi1tDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1t * consistParam_plRecov * backstressTot(0)) - 2 * consistParam_plRecov * gammaDiag(0) * backstressTot(0) - dGammaDChi1tDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
 
-	dF1tDepsiPB11 = -(-2. * (dSigmaBezierODEpsiPb11 - dAlpha11TotDEpsiPb11) * (sigmaBezierO - backstressTot(0)) * (b_1tO * pow(sigmaBezierO,2)) - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)),2)) * 2 * b_1tO * dSigmaBezierODEpsiPb11 * sigmaBezierO)/ pow((b_1tO * pow(sigmaBezierO,2)),2);
+	dF1tDepsiPB11 = -(-2. * (dSigmaBezierODEpsiPb11 - dAlpha11TotDEpsiPb11) * (sigmaBezierO - backstressTot(0)) * (b_1tOTrial * pow(sigmaBezierO,2)) - (pow(yieldStress, 2) - pow((sigmaBezierO - backstressTot(0)),2)) * 2 * b_1tOTrial * dSigmaBezierODEpsiPb11 * sigmaBezierO)/ pow((b_1tOTrial * pow(sigmaBezierO,2)),2);
 
-	dChi1tDepsiPB11 = -b_1tO * dF1tDepsiPB11;
+	dChi1tDepsiPB11 = -b_1tOTrial * dF1tDepsiPB11;
 
 	dPhiTensDSigma(0) = 2. * (relativeStressNPlus1(0) + chi1t * stressTrial(0));
 	dPhiTensDSigma(1) = 6. * relativeStressNPlus1(1);
@@ -1925,6 +2007,25 @@ int LocalBucklingWebPlate::commitState() {
 	stiffnessConverged = stiffnessTrial;
 	sumEjConverged = sumEjTrial;
 	c1cConverged = c1cTrial;
+
+	b_1tOConverged = b_1tOTrial;
+	b_1tSConverged = b_1tSTrial;
+	sigmaPrBezierOConverged = sigmaPrBezierOTrial;
+	sigmaPrBezierSConverged = sigmaPrBezierSTrial;
+	sigmaYrBezierSConverged = sigmaYrBezierSTrial;
+	sigmaYrBezierOConverged = sigmaYrBezierOTrial;
+	epsilonPB11UnloadConverged = epsilonPB11UnloadTrial;
+	backstressAfterCompressionConverged = backstressAfterCompressionTrial;
+	epsilonPB11MinConverged = epsilonPB11MinTrial;
+	alphaPrBezierConverged = alphaPrBezierTrial;
+	alphaYrBezierConverged = alphaYrBezierTrial;
+	kPrBezierSConverged = kPrBezierSTrial;
+	kYrBezierSConverged = kYrBezierSTrial;
+	rAlphaBackstress1Converged = rAlphaBackstress1Trial;
+	rAlphaBackstress2Converged = rAlphaBackstress2Trial;
+	c1cUnloadConverged = c1cUnloadTrial;
+	ErcConverged = ErcTrial;
+	sigmaCConverged = sigmaCTrial;
 	return 0;
 }
 
@@ -1947,6 +2048,25 @@ int LocalBucklingWebPlate::revertToLastCommit() {
 	stiffnessTrial = stiffnessConverged;
 	sumEjTrial = sumEjConverged;
 	c1cTrial = c1cConverged;
+
+	b_1tOTrial = b_1tOConverged;
+	b_1tSTrial = b_1tSConverged;
+	sigmaPrBezierOTrial = sigmaPrBezierOConverged;
+	sigmaPrBezierSTrial = sigmaPrBezierSConverged;
+	sigmaYrBezierSTrial = sigmaYrBezierSConverged;
+	sigmaYrBezierOTrial = sigmaYrBezierOConverged;
+	epsilonPB11UnloadTrial = epsilonPB11UnloadConverged;
+	backstressAfterCompressionTrial = backstressAfterCompressionConverged;
+	epsilonPB11MinTrial = epsilonPB11MinConverged;
+	alphaPrBezierTrial = alphaPrBezierConverged;
+	alphaYrBezierTrial = alphaYrBezierConverged;
+	kPrBezierSTrial = kPrBezierSConverged;
+	kYrBezierSTrial = kYrBezierSConverged;
+	rAlphaBackstress1Trial = rAlphaBackstress1Converged;
+	rAlphaBackstress2Trial = rAlphaBackstress2Converged;
+	c1cUnloadTrial = c1cUnloadConverged;
+	ErcTrial = ErcConverged;
+	sigmaCTrial = sigmaCConverged;
 	return 0;
 }
 
@@ -2030,8 +2150,27 @@ int LocalBucklingWebPlate::revertToStart() {
 		alphaPBKConverged[i].Zero();
 	}
 	sumEjConverged = 0.;
-	sumEjTrial = 0.;
-	c1cTrial = 0.;
+	c1cConverged = 0.;
+
+	b_1tOConverged = 0.;
+	b_1tSConverged = 0.;
+	sigmaPrBezierOConverged = 0.;
+	sigmaPrBezierSConverged = 0.;
+	sigmaYrBezierSConverged = 0.;
+	sigmaYrBezierOConverged = 0.;
+	epsilonPB11UnloadConverged = 0.;
+	backstressAfterCompressionConverged.Zero();
+	epsilonPB11MinConverged = 0.;
+	alphaPrBezierConverged = 0.;
+	alphaYrBezierConverged = 0.;
+	kPrBezierSConverged = 0.;
+	kYrBezierSConverged = 0.;
+	rAlphaBackstress1Converged = 0.;
+	rAlphaBackstress2Converged = 0.;
+	c1cUnloadConverged = 0.;
+	ErcConverged = 0.;
+	sigmaCConverged = 0.;
+
 	revertToLastCommit();
 	return 0;
 }
@@ -2077,6 +2216,43 @@ NDMaterial* LocalBucklingWebPlate::getCopy() {
 	theCopy->sumEjTrial = sumEjTrial;
 	theCopy->c1cConverged = c1cConverged;
 	theCopy->c1cTrial = c1cTrial;
+
+	theCopy->b_1tOConverged = b_1tOConverged;
+	theCopy->b_1tSConverged = b_1tSConverged;
+	theCopy->sigmaPrBezierOConverged = sigmaPrBezierOConverged;
+	theCopy->sigmaPrBezierSConverged = sigmaPrBezierSConverged;
+	theCopy->sigmaYrBezierSConverged = sigmaYrBezierSConverged;
+	theCopy->sigmaYrBezierOConverged = sigmaYrBezierOConverged;
+	theCopy->epsilonPB11UnloadConverged = epsilonPB11UnloadConverged;
+	theCopy->backstressAfterCompressionConverged = backstressAfterCompressionConverged;
+	theCopy->epsilonPB11MinConverged = epsilonPB11MinConverged;
+	theCopy->alphaPrBezierConverged = alphaPrBezierConverged;
+	theCopy->alphaYrBezierConverged = alphaYrBezierConverged;
+	theCopy->kPrBezierSConverged = kPrBezierSConverged;
+	theCopy->kYrBezierSConverged = kYrBezierSConverged;
+	theCopy->rAlphaBackstress1Converged = rAlphaBackstress1Converged;
+	theCopy->rAlphaBackstress2Converged = rAlphaBackstress2Converged;
+	theCopy->c1cUnloadConverged = c1cUnloadConverged;
+	theCopy->ErcConverged = ErcConverged;
+	theCopy->sigmaCConverged = sigmaCConverged;
+	theCopy->b_1tOTrial = b_1tOTrial;
+	theCopy->b_1tSTrial = b_1tSTrial;
+	theCopy->sigmaPrBezierOTrial = sigmaPrBezierOTrial;
+	theCopy->sigmaPrBezierSTrial = sigmaPrBezierSTrial;
+	theCopy->sigmaYrBezierSTrial = sigmaYrBezierSTrial;
+	theCopy->sigmaYrBezierOTrial = sigmaYrBezierOTrial;
+	theCopy->epsilonPB11UnloadTrial = epsilonPB11UnloadTrial;
+	theCopy->backstressAfterCompressionTrial = backstressAfterCompressionTrial;
+	theCopy->epsilonPB11MinTrial = epsilonPB11MinTrial;
+	theCopy->alphaPrBezierTrial = alphaPrBezierTrial;
+	theCopy->alphaYrBezierTrial = alphaYrBezierTrial;
+	theCopy->kPrBezierSTrial = kPrBezierSTrial;
+	theCopy->kYrBezierSTrial = kYrBezierSTrial;
+	theCopy->rAlphaBackstress1Trial = rAlphaBackstress1Trial;
+	theCopy->rAlphaBackstress2Trial = rAlphaBackstress2Trial;
+	theCopy->c1cUnloadTrial = c1cUnloadTrial;
+	theCopy->ErcTrial = ErcTrial;
+	theCopy->sigmaCTrial = sigmaCTrial;
 
 	return theCopy;
 }
@@ -2579,61 +2755,69 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStress, Vec
 		//Determine the stress at wich would reach Von-Mises yield surface
 		scaleFactorBezierStress = 2 * yieldStress - (yieldStress - alphaTot(0));
 
+		// Set quantities for Bezier curve
+		sigmaYrBezierSTrial = scaleFactorBezierStress;
+		alphaPrBezierTrial = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaPrBezier);
+		alphaYrBezierTrial = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
+		kPrBezierSTrial = beta1RegressionKPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezierS) * scaleFactorBezierStress;
+		kYrBezierSTrial = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezierS) * scaleFactorBezierStress;
+		sigmaYrBezierOTrial = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezierO);
+
 		// Determine different stresses sigmaPr
 		sigmaPrS_regression = beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaPrBezierS);
-		sigmaPrBezierS = std::min(scaleFactorBezierStress, sigmaPrS_regression / 1. * scaleFactorBezierStress);
-		sigmaPrBezierO = std::min(scaleFactorBezierStress, sigmaPrS_regression * sigmaYrBezierO);
+		sigmaPrBezierSTrial = std::min(scaleFactorBezierStress, sigmaPrS_regression / 1. * scaleFactorBezierStress);
+		sigmaPrBezierOTrial = std::min(scaleFactorBezierStress, sigmaPrS_regression * sigmaYrBezierOTrial);
 
 		// Determine epsiPb11Min
 		epsilonPb11MinS = -pow((1. / beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrBezierS)), (1. / beta3RegressionSigmaPrBezierS));
-		epsilonPb11MinO = -pow((1. / sigmaYrBezierO * scaleFactorBezierStress * 1. / beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrBezierS)), (1. / beta3RegressionSigmaPrBezierS));
-		epsilonPB11Min = std::min(epsilonPb11MinS, epsilonPb11MinO);
+		epsilonPb11MinO = -pow((1. / sigmaYrBezierOTrial * scaleFactorBezierStress * 1. / beta1RegressionSigmaPrBezierS * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrBezierS)), (1. / beta3RegressionSigmaPrBezierS));
+		epsilonPB11MinTrial = std::min(epsilonPb11MinS, epsilonPb11MinO);
 
 		// Compute b_1t
-		if (strainPostBucklingTrial(0) < epsilonPB11Min)
+		if (strainPostBucklingTrial(0) < epsilonPB11MinTrial)
 		{
-			b_1tO = (pow(yieldStress, 2) - pow((sigmaPrBezierO - alphaTot(0)), 2)) / pow(sigmaPrBezierO, 2);
-			b_1tS = (pow(yieldStress, 2) - pow((sigmaPrBezierS - alphaTot(0)), 2)) / pow(sigmaPrBezierS, 2);
+			b_1tOTrial = (pow(yieldStress, 2) - pow((sigmaPrBezierOTrial - alphaTot(0)), 2)) / pow(sigmaPrBezierOTrial, 2);
+			b_1tSTrial = (pow(yieldStress, 2) - pow((sigmaPrBezierSTrial - alphaTot(0)), 2)) / pow(sigmaPrBezierSTrial, 2);
 		}
 		else
 		{
-			b_1tO = 0.;
-			b_1tS = 0.;
+			b_1tOTrial = 0.;
+			b_1tSTrial = 0.;
 		}
 
 		// Set epsilonPb11Unload
-		epsilonPB11Unload = strainPostBucklingTrial(0);
+		epsilonPB11UnloadTrial = strainPostBucklingTrial(0);
 
 		// Compute yield surface center after compression stage
-		backstressAfterCompression = alphaTot;
+		backstressAfterCompressionTrial = alphaTot;
 
-		// Set quantities for Bezier curve
-		sigmaYrBezierS = scaleFactorBezierStress;
-		alphaPrBezier = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaPrBezier);
-		alphaYrBezier = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
-		kPrBezierS = beta1RegressionKPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezierS) * scaleFactorBezierStress;
-		kYrBezierS = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezierS) * scaleFactorBezierStress;
-		sigmaYrBezierO = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezierO);
+		//// Set quantities for Bezier curve
+		//sigmaYrBezierSTrial = scaleFactorBezierStress;
+		//alphaPrBezierTrial = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaPrBezier);
+		//alphaYrBezierTrial = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
+		//kPrBezierSTrial = beta1RegressionKPrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezierS) * scaleFactorBezierStress;
+		//kYrBezierSTrial = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezierS) * scaleFactorBezierStress;
+		//sigmaYrBezierOTrial = beta1RegressionSigmaYrBezierO * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezierO) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezierO);
 
 		// Check if Bezier curve becomes larger than sigmaY + alphaAfterCompression(1) this fixes issue with f1t > 1
-		double AderivSigmaBezierS = 6. * sigmaPrBezierS - 6. * sigmaYrBezierS + 9. * alphaPrBezier * kPrBezierS - 9. * alphaYrBezier * kYrBezierS;
-		double BderivSigmaBezierS = 6. * sigmaYrBezierS - 6. * sigmaPrBezierS - 12. * alphaPrBezier * kPrBezierS + 6. * alphaYrBezier * kYrBezierS;
-		double CderivSigmaBezierS = 3. * alphaPrBezier * kPrBezierS;
+		double AderivSigmaBezierS = 6. * sigmaPrBezierSTrial - 6. * sigmaYrBezierSTrial + 9. * alphaPrBezierTrial * kPrBezierSTrial - 9. * alphaYrBezierTrial * kYrBezierSTrial;
+		double BderivSigmaBezierS = 6. * sigmaYrBezierSTrial - 6. * sigmaPrBezierSTrial - 12. * alphaPrBezierTrial * kPrBezierSTrial + 6. * alphaYrBezierTrial * kYrBezierSTrial;
+		double CderivSigmaBezierS = 3. * alphaPrBezierTrial * kPrBezierSTrial;
 		double tHat1 = (-BderivSigmaBezierS + sqrt(pow(BderivSigmaBezierS, 2.) - 4. * AderivSigmaBezierS * CderivSigmaBezierS)) / (2. * AderivSigmaBezierS);
 		double tHat2 = (-BderivSigmaBezierS - sqrt(pow(BderivSigmaBezierS, 2.) - 4. * AderivSigmaBezierS * CderivSigmaBezierS)) / (2. * AderivSigmaBezierS);
-		double sigmaBezierSAtTHat1 = pow((1. - tHat1), 3) * sigmaPrBezierS + 3. * pow((1. - tHat1), 2) * tHat1 * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tHat1) * pow(tHat1, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tHat1, 3) * sigmaYrBezierS;
-		double sigmaBezierSAtTHat2 = pow((1. - tHat2), 3) * sigmaPrBezierS + 3. * pow((1. - tHat2), 2) * tHat2 * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tHat2) * pow(tHat2, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tHat2, 3) * sigmaYrBezierS;
-		if (sigmaBezierSAtTHat1 > yieldStress + backstressAfterCompression(0) || sigmaBezierSAtTHat2 > yieldStress + backstressAfterCompression(0) || sigmaBezierSAtTHat1 < -yieldStress + backstressAfterCompression(0) || sigmaBezierSAtTHat2 < -yieldStress + backstressAfterCompression(0))
+		double sigmaBezierSAtTHat1 = pow((1. - tHat1), 3) * sigmaPrBezierSTrial + 3. * pow((1. - tHat1), 2) * tHat1 * (sigmaPrBezierSTrial + alphaPrBezierTrial * kPrBezierSTrial) + 3. * (1. - tHat1) * pow(tHat1, 2) * (sigmaYrBezierSTrial + alphaYrBezierTrial * kYrBezierSTrial) + pow(tHat1, 3) * sigmaYrBezierSTrial;
+		double sigmaBezierSAtTHat2 = pow((1. - tHat2), 3) * sigmaPrBezierSTrial + 3. * pow((1. - tHat2), 2) * tHat2 * (sigmaPrBezierSTrial + alphaPrBezierTrial * kPrBezierSTrial) + 3. * (1. - tHat2) * pow(tHat2, 2) * (sigmaYrBezierSTrial + alphaYrBezierTrial * kYrBezierSTrial) + pow(tHat2, 3) * sigmaYrBezierSTrial;
+		if (sigmaBezierSAtTHat1 > yieldStress + backstressAfterCompressionTrial(0) || sigmaBezierSAtTHat2 > yieldStress + backstressAfterCompressionTrial(0) || sigmaBezierSAtTHat1 < -yieldStress + backstressAfterCompressionTrial(0) || sigmaBezierSAtTHat2 < -yieldStress + backstressAfterCompressionTrial(0))
 		{
-			alphaPrBezier = 0;
-			alphaYrBezier = 0;
+			alphaPrBezierTrial = 0;
+			alphaYrBezierTrial = 0;
 		}
 
 		//Compute ratios for backstress update during plastic recovery stage
 		calculateRatioAlphaBackstress(yieldStress);
 
 		// Set c1cUnload
-		c1cUnload = c1cTrial;
+		c1cUnloadTrial = c1cTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2644,7 +2828,7 @@ double LocalBucklingWebPlate::calculateChi1t(double yieldStress, double alphaTot
 
 	f1t = calculateF1t(yieldStress, alphaTot11);
 
-	chi1t = b_1tO * (1. - f1t);
+	chi1t = b_1tOTrial * (1. - f1t);
 
 	return chi1t;
 }
@@ -2657,13 +2841,13 @@ double LocalBucklingWebPlate::calculateF1t(double yieldStress, double alphaTot11
 	double sigmaBezierS = 0.;
 	double sigmaBezierO = 0.;
 
-	if (b_1tO>0.) // tensile yield surface is ellipsoid
+	if (b_1tOTrial >0.) // tensile yield surface is ellipsoid
 	{
 		tBezier = calculateTBezier();
-		sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierS + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierS + alphaPrBezier * kPrBezierS) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierS + alphaYrBezier * kYrBezierS) + pow(tBezier, 3) * sigmaYrBezierS;
-		sigmaBezierO = sigmaYrBezierO / (2. * yieldStress - (yieldStress - backstressAfterCompression(0))) * sigmaBezierS;
+		sigmaBezierS = pow((1. - tBezier), 3) * sigmaPrBezierSTrial + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierSTrial + alphaPrBezierTrial * kPrBezierSTrial) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierSTrial + alphaYrBezierTrial * kYrBezierSTrial) + pow(tBezier, 3) * sigmaYrBezierSTrial;
+		sigmaBezierO = sigmaYrBezierOTrial / (2. * yieldStress - (yieldStress - backstressAfterCompressionTrial(0))) * sigmaBezierS;
 
-		f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - alphaTot11), 2)) / (b_1tO * pow(sigmaBezierO, 2));
+		f1t = 1. - (pow(yieldStress, 2) - pow((sigmaBezierO - alphaTot11), 2)) / (b_1tOTrial * pow(sigmaBezierO, 2));
 	}
 	else // tensile yield surface is Von-Mises cylinder
 	{
@@ -2696,10 +2880,10 @@ double LocalBucklingWebPlate::calculateTBezier() {
 	std::complex<double> nineComplex(9., 0);
 	std::complex<double> twentySevenComplex(27., 0);
 
-	std::complex<double> a = threeComplex * alphaPrBezier - threeComplex * alphaYrBezier + twoComplex * abs(epsilonPB11Unload);
-	std::complex<double> b = -sixComplex * alphaPrBezier + threeComplex * alphaYrBezier - threeComplex * abs(epsilonPB11Unload);
-	std::complex<double> c = threeComplex * alphaPrBezier;
-	std::complex<double> d = abs(epsilonPB11Unload) - abs(strainPostBucklingTrial(0));
+	std::complex<double> a = threeComplex * alphaPrBezierTrial - threeComplex * alphaYrBezierTrial + twoComplex * abs(epsilonPB11UnloadTrial);
+	std::complex<double> b = -sixComplex * alphaPrBezierTrial + threeComplex * alphaYrBezierTrial - threeComplex * abs(epsilonPB11UnloadTrial);
+	std::complex<double> c = threeComplex * alphaPrBezierTrial;
+	std::complex<double> d = abs(epsilonPB11UnloadTrial) - abs(strainPostBucklingTrial(0));
 
 	std::complex<double> Delta0 = pow(b, 2.) - threeComplex * a * c;
 	std::complex<double> Delta1 = twoComplex * pow(b, 3.) - nineComplex * a * b * c + twentySevenComplex * pow(a, 2) * d;
@@ -2721,7 +2905,7 @@ double LocalBucklingWebPlate::calculateTBezier() {
 		tBezier = real(x3SolCubic);
 	}
 
-	if (abs(strainPostBucklingTrial(0))>abs(epsilonPB11Unload))
+	if (abs(strainPostBucklingTrial(0))>abs(epsilonPB11UnloadTrial))
 	{
 		tBezier = 0.;
 	}
@@ -2744,11 +2928,11 @@ void LocalBucklingWebPlate::calculateRatioAlphaBackstress(double yieldstress) {
 	double kYr = 0.;
 
 	// Compute tangent Bezier curve
-	kYr = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(epsilonPB11Unload), beta3RegressionKYrBezierS);
-	dSigmaBezierODEpsiPb11 = -kYr * sigmaYrBezierO;
+	kYr = beta1RegressionKYrBezierS * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezierS) * pow(abs(epsilonPB11UnloadTrial), beta3RegressionKYrBezierS);
+	dSigmaBezierODEpsiPb11 = -kYr * sigmaYrBezierOTrial;
 
 	// Compute variables for UVC tangent
-	backstressTot11_endPlRecovStage = sigmaYrBezierO - yieldstress;
+	backstressTot11_endPlRecovStage = sigmaYrBezierOTrial - yieldstress;
 	backstressP1 = alphaPKConverged[0];
 	backstressP2 = alphaPKConverged[1];
 	backstressP = backstressP1 + backstressP2;
@@ -2759,16 +2943,16 @@ void LocalBucklingWebPlate::calculateRatioAlphaBackstress(double yieldstress) {
 	hPrime11 = sqrt(3. / 2.) * theta1 - sqrt(2. / 3.) * (KPrime + elasticModulus);
 
 	// Compute ratios for update of post-buckling backstress during plastic recovery stage
-	rAlphaBackstress1 = 1 / (backstressPb11_endPlRecovStage * (gammaK[0] - gammaK[1])) * (cK[0] + cK[1] - gammaK[0] * backstressP1(0) - gammaK[1] * backstressP2(0) - gammaK[1] * backstressPb11_endPlRecovStage - sqrt(3. / 2.) * hPrime11);
-	rAlphaBackstress2 = 1. - rAlphaBackstress1;
+	rAlphaBackstress1Trial = 1 / (backstressPb11_endPlRecovStage * (gammaK[0] - gammaK[1])) * (cK[0] + cK[1] - gammaK[0] * backstressP1(0) - gammaK[1] * backstressP2(0) - gammaK[1] * backstressPb11_endPlRecovStage - sqrt(3. / 2.) * hPrime11);
+	rAlphaBackstress2Trial = 1. - rAlphaBackstress1Trial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 void LocalBucklingWebPlate::initializeErc() {
-	Erc = beta1RegressionErc * pow(bPlateWidth / tPlateThickness, beta2RegressionErc);
+	ErcConverged = beta1RegressionErc * pow(bPlateWidth / tPlateThickness, beta2RegressionErc);
 
-	sigmaC = sigmaC0Stress;
+	sigmaCConverged = sigmaC0Stress;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2776,8 +2960,8 @@ void LocalBucklingWebPlate::initializeErc() {
 void LocalBucklingWebPlate::computeSigmaCDegradation() {
 	double betaDegradationParam = 0.;
 
-	betaDegradationParam = sumEjTrial / Erc;
-	sigmaC = (1 - betaDegradationParam) * sigmaC0Stress;
+	betaDegradationParam = sumEjTrial / ErcTrial;
+	sigmaCTrial = (1 - betaDegradationParam) * sigmaC0Stress;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
