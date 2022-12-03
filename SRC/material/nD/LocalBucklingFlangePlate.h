@@ -1,5 +1,6 @@
 // 
 // Created by Diego Heredia on 24.01.2022
+// Version 03.12.2022
 //
 
 #ifndef CPP_LocalBucklingFlangePlate_H

@@ -1,5 +1,6 @@
 // 
 // Created by Diego Heredia on 24.01.2022
+// Version 03.12.2022
 //
 
 #include "LocalBucklingFlangePlate.h"
@@ -654,6 +655,15 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 	yieldStress = calculateYieldStress();
 	sigmaSurSigmaY = calculateSigmaSurSigmaY();
 
+	Vector strainPostBucklingConvergedWithAddedTol = Vector(N_DIMS);
+	if (abs(strainPostBucklingConverged(0)) < RETURN_MAP_TOL)
+	{ // Try to solve issue with epsiPb11<tol after softening stage
+		strainPostBucklingConvergedWithAddedTol = strainPostBucklingConverged - pVect * RETURN_MAP_TOL;
+	}
+	else {
+		strainPostBucklingConvergedWithAddedTol = strainPostBucklingConverged;
+	}
+
 	/*if (strainConverged(0) <= -0.04693 && strainConverged(0) > -0.04694 && strainTrial(0) >= -0.04745 && strainTrial(0) < -0.04744)
 	{
 		double testError = 1.;
@@ -670,9 +680,9 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 		gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_postBuckling * 6.);
 		gammaDiag(2) = gammaDiag(1);
 
-		relativeStressNPlus1(0) = gammaDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alpha(0)) - gammaDiag(0) / LambdaC_nPlus1Diag(0) * alpha(0);
-		relativeStressNPlus1(1) = gammaDiag(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiag(1) / LambdaC_nPlus1Diag(1) * alpha(1);
-		relativeStressNPlus1(2) = gammaDiag(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiag(2) / LambdaC_nPlus1Diag(2) * alpha(2);
+		relativeStressNPlus1(0) = gammaDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConvergedWithAddedTol(0) - 2. * chi1c * consistParam_postBuckling * alpha(0)) - gammaDiag(0) / LambdaC_nPlus1Diag(0) * alpha(0);
+		relativeStressNPlus1(1) = gammaDiag(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConvergedWithAddedTol(1)) - gammaDiag(1) / LambdaC_nPlus1Diag(1) * alpha(1);
+		relativeStressNPlus1(2) = gammaDiag(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConvergedWithAddedTol(2)) - gammaDiag(2) / LambdaC_nPlus1Diag(2) * alpha(2);
 		stressTrial = relativeStressNPlus1 + alpha;
 
 		phiComp = 3. / 2. * (2. / 3. * pow(relativeStressNPlus1(0), 2) + 2. * pow(relativeStressNPlus1(1), 2) + 2. * pow(relativeStressNPlus1(2), 2)) + chi1c * pow(stressTrial(0), 2) - pow(yieldStress, 2);
@@ -692,9 +702,9 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 		gammaDiagPrime(1) = -pow(gammaDiag(1), 2) * (dCdLambdaPB(1) + 6.);
 		gammaDiagPrime(2) = -pow(gammaDiag(2), 2) * (dCdLambdaPB(2) + 6.);
 
-		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * alpha(0)) - 2 * chi1c * gammaDiag(0) * alpha(0) - 2 * consistParam_postBuckling * gammaDiag(0) * alpha(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * alpha(0) - gammaDiag(0) * dCdLambdaPB(0) * alpha(0);
-		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * alpha(1) - gammaDiag(1) * dCdLambdaPB(1) * alpha(1);
-		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * alpha(2) - gammaDiag(2) * dCdLambdaPB(2) * alpha(2);
+		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConvergedWithAddedTol(0) - 2. * chi1c * consistParam_postBuckling * alpha(0)) - 2 * chi1c * gammaDiag(0) * alpha(0) - 2 * consistParam_postBuckling * gammaDiag(0) * alpha(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * alpha(0) - gammaDiag(0) * dCdLambdaPB(0) * alpha(0);
+		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConvergedWithAddedTol(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * alpha(1) - gammaDiag(1) * dCdLambdaPB(1) * alpha(1);
+		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConvergedWithAddedTol(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * alpha(2) - gammaDiag(2) * dCdLambdaPB(2) * alpha(2);
 
 		dPhiCompdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2) * dChi1cDLambdaPB;
 
@@ -702,13 +712,21 @@ int LocalBucklingFlangePlate::returnMappingSoftening(Vector strain_nPlus1, Vecto
 		consistParam_postBuckling = consistParam_postBuckling - phiComp / dPhiCompdLambdaPB;
 
 		strainPBEqTrial = strainPBEqConverged + psi * consistParam_postBuckling;
-		strainPostBucklingTrial = strainPostBucklingConverged + consistParam_postBuckling * dPhiCompdXi;
+		strainPostBucklingTrial = strainPostBucklingConvergedWithAddedTol + consistParam_postBuckling * dPhiCompdXi;
 
 		sigmaSurSigmaY = calculateSigmaSurSigmaY();
 		chi1c = calculateChi1c();
 
-		// Check convergence
-		if (fabs(phiComp) < RETURN_MAP_TOL) {
+		//// Check convergence
+		//if (fabs(phiComp) < RETURN_MAP_TOL) {
+		//	convergedReturnMapping = true;
+		//}
+		if (iterationNumber_ReturnMapping <= MAXIMUM_ITERATIONS_RETURNMAPPING / 2 && fabs(phiComp) < RETURN_MAP_TOL)
+		{
+			convergedReturnMapping = true;
+		}
+		else if (iterationNumber_ReturnMapping > MAXIMUM_ITERATIONS_RETURNMAPPING / 2 && fabs(phiComp) < 50 * RETURN_MAP_TOL)
+		{
 			convergedReturnMapping = true;
 		}
 	}
