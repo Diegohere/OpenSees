@@ -416,7 +416,7 @@ NDFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     }
   }
 
-  /*opserr << "This is coord fibers:"<< endln;
+ /* opserr << "This is coord fibers:"<< endln;
   for (int i = 0; i < numFibers; i++) {
       opserr << yLocs[i] << " and " << zLocs[i] << endln;
   }*/
@@ -444,6 +444,12 @@ NDFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     eps(2) = rootAlpha*d4 + y*d5;
 
     res += theMat->setTrialStrain(eps);
+    if (res==-1)
+    {
+        opserr << "This fiber did not converge!" << endln;
+        opserr << "This is coordY: " << y << endln;
+        opserr << "This is coordZ: " << z << endln;
+    }
     const Vector &stress = theMat->getStress();
     const Matrix &tangent = theMat->getTangent();
 

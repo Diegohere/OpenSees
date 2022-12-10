@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version 03.12.2022
+// Version 10.12.2022
 //
 
 #include "LocalBucklingWebPlate.h"
@@ -431,9 +431,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainConverged(0) <= -0.001783951426358603 && strainConverged(0) > -0.001783951426358604 && strainTrial(0) >= -0.001788916222122188 && strainTrial(0) < -0.001788916222122187) {
+	if (strainConverged(0) <= -0.001828436512317031 && strainConverged(0) > -0.001828436512317032 && strainTrial(0) >= -0.001821738976073655 && strainTrial(0) < -0.001821738976073654) {
 		double testBreak = 0.;
-	}*/
+	}
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
@@ -1022,6 +1022,11 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 	{
 		double testError = 0.;
 	}*/
+
+	if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) > RETURN_MAP_TOL)
+	{
+		int testError = 1;
+	}
 
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusSoftening(strain_nPlus1, backstressTot, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
@@ -2660,14 +2665,36 @@ double LocalBucklingWebPlate::calculateEtaTangentReduce() {
 
 	double epsiPb11_min = pow(1./beta1RegressionEuSurEl*pow((bPlateWidth/tPlateThickness),-beta2RegressionEuSurEl),1/beta3RegressionEuSurEl);
 
-	if (abs(strainPostBucklingTrial(0))<=epsiPb11_min)
+	/*if (abs(strainPostBucklingTrial(0))<=epsiPb11_min)
 	{
 		etaTangent = 1;
 	}
 	else
 	{
 		etaTangent = beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionEuSurEl);
+	}*/
+
+	// Try to solve oscillation trap
+	double bound4Smoothin = 5. / 100. * abs(epsiPb11_min);
+
+	double a1XTilda = 1.;
+	double a2XTilda = beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionEuSurEl);
+
+	double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2. * bound4Smoothin);
+	double fXTilda = 0.;
+	double f1MinusXTilda = 0.;
+	if (xTilda > 0.)
+	{
+		fXTilda = exp(-1. / xTilda);
 	}
+	if (1. - xTilda > 0.)
+	{
+		f1MinusXTilda = exp(-1. / (1. - xTilda));
+	}
+	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
+
+	double etaTangentIntermed = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda;
+	etaTangent = std::min(1., etaTangentIntermed);
 
 	return etaTangent;
 }
@@ -2705,14 +2732,34 @@ double LocalBucklingWebPlate::calculateDEtaTangentdEpsiPb11() {
 
 	double epsiPb11_min = pow(1. / beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), -beta2RegressionEuSurEl), 1 / beta3RegressionEuSurEl);
 
-	if (abs(strainPostBucklingTrial(0)) <= epsiPb11_min)
+	/*if (abs(strainPostBucklingTrial(0)) <= epsiPb11_min)
 	{
 		dEtaTangentdEpsiPb11 = 0.;
 	}
 	else
 	{
 		dEtaTangentdEpsiPb11 = beta3RegressionEuSurEl * beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(strainPostBucklingTrial(0)), (beta3RegressionEuSurEl - 1.));
+	}*/
+
+	// Try to solve oscillation trap
+	double bound4Smoothin = 5. / 100. * abs(epsiPb11_min);
+	double a2XTilda = beta3RegressionEuSurEl * beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(strainPostBucklingTrial(0)), (beta3RegressionEuSurEl - 1.));
+
+	double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
+	double fXTilda = 0.;
+	double f1MinusXTilda = 0.;
+	if (xTilda > 0.)
+	{
+		fXTilda = exp(-1. / xTilda);
 	}
+	double ans = 1. - xTilda;
+	if (1. - xTilda > 0.)
+	{
+		f1MinusXTilda = exp(-1 / (1. - xTilda));
+	}
+	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
+
+	dEtaTangentdEpsiPb11 = gXTilda * a2XTilda;
 
 	return dEtaTangentdEpsiPb11;
 }
