@@ -431,9 +431,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	if (strainConverged(0) <= -0.001828436512317031 && strainConverged(0) > -0.001828436512317032 && strainTrial(0) >= -0.001821738976073655 && strainTrial(0) < -0.001821738976073654) {
+	/*if (strainConverged(0) <= -0.001828436512317031 && strainConverged(0) > -0.001828436512317032 && strainTrial(0) >= -0.001821738976073655 && strainTrial(0) < -0.001821738976073654) {
 		double testBreak = 0.;
-	}
+	}*/
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
@@ -652,7 +652,11 @@ int LocalBucklingWebPlate::timeIntegration() {
 						cappingPoint = 1;
 						if (convergedMatLaw == 0)
 						{
-							strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
+							if (abs(strainPostBucklingTrial(0)<RETURN_MAP_TOL))
+							{
+								strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
+							}
+							//strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
 							//calculateC1c(yieldStress, alphaTot(0));
 							calculateC1c(yieldStress, alphaTot);
 						}
@@ -676,61 +680,95 @@ int LocalBucklingWebPlate::timeIntegration() {
 					// Do a step in the hardening direction
 					plasticLoading = 1;
 					retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial, switchUVCRecovUVCPoint);
+
+					// Check if the initial capping stress sigmaC0 has been passed
+					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+					//if (stressTrial(0) - sigmaC <= RETURN_MAP_TOL) { // not yet at capping point
+						deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
+						deltaStrain_converged4Peak = deltaStrain_trial;
+
+						// Check if capping point is reached
+						if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+							cappingPoint = 1;
+							strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
+							deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
+						}
+
+						// Check if the full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+							convergedMatLaw = true;
+						}
+						else { // converged but there is more strain increment to do
+							/*strain_previous += deltaStrain_trial;
+							deltaStrain_trial = deltaStrain_todo;*/
+							if (cappingPoint == 0) {
+								revertToBeforeCapping(cappingPoint);
+								deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2.;
+							}
+						}
+
+					}
+					else { // the capping point has been passed
+						//deltaStrain_trial /= 2.;
+						revertToBeforeCapping(cappingPoint);
+						/*deltaStrain_remaining4Peak /= 2.;
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
+						deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
+					}
 				}
 				else { // if chi1c !=0 --> softening stage
 					postBucklingLoading = 1;
 
 					retVal = returnMappingSoftening(strain_nPlus1, xiTrial, alphaTot);
 
-					convergedMatLaw = true;
+					//convergedMatLaw = true;
+
+					// Check if the initial capping stress  has been passed (due to reduction in sigmaC)
+					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= RETURN_MAP_TOL) { // not yet at capping point
+					//if (stressTrial(0) - sigmaC <= RETURN_MAP_TOL) { // not yet at capping point
+						deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
+						deltaStrain_converged4Peak = deltaStrain_trial;
+
+						// Check if capping point is reached
+						if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -RETURN_MAP_TOL) { // capping point is reached
+						//if (stressTrial(0) - sigmaC >= RETURN_MAP_TOL) { // capping point is reached
+							cappingPoint = 1;
+							calculateC1c(yieldStress, alphaTot);
+							deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
+						}
+
+						// Check if the full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+							convergedMatLaw = true;
+						}
+						else { // converged but there is more strain increment to do
+							/*strain_previous += deltaStrain_trial;
+							deltaStrain_trial = deltaStrain_todo;*/
+							if (cappingPoint == 0) {
+								revertToBeforeCapping(cappingPoint);
+								deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2.;
+							}
+						}
+
+					}
+					else { // the capping point has been passed
+						//deltaStrain_trial /= 2.;
+						revertToBeforeCapping(cappingPoint);
+						/*deltaStrain_remaining4Peak /= 2.;
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
+						deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
+						deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
+					}
 
 					// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
 					setTensileEllipsoidYieldSurf(yieldStress, alphaTot);
 				}
-
-				// Check if the initial capping stress sigmaC0 has been passed
-				//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
-				if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= RETURN_MAP_TOL) { // not yet at capping point
-				//if (stressTrial(0) - sigmaC <= RETURN_MAP_TOL) { // not yet at capping point
-					deltaStrain_todo = deltaStrain_fullIncrement - deltaStrain_trial;
-					deltaStrain_converged4Peak = deltaStrain_trial;
-
-					// Check if capping point is reached
-					if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -RETURN_MAP_TOL) { // capping point is reached
-					//if (stressTrial(0) - sigmaC >= RETURN_MAP_TOL) { // capping point is reached
-						cappingPoint = 1;
-						//chi1c = RETURN_MAP_TOL;
-						if (convergedMatLaw == 0)
-						{
-							strainPostBucklingTrial(0) = -RETURN_MAP_TOL;
-						}
-						deltaStrain_trial = deltaStrain_todo + deltaStrain_converged4Peak;
-					}
-
-					// Check if the full strain increment has been done
-					//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
-					if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
-						convergedMatLaw = true;
-					}
-					else { // converged but there is more strain increment to do
-						/*strain_previous += deltaStrain_trial;
-						deltaStrain_trial = deltaStrain_todo;*/
-						if (cappingPoint == 0) {
-							revertToBeforeCapping(cappingPoint);
-							deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_todo / 2.;
-						}
-					}
-					
-				}
-				else { // the capping point has been passed
-					//deltaStrain_trial /= 2.;
-					revertToBeforeCapping(cappingPoint);
-					/*deltaStrain_remaining4Peak /= 2.;
-					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak;*/
-					deltaStrain_remaining4Peak = deltaStrain_trial - deltaStrain_converged4Peak;
-					deltaStrain_trial = deltaStrain_converged4Peak + deltaStrain_remaining4Peak / 2.;
-				}
-			}
+			} // end IF not elastic
 
 			//// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
 			//setTensileEllipsoidYieldSurf(yieldStress, alphaTot);
@@ -2783,12 +2821,14 @@ void LocalBucklingWebPlate::calculateC1c(double yieldStress, Vector alphaTot) {
 	double sigma11UpdatedTol = stressTrial(0) + stressTol;
 	Vector xiTrial = (stressTrial + pVect * stressTol) - alphaTot;
 	double xiVonMisesSquared = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2));
-	c1cTrial = (pow(yieldStress, 2) - xiVonMisesSquared) / pow(sigma11UpdatedTol, 2);
+	
+	double chi_1c = (pow(yieldStress, 2) - xiVonMisesSquared) / pow(sigma11UpdatedTol, 2);
 
-	/*if (c1cTrial<0)
-	{
-		int errorNeg = 1;
-	}*/
+	//c1cTrial = (pow(yieldStress, 2) - xiVonMisesSquared) / pow(sigma11UpdatedTol, 2);
+
+	double sigmaSurSigmaY = calculateSigmaSurSigmaY();
+	double sigmaSurSigmaYTerm = b_chi1c * pow((1. - sigmaSurSigmaY), 2);
+	c1cTrial = chi_1c - sigmaSurSigmaYTerm;
 
 }
 

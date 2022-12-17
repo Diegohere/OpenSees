@@ -894,6 +894,7 @@ GradientForceBeamColumn3d::update(void)
 						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
 						{
 							opserr << "GradientForceBeamColumn3d::update() - section failed in setTrial\n";
+							opserr << "This is section: " << i+1 << endln;
 							return -1;
 						}
 

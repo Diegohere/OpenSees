@@ -447,8 +447,8 @@ NDFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     if (res==-1)
     {
         opserr << "This fiber did not converge!" << endln;
-        opserr << "This is coordY: " << y << endln;
-        opserr << "This is coordZ: " << z << endln;
+        opserr << "This is coordY: " << y << "      This is coordZ: " << z << endln;
+        //opserr << "This is coordZ: " << z << endln;
     }
     const Vector &stress = theMat->getStress();
     const Matrix &tangent = theMat->getTangent();
