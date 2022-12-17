@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version 10.12.2022
+// Version 17.12.2022
 //
 
 #include "LocalBucklingWebPlate.h"
