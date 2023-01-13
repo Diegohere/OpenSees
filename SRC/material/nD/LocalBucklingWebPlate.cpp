@@ -743,7 +743,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 						// Check if the full strain increment has been done
 						//if (deltaStrain_todo.Norm() <= RETURN_MAP_TOL) { // full strain increment has been done
-						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= pow(RETURN_MAP_TOL,2)) { // full strain increment has been done	
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
