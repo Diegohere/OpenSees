@@ -2028,6 +2028,16 @@ const Matrix& LocalBucklingWebPlate::getTangent() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
+double LocalBucklingWebPlate::getYieldStress() {
+
+	double yieldStress = 0.;
+	yieldStress = calculateYieldStress();
+	return yieldStress;
+
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
 const Matrix& LocalBucklingWebPlate::getInitialTangent() {
 
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable

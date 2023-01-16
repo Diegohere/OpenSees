@@ -231,6 +231,17 @@ NDMaterial::getTempAndElong()
 }
 //end of adding thermo-mechanical functions, L.Jiang [SIF]
 
+
+// Start addition by Diego Heredia 13.01.2023
+double 
+NDMaterial::getYieldStress()
+ {
+     opserr << "NDMaterial::getYieldStress -- subclass responsibility\n";
+     return -1;
+ }
+// End addition by Diego Heredia 13.01.2023
+
+
 Response*
 NDMaterial::setResponse (const char **argv, int argc, OPS_Stream &output)
 {
@@ -296,7 +307,7 @@ NDMaterial::setResponse (const char **argv, int argc, OPS_Stream &output)
 	  theResponse = new MaterialResponse(this, 3, this->getTempAndElong());
   }
   //end of adding output request,L.Jiang [SIF]
-  else if (strcmp(argv[0], "Tangent") == 0 || strcmp(argv[0], "tangent") == 0) {
+    else if (strcmp(argv[0], "Tangent") == 0 || strcmp(argv[0], "tangent") == 0) {
 	  const Matrix &res = this->getTangent();
 	  theResponse = new MaterialResponse(this, 4, this->getTangent());
   }
@@ -307,6 +318,15 @@ NDMaterial::setResponse (const char **argv, int argc, OPS_Stream &output)
       theResponse = new MaterialResponse(this, 5, vec);  // zero vector
   }
   //default damage output - added by V.K. Papanikolaou [AUTh] - end 
+
+  // Start addition by Diego Heredia 13.01.2023
+  else if (strcmp(argv[0], "sigmaY") == 0) {
+      //const Vector& res = this->getYieldStress();
+      double res = this->getYieldStress();
+      theResponse = new MaterialResponse(this, 6, this->getYieldStress());
+      output.tag("ResponseType", "sigmaY");
+  }
+  // End addition by Diego Heredia 13.01.2023
 
   output.endTag(); // NdMaterialOutput
 
@@ -322,6 +342,11 @@ NDMaterial::getResponse (int responseID, Information &matInfo)
     
   case 2:
     return matInfo.setVector(this->getStrain());
+
+   // Start addition by Diego Heredia 13.01.2023
+  case 6:
+      return matInfo.setDouble(this->getYieldStress());
+   // End addition by Diego Heredia 13.01.2023
     
   default:
     return -1;

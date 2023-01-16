@@ -5279,92 +5279,136 @@ recorder Node -file $Result/3dModel_lc20D_EQLCombined_ReactionY.txt -time  -node
 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY139Z-1391IP.txt -ele 011103012101 section 1 fiber 138.91 -138.91 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY139Z-1391IP.txt -ele 011103012101 section 1 fiber 138.91 -138.91 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY139Z-1391IP.txt -ele 011103012101 section 1 fiber 138.91 -138.91 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z-1111IP.txt -ele 011103012101 section 1 fiber 145.50 -110.70 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z-1111IP.txt -ele 011103012101 section 1 fiber 145.50 -110.70 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z-1111IP.txt -ele 011103012101 section 1 fiber 145.50 -110.70 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z-861IP.txt -ele 011103012101 section 1 fiber 145.50 -86.10 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z-861IP.txt -ele 011103012101 section 1 fiber 145.50 -86.10 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z-861IP.txt -ele 011103012101 section 1 fiber 145.50 -86.10 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z-621IP.txt -ele 011103012101 section 1 fiber 145.50 -61.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z-621IP.txt -ele 011103012101 section 1 fiber 145.50 -61.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z-621IP.txt -ele 011103012101 section 1 fiber 145.50 -61.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z-371IP.txt -ele 011103012101 section 1 fiber 145.50 -36.90 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z-371IP.txt -ele 011103012101 section 1 fiber 145.50 -36.90 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z-371IP.txt -ele 011103012101 section 1 fiber 145.50 -36.90 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z-121IP.txt -ele 011103012101 section 1 fiber 145.50 -12.30 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z-121IP.txt -ele 011103012101 section 1 fiber 145.50 -12.30 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z-121IP.txt -ele 011103012101 section 1 fiber 145.50 -12.30 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z121IP.txt -ele 011103012101 section 1 fiber 145.50 12.30 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z121IP.txt -ele 011103012101 section 1 fiber 145.50 12.30 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z121IP.txt -ele 011103012101 section 1 fiber 145.50 12.30 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z371IP.txt -ele 011103012101 section 1 fiber 145.50 36.90 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z371IP.txt -ele 011103012101 section 1 fiber 145.50 36.90 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z371IP.txt -ele 011103012101 section 1 fiber 145.50 36.90 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z621IP.txt -ele 011103012101 section 1 fiber 145.50 61.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z621IP.txt -ele 011103012101 section 1 fiber 145.50 61.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z621IP.txt -ele 011103012101 section 1 fiber 145.50 61.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z861IP.txt -ele 011103012101 section 1 fiber 145.50 86.10 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z861IP.txt -ele 011103012101 section 1 fiber 145.50 86.10 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z861IP.txt -ele 011103012101 section 1 fiber 145.50 86.10 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY146Z1111IP.txt -ele 011103012101 section 1 fiber 145.50 110.70 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY146Z1111IP.txt -ele 011103012101 section 1 fiber 145.50 110.70 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY146Z1111IP.txt -ele 011103012101 section 1 fiber 145.50 110.70 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY139Z1391IP.txt -ele 011103012101 section 1 fiber 138.91 138.91 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY139Z1391IP.txt -ele 011103012101 section 1 fiber 138.91 138.91 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY139Z1391IP.txt -ele 011103012101 section 1 fiber 138.91 138.91 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY111Z1461IP.txt -ele 011103012101 section 1 fiber 110.70 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY111Z1461IP.txt -ele 011103012101 section 1 fiber 110.70 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY111Z1461IP.txt -ele 011103012101 section 1 fiber 110.70 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY86Z1461IP.txt -ele 011103012101 section 1 fiber 86.10 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY86Z1461IP.txt -ele 011103012101 section 1 fiber 86.10 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY86Z1461IP.txt -ele 011103012101 section 1 fiber 86.10 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY62Z1461IP.txt -ele 011103012101 section 1 fiber 61.50 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY62Z1461IP.txt -ele 011103012101 section 1 fiber 61.50 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY62Z1461IP.txt -ele 011103012101 section 1 fiber 61.50 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY37Z1461IP.txt -ele 011103012101 section 1 fiber 36.90 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY37Z1461IP.txt -ele 011103012101 section 1 fiber 36.90 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY37Z1461IP.txt -ele 011103012101 section 1 fiber 36.90 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY12Z1461IP.txt -ele 011103012101 section 1 fiber 12.30 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY12Z1461IP.txt -ele 011103012101 section 1 fiber 12.30 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY12Z1461IP.txt -ele 011103012101 section 1 fiber 12.30 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-12Z1461IP.txt -ele 011103012101 section 1 fiber -12.30 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-12Z1461IP.txt -ele 011103012101 section 1 fiber -12.30 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-12Z1461IP.txt -ele 011103012101 section 1 fiber -12.30 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-37Z1461IP.txt -ele 011103012101 section 1 fiber -36.90 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-37Z1461IP.txt -ele 011103012101 section 1 fiber -36.90 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-37Z1461IP.txt -ele 011103012101 section 1 fiber -36.90 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-62Z1461IP.txt -ele 011103012101 section 1 fiber -61.50 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-62Z1461IP.txt -ele 011103012101 section 1 fiber -61.50 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-62Z1461IP.txt -ele 011103012101 section 1 fiber -61.50 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-86Z1461IP.txt -ele 011103012101 section 1 fiber -86.10 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-86Z1461IP.txt -ele 011103012101 section 1 fiber -86.10 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-86Z1461IP.txt -ele 011103012101 section 1 fiber -86.10 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-111Z1461IP.txt -ele 011103012101 section 1 fiber -110.70 145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-111Z1461IP.txt -ele 011103012101 section 1 fiber -110.70 145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-111Z1461IP.txt -ele 011103012101 section 1 fiber -110.70 145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-139Z1391IP.txt -ele 011103012101 section 1 fiber -138.91 138.91 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-139Z1391IP.txt -ele 011103012101 section 1 fiber -138.91 138.91 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-139Z1391IP.txt -ele 011103012101 section 1 fiber -138.91 138.91 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z1111IP.txt -ele 011103012101 section 1 fiber -145.50 110.70 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z1111IP.txt -ele 011103012101 section 1 fiber -145.50 110.70 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z1111IP.txt -ele 011103012101 section 1 fiber -145.50 110.70 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z861IP.txt -ele 011103012101 section 1 fiber -145.50 86.10 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z861IP.txt -ele 011103012101 section 1 fiber -145.50 86.10 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z861IP.txt -ele 011103012101 section 1 fiber -145.50 86.10 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z621IP.txt -ele 011103012101 section 1 fiber -145.50 61.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z621IP.txt -ele 011103012101 section 1 fiber -145.50 61.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z621IP.txt -ele 011103012101 section 1 fiber -145.50 61.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z371IP.txt -ele 011103012101 section 1 fiber -145.50 36.90 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z371IP.txt -ele 011103012101 section 1 fiber -145.50 36.90 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z371IP.txt -ele 011103012101 section 1 fiber -145.50 36.90 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z121IP.txt -ele 011103012101 section 1 fiber -145.50 12.30 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z121IP.txt -ele 011103012101 section 1 fiber -145.50 12.30 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z121IP.txt -ele 011103012101 section 1 fiber -145.50 12.30 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z-121IP.txt -ele 011103012101 section 1 fiber -145.50 -12.30 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z-121IP.txt -ele 011103012101 section 1 fiber -145.50 -12.30 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z-121IP.txt -ele 011103012101 section 1 fiber -145.50 -12.30 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z-371IP.txt -ele 011103012101 section 1 fiber -145.50 -36.90 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z-371IP.txt -ele 011103012101 section 1 fiber -145.50 -36.90 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z-371IP.txt -ele 011103012101 section 1 fiber -145.50 -36.90 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z-621IP.txt -ele 011103012101 section 1 fiber -145.50 -61.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z-621IP.txt -ele 011103012101 section 1 fiber -145.50 -61.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z-621IP.txt -ele 011103012101 section 1 fiber -145.50 -61.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z-861IP.txt -ele 011103012101 section 1 fiber -145.50 -86.10 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z-861IP.txt -ele 011103012101 section 1 fiber -145.50 -86.10 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z-861IP.txt -ele 011103012101 section 1 fiber -145.50 -86.10 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-146Z-1111IP.txt -ele 011103012101 section 1 fiber -145.50 -110.70 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-146Z-1111IP.txt -ele 011103012101 section 1 fiber -145.50 -110.70 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-146Z-1111IP.txt -ele 011103012101 section 1 fiber -145.50 -110.70 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-139Z-1391IP.txt -ele 011103012101 section 1 fiber -138.91 -138.91 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-139Z-1391IP.txt -ele 011103012101 section 1 fiber -138.91 -138.91 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-139Z-1391IP.txt -ele 011103012101 section 1 fiber -138.91 -138.91 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-111Z-1461IP.txt -ele 011103012101 section 1 fiber -110.70 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-111Z-1461IP.txt -ele 011103012101 section 1 fiber -110.70 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-111Z-1461IP.txt -ele 011103012101 section 1 fiber -110.70 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-86Z-1461IP.txt -ele 011103012101 section 1 fiber -86.10 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-86Z-1461IP.txt -ele 011103012101 section 1 fiber -86.10 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-86Z-1461IP.txt -ele 011103012101 section 1 fiber -86.10 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-62Z-1461IP.txt -ele 011103012101 section 1 fiber -61.50 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-62Z-1461IP.txt -ele 011103012101 section 1 fiber -61.50 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-62Z-1461IP.txt -ele 011103012101 section 1 fiber -61.50 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-37Z-1461IP.txt -ele 011103012101 section 1 fiber -36.90 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-37Z-1461IP.txt -ele 011103012101 section 1 fiber -36.90 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-37Z-1461IP.txt -ele 011103012101 section 1 fiber -36.90 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY-12Z-1461IP.txt -ele 011103012101 section 1 fiber -12.30 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY-12Z-1461IP.txt -ele 011103012101 section 1 fiber -12.30 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY-12Z-1461IP.txt -ele 011103012101 section 1 fiber -12.30 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY12Z-1461IP.txt -ele 011103012101 section 1 fiber 12.30 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY12Z-1461IP.txt -ele 011103012101 section 1 fiber 12.30 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY12Z-1461IP.txt -ele 011103012101 section 1 fiber 12.30 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY37Z-1461IP.txt -ele 011103012101 section 1 fiber 36.90 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY37Z-1461IP.txt -ele 011103012101 section 1 fiber 36.90 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY37Z-1461IP.txt -ele 011103012101 section 1 fiber 36.90 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY62Z-1461IP.txt -ele 011103012101 section 1 fiber 61.50 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY62Z-1461IP.txt -ele 011103012101 section 1 fiber 61.50 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY62Z-1461IP.txt -ele 011103012101 section 1 fiber 61.50 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY86Z-1461IP.txt -ele 011103012101 section 1 fiber 86.10 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY86Z-1461IP.txt -ele 011103012101 section 1 fiber 86.10 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY86Z-1461IP.txt -ele 011103012101 section 1 fiber 86.10 -145.50 sigmaY; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_stressFiberY111Z-1461IP.txt -ele 011103012101 section 1 fiber 110.70 -145.50 stress; 
 recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_strainFiberY111Z-1461IP.txt -ele 011103012101 section 1 fiber 110.70 -145.50 strain; 
+recorder Element -file $Result/3dModel_lc20D_EQLCombined_011103012101_sigmaYFiberY111Z-1461IP.txt -ele 011103012101 section 1 fiber 110.70 -145.50 sigmaY; 
 # Eigen value analysis;
 # Mode Shapes;
 set numModes 4;
@@ -5459,311 +5503,3 @@ analysis Static;
 analyze 10;
 loadConst -time 0.0;
 puts "Gravity Done";
-
-
-# Nonlinear dynamic analysis 
-
-# Rayleigh Damping
-# calculate damping parameters for earthquake loading
-set zeta_EQ 0.03;		# percentage of critical damping
-set zeta_FV 0.5;		# percentage of critical damping
-set a0_EQ [expr 0.3119];	# mass damping coefficient based on first and third modes
-set a1_EQ [expr 0.0021];	# stiffness damping coefficient based on first and third modes
-set a0_FV [expr 5.1983];	# mass damping coefficient based on first and third modes
-set a1_FV [expr 0.0353];	# stiffness damping coefficient based on first and third modes
-set a1_EQ_mod_two [expr $a1_EQ*(1.0+10.0000)/10.0000]; # modified stiffness damping coefficient used for n modified elements. See Zareian & Medina 2010.
-set a1_EQ_mod_one [expr (1.0+1.0/(2*10.0000))*$a1_EQ];    # modified stiffness damping coefficient used for n modified elements. See Zareian & Medina 2010.
-set a1_FV_mod_two [expr $a1_FV*(1.0+10.0000)/10.0000]; # modified stiffness damping coefficient used for n modified elements. See Zareian & Medina 2010.
-set a1_FV_mod_one [expr (1.0+1.0/(2*10.0000))*$a1_FV];    # modified stiffness damping coefficient used for n modified elements. See Zareian & Medina 2010.
-
-# 20% level earthquake
-
-# Damping for 20% level earthquake
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  021103022101  022103023101  023103024101  024103025101  021203022201  022203023201  023203024201  024203025201  021303022301  022303023301  023303024301  024303025301  -rayleigh 0.0 0.0 $a1_EQ 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  1221412222  1231412322  1241412422  1251412522  1222412232  1232412332  1242412432  1252412532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 4 -ele  2121422212  2131422312  2141422412  2151422512  2122422222  2132422322  2142422422  2152422522  2123422232  2133422332  2143422432  2153422532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G11 and G12
-region 5 -ele  500112104  500113104  500114104  500115104  500112202  500112204  500113202  500113204  500114202  500114204  500115202  500115204  500112302  500113302  500114302  500115302  500122104  500123104  500124104  500125104  500122202  500122204  500123202  500123204  500124202  500124204  500125202  500125204  500122302  500123302  500124302  500125302  -rayleigh 0.0 0.0 $a1_EQ_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in X direction
-region 6 -ele  500212104  500213104  500214104  500215104  500212204  500213204  500214204  500215204  500212304  500213304  500214304  500215304  500222102  500223102  500224102  500225102  500222202  500223202  500224202  500225202  500222302  500223302  500224302  500225302  -rayleigh 0.0 0.0 $a1_EQ_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in Z direction
-region 7 -node 0020  0030  0040  0050 -rayleigh $a0_EQ 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define level 20% ground motion parameters
-
-set pattern1ID 1;              # Pattern ID
-set pattern2ID 2;              # Pattern ID
-set pattern3ID 3;              # Pattern ID
-set GMXdirection 1;				# ground motion direction (1 = x)
-set GMYdirection 2;				# ground motion direction (2 = y)
-set GMZdirection 3;				# ground motion direction (3 = z)
-set GMEQYL02file "Takatori_YDir_EQL02.txt";      # ground motion filename
-set GMEQXL02file "Takatori_XDir_EQL02.txt";      # ground motion filename
-set GMEQZL02file "Takatori_ZDir_EQL02.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 4100;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries1 "Series -dt $dt -filePath $GMEQYL02file -factor [expr $Scalefact*$g]";
-set accelSeries2 "Series -dt $dt -filePath $GMEQXL02file -factor [expr $Scalefact*$g]";
-set accelSeries3 "Series -dt $dt -filePath $GMEQZL02file -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern1ID $GMXdirection -accel $accelSeries1;
-pattern UniformExcitation $pattern2ID $GMZdirection -accel $accelSeries2;
-pattern UniformExcitation $pattern3ID $GMYdirection -accel $accelSeries3;
-
-puts "Running Level 20% Dynamic Analysis..."
-# define dynamic analysis parameters
-set dt_analysis 0.0050;			# timestep of analysis
-set FloorNodes [list  011103 021103 112102 122102 113102 123102 114102 124102 115102 125102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V02        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTime [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Level 20% ground motion time: $currentTime";
-set tFinish [clock seconds];
-set tFinishEQL02 [expr $tFinish - $tStart];
-puts "Level 20% ground motion analysis duration: $tFinishEQL02] s";
-loadConst -time 0.0;
-puts "Level 20% ground motion Done";
-
-# Free vibration beween 20% and 40% level earthquake motions
-
-# Damping for free vibration
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  021103022101  022103023101  023103024101  024103025101  021203022201  022203023201  023203024201  024203025201  021303022301  022303023301  023303024301  024303025301  -rayleigh 0.0 0.0 $a1_FV 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  1221412222  1231412322  1241412422  1251412522  1222412232  1232412332  1242412432  1252412532  -rayleigh 0.0 0.0 $a1_FV_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 4 -ele  2121422212  2131422312  2141422412  2151422512  2122422222  2132422322  2142422422  2152422522  2123422232  2133422332  2143422432  2153422532  -rayleigh 0.0 0.0 $a1_FV_mod_two 0.0;# assign stiffness proportional damping to beams G11 and G12
-region 5 -ele  500112104  500113104  500114104  500115104  500112202  500112204  500113202  500113204  500114202  500114204  500115202  500115204  500112302  500113302  500114302  500115302  500122104  500123104  500124104  500125104  500122202  500122204  500123202  500123204  500124202  500124204  500125202  500125204  500122302  500123302  500124302  500125302  -rayleigh 0.0 0.0 $a1_FV_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in X direction
-region 6 -ele  500212104  500213104  500214104  500215104  500212204  500213204  500214204  500215204  500212304  500213304  500214304  500215304  500222102  500223102  500224102  500225102  500222202  500223202  500224202  500225202  500222302  500223302  500224302  500225302  -rayleigh 0.0 0.0 $a1_FV_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in Z direction
-region 7 -node 0020  0030  0040  0050 -rayleigh $a0_FV 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define parameters for Free vibration beween 20% and 40% level earthquake motions
-
-set pattern4ID 4;              # Pattern ID
-set pattern5ID 5;              # Pattern ID
-set pattern6ID 6;              # Pattern ID
-set FVYfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set FVXfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set FVZfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 500;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries4 "Series -dt $dt -filePath $FVYfile -factor [expr $Scalefact*$g]";
-set accelSeries5 "Series -dt $dt -filePath $FVXfile -factor [expr $Scalefact*$g]";
-set accelSeries6 "Series -dt $dt -filePath $FVZfile -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern4ID $GMXdirection -accel $accelSeries4;
-pattern UniformExcitation $pattern5ID $GMZdirection -accel $accelSeries5;
-pattern UniformExcitation $pattern6ID $GMYdirection -accel $accelSeries6;
-
-puts "Running Free vibration beween 20% and 40% level earthquake..."
-# define dynamic analysis parameters
-set dt_analysis 0.0050;			# timestep of analysis
-set FloorNodes [list  011103 021103 112102 122102 113102 123102 114102 124102 115102 125102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V02        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTime [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Free vibration beween 20% and 40% level earthquake: $currentTime";
-set tFinish [clock seconds];
-set tFinishFV0204 [expr $tFinish - $tStart];
-puts "Free vibration beween 20% and 40% level earthquake analysis duration: $tFinishFV0204 s";
-loadConst -time 0.0;
-puts "Free vibration beween 20% and 40% level earthquake Done";
-
-# 40% level earthquake
-
-# Damping for 40% level earthquake
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  021103022101  022103023101  023103024101  024103025101  021203022201  022203023201  023203024201  024203025201  021303022301  022303023301  023303024301  024303025301  -rayleigh 0.0 0.0 $a1_EQ 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  1221412222  1231412322  1241412422  1251412522  1222412232  1232412332  1242412432  1252412532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 4 -ele  2121422212  2131422312  2141422412  2151422512  2122422222  2132422322  2142422422  2152422522  2123422232  2133422332  2143422432  2153422532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G11 and G12
-region 5 -ele  500112104  500113104  500114104  500115104  500112202  500112204  500113202  500113204  500114202  500114204  500115202  500115204  500112302  500113302  500114302  500115302  500122104  500123104  500124104  500125104  500122202  500122204  500123202  500123204  500124202  500124204  500125202  500125204  500122302  500123302  500124302  500125302  -rayleigh 0.0 0.0 $a1_EQ_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in X direction
-region 6 -ele  500212104  500213104  500214104  500215104  500212204  500213204  500214204  500215204  500212304  500213304  500214304  500215304  500222102  500223102  500224102  500225102  500222202  500223202  500224202  500225202  500222302  500223302  500224302  500225302  -rayleigh 0.0 0.0 $a1_EQ_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in Z direction
-region 7 -node 0020  0030  0040  0050 -rayleigh $a0_EQ 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define level 40% ground motion parameters
-
-set pattern7ID 7;              # Pattern ID
-set pattern8ID 8;              # Pattern ID
-set pattern9ID 9;              # Pattern ID
-set GMEQYL04file "Takatori_YDir_EQL04.txt";      # ground motion filename
-set GMEQXL04file "Takatori_XDir_EQL04.txt";      # ground motion filename
-set GMEQZL04file "Takatori_ZDir_EQL04.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 4100;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries7 "Series -dt $dt -filePath $GMEQYL04file -factor [expr $Scalefact*$g]";
-set accelSeries8 "Series -dt $dt -filePath $GMEQXL04file -factor [expr $Scalefact*$g]";
-set accelSeries9 "Series -dt $dt -filePath $GMEQZL04file -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern7ID $GMXdirection -accel $accelSeries7;
-pattern UniformExcitation $pattern8ID $GMZdirection -accel $accelSeries8;
-pattern UniformExcitation $pattern9ID $GMYdirection -accel $accelSeries9;
-
-puts "Running Level 40% Dynamic Analysis..."
-# define dynamic analysis parameters
-set dt_analysis 0.0020;			# timestep of analysis
-set FloorNodes [list  011103 021103 112102 122102 113102 123102 114102 124102 115102 125102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V02        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTime [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Level 40% ground motion time: $currentTime";
-set tFinish [clock seconds];
-set tFinishEQL04 [expr $tFinish - $tStart];
-puts "Level 40% ground motion analysis duration: $tFinishEQL04] s";
-loadConst -time 0.0;
-puts "Level 40% ground motion Done";
-
-# Free vibration beween 40% and 60% level earthquake motions
-
-# Damping for free vibration
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  021103022101  022103023101  023103024101  024103025101  021203022201  022203023201  023203024201  024203025201  021303022301  022303023301  023303024301  024303025301  -rayleigh 0.0 0.0 $a1_FV 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  1221412222  1231412322  1241412422  1251412522  1222412232  1232412332  1242412432  1252412532  -rayleigh 0.0 0.0 $a1_FV_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 4 -ele  2121422212  2131422312  2141422412  2151422512  2122422222  2132422322  2142422422  2152422522  2123422232  2133422332  2143422432  2153422532  -rayleigh 0.0 0.0 $a1_FV_mod_two 0.0;# assign stiffness proportional damping to beams G11 and G12
-region 5 -ele  500112104  500113104  500114104  500115104  500112202  500112204  500113202  500113204  500114202  500114204  500115202  500115204  500112302  500113302  500114302  500115302  500122104  500123104  500124104  500125104  500122202  500122204  500123202  500123204  500124202  500124204  500125202  500125204  500122302  500123302  500124302  500125302  -rayleigh 0.0 0.0 $a1_FV_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in X direction
-region 6 -ele  500212104  500213104  500214104  500215104  500212204  500213204  500214204  500215204  500212304  500213304  500214304  500215304  500222102  500223102  500224102  500225102  500222202  500223202  500224202  500225202  500222302  500223302  500224302  500225302  -rayleigh 0.0 0.0 $a1_FV_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in Z direction
-region 7 -node 0020  0030  0040  0050 -rayleigh $a0_FV 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define parameters for Free vibration beween 20% and 40% level earthquake motions
-
-set pattern10ID 10;              # Pattern ID
-set pattern11ID 11;              # Pattern ID
-set pattern12ID 12;              # Pattern ID
-set FVYfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set FVXfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set FVZfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 500;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries10 "Series -dt $dt -filePath $FVYfile -factor [expr $Scalefact*$g]";
-set accelSeries11 "Series -dt $dt -filePath $FVXfile -factor [expr $Scalefact*$g]";
-set accelSeries12 "Series -dt $dt -filePath $FVZfile -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern10ID $GMXdirection -accel $accelSeries10;
-pattern UniformExcitation $pattern11ID $GMZdirection -accel $accelSeries11;
-pattern UniformExcitation $pattern12ID $GMYdirection -accel $accelSeries12;
-
-puts "Running Free vibration beween 40% and 60% level earthquake..."
-# define dynamic analysis parameters
-set dt_analysis 0.0050;			# timestep of analysis
-set FloorNodes [list  011103 021103 112102 122102 113102 123102 114102 124102 115102 125102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V02        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTime [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Free vibration beween 40% and 60% level earthquake: $currentTime";
-set tFinish [clock seconds];
-set tFinishFV0406 [expr $tFinish - $tStart];
-puts "Free vibration beween 40% and 60% level earthquake analysis duration: $tFinishFV0406 s";
-loadConst -time 0.0;
-puts "Free vibration beween 40% and 60% level earthquake Done";
-
-# 60% level earthquake
-
-# Damping for 60% level earthquake
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  021103022101  022103023101  023103024101  024103025101  021203022201  022203023201  023203024201  024203025201  021303022301  022303023301  023303024301  024303025301  -rayleigh 0.0 0.0 $a1_EQ 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  1221412222  1231412322  1241412422  1251412522  1222412232  1232412332  1242412432  1252412532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 4 -ele  2121422212  2131422312  2141422412  2151422512  2122422222  2132422322  2142422422  2152422522  2123422232  2133422332  2143422432  2153422532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G11 and G12
-region 5 -ele  500112104  500113104  500114104  500115104  500112202  500112204  500113202  500113204  500114202  500114204  500115202  500115204  500112302  500113302  500114302  500115302  500122104  500123104  500124104  500125104  500122202  500122204  500123202  500123204  500124202  500124204  500125202  500125204  500122302  500123302  500124302  500125302  -rayleigh 0.0 0.0 $a1_EQ_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in X direction
-region 6 -ele  500212104  500213104  500214104  500215104  500212204  500213204  500214204  500215204  500212304  500213304  500214304  500215304  500222102  500223102  500224102  500225102  500222202  500223202  500224202  500225202  500222302  500223302  500224302  500225302  -rayleigh 0.0 0.0 $a1_EQ_mod_one 0.0;# assign stiffness proportional damping to WUF_W edges in Z direction
-region 7 -node 0020  0030  0040  0050 -rayleigh $a0_EQ 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define level 60% ground motion parameters
-
-set pattern13ID 13;              # Pattern ID
-set pattern14ID 14;              # Pattern ID
-set pattern15ID 15;              # Pattern ID
-set GMEQYL06file "Takatori_YDir_EQL06.txt";      # ground motion filename
-set GMEQXL06file "Takatori_XDir_EQL06.txt";      # ground motion filename
-set GMEQZL06file "Takatori_ZDir_EQL06.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 4100;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries13 "Series -dt $dt -filePath $GMEQYL06file -factor [expr $Scalefact*$g]";
-set accelSeries14 "Series -dt $dt -filePath $GMEQXL06file -factor [expr $Scalefact*$g]";
-set accelSeries15 "Series -dt $dt -filePath $GMEQZL06file -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern13ID $GMXdirection -accel $accelSeries13;
-pattern UniformExcitation $pattern14ID $GMZdirection -accel $accelSeries14;
-pattern UniformExcitation $pattern15ID $GMYdirection -accel $accelSeries15;
-
-puts "Running Level 60% Dynamic Analysis..."
-# define dynamic analysis parameters
-set dt_analysis 0.0010;			# timestep of analysis
-set FloorNodes [list  011103 021103 112102 122102 113102 123102 114102 124102 115102 125102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V02        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTime [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Level 60% ground motion time: $currentTime";
-set tFinish [clock seconds];
-set tFinishEQL06 [expr $tFinish - $tStart];
-puts "Level 60% ground motion analysis duration: $tFinishEQL06] s";
-loadConst -time 0.0;
-puts "Level 60% ground motion Done";
-
-puts "Level 20% ground motion analysis duration: $tFinishEQL02] s";
-puts "Free vibration beween 20% and 40% level earthquake analysis duration: $tFinishFV0204 s";
-puts "Level 40% ground motion analysis duration: $tFinishEQL04] s";
-puts "Free vibration beween 40% and 60% level earthquake analysis duration: $tFinishFV0406 s";
-puts "Level 60% ground motion analysis duration: $tFinishEQL06] s";
-
-wipe;
-wipe all;

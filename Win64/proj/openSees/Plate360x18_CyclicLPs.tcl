@@ -103,6 +103,7 @@ puts "Recorders ..."
 # Record stress and strains for fibers
 	recorder Element -file $dataDir/WebPlate_bSurT20_cyclic_constant005_stressFiber_OpenSees.txt -ele 12 section 1 fiber 150. 150. 1 stress;
 	recorder Element -file $dataDir/WebPlate_bSurT20_cyclic_constant005_strainFiber_OpenSees.txt -ele 12 section 1 fiber 150. 150. 1 strain;
+	recorder Element -file $dataDir/WebPlate_bSurT20_cyclic_constant005_sigmaYFiber_OpenSees.txt -ele 12 section 1 fiber 150. 150. 1 sigmaY;
 	
 #######################################################################################
 #                                                                                     #

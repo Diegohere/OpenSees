@@ -66,6 +66,10 @@ public:
 	// Returns the trial elastoplastic tangent modulus
 	const Matrix& getTangent(void);
 
+	// Returns the yield stress (accounting for isotropic hardening)
+	double getYieldStress(void);
+	//const Vector getYieldStress(void);
+
 	// Returns the tangent modulus in the undeformed configuration
 	const Matrix& getInitialTangent(void);
 
