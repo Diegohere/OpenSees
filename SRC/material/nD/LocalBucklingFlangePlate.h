@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 24.01.2022
-// Version 03.12.2022
+// Version 21.01.2023
 //
 
 #ifndef CPP_LocalBucklingFlangePlate_H
@@ -213,7 +213,8 @@ private:
 	double alphaRegularization;
 
 	// Plate stress properties (fixed for now, could be set by the constructor)
-	const double alpha_chi1c = 1. / 3.;
+	/*const double alpha_chi1c = 1. / 3.;*/
+	const double alpha_chi1c = 2. / 3.;
 	const double sigmaDMStress = 10; // in MPa
 	//const double sigmaDMStress = 1.45; // in ksi
 	double b_chi1c;

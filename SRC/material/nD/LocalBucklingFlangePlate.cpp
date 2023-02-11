@@ -1438,15 +1438,72 @@ double LocalBucklingFlangePlate::calculateSigmaSurSigmaY() {
 	double cPlate = 0.;
 	double AHat = 0., BHat = 0., CHat = 0.;
 	double DHat = 0., EHat = 0., FHat = 0., GHat = 0., HHat = 0.;
-	double p4eq = 0., q4eq = 0.;
-	double Delta0eq = 0.;
-	double Delta1eq = 0.;
 	double strainPB11TrialRegularized = 0.;
 
 	alphaAngle = 55. * 3.1416 / 180.;
 	cPlate = bPlateWidth / (2. * tan(alphaAngle));
 
 	strainPB11TrialRegularized = abs(strainPostBucklingTrial(0)) * alphaRegularization;
+
+	//// Method 1
+	//double p4eq = 0., q4eq = 0.;
+	//double Delta0eq = 0.;
+	//double Delta1eq = 0.;
+
+	//// Check if strainPBEqTrial is equal to 0 
+	//if (abs(strainPostBucklingTrial(0)) < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
+	//	sigmaSurSigmaY = 1.;
+	//}
+	//else {
+	//	AHat = (pow(tPlateThickness, 2) * (1. - strainPB11TrialRegularized)) / (sin(2. * alphaAngle) * sqrt(1. - pow((1. - strainPB11TrialRegularized), 2)));
+	//	BHat = (pow(tPlateThickness, 2.) * (bPlateWidth - cPlate)) / (bPlateWidth * sqrt(1. - pow((1. - strainPB11TrialRegularized), 2)));
+	//	CHat = (1. / 2. * tPlateThickness * sqrt(pow(cPlate, 2.) + pow((bPlateWidth / 2. * sqrt(1. - pow((1. - strainPB11TrialRegularized), 2))), 2)) - bPlateWidth * tPlateThickness);
+
+	//	DHat = -pow((BHat), 2);
+	//	EHat = 2. * BHat * CHat;
+	//	FHat = -pow((AHat), 2) + 2. * pow((BHat), 2) - pow(CHat, 2);
+	//	GHat = -2. * BHat * CHat;
+	//	HHat = pow(AHat, 2) - pow(BHat, 2);
+
+	//	p4eq = (8. * DHat * FHat - 3. * pow(EHat, 2)) / (8. * pow(DHat, 2));
+	//	q4eq = (pow(EHat, 3) - 4. * DHat * EHat * FHat + 8. * pow(DHat, 2) * GHat) / (8. * pow(DHat, 3));
+
+	//	Delta0eq = pow(FHat, 2) - 3. * EHat * GHat + 12. * DHat * HHat;
+	//	Delta1eq = 2. * pow(FHat, 3) - 9. * EHat * FHat * GHat + 27. * pow(EHat, 2) * HHat + 27. * DHat * pow(GHat, 2) - 72. * DHat * FHat * HHat;
+
+	//	std::complex<double> Delta0eqComplex(Delta0eq, 0.);
+	//	std::complex<double> Delta1eqComplex(Delta1eq, 0.);
+	//	std::complex<double> fourComplex(4., 0.);
+	//	std::complex<double> twoComplex(2., 0.);
+	//	std::complex<double> Q4eq = pow(((Delta1eqComplex + sqrt(pow(Delta1eqComplex, 2) - fourComplex * pow(Delta0eqComplex, 3))) / twoComplex), 1.0 / 3.0);
+
+	//	std::complex<double> oneDivTwoComplex(0.5, 0.);
+	//	std::complex<double> twoDivThreeComplex(2.0 / 3.0, 0.);
+	//	std::complex<double> oneComplex(1., 0.);
+	//	std::complex<double> threeComplex(3., 0.);
+	//	std::complex<double> p4eqComplex(p4eq, 0.);
+	//	std::complex<double> DHatComplex(DHat, 0.);
+	//	std::complex<double> q4eqComplex(q4eq, 0.);
+	//	std::complex<double> S4eq = oneDivTwoComplex * sqrt(-twoDivThreeComplex * p4eqComplex + oneComplex / (threeComplex * DHatComplex) * (Q4eq + Delta0eqComplex / Q4eq));
+
+	//	std::complex<double> EHatComplex(EHat, 0.);
+	//	std::complex<double> sol4eq3 = -EHatComplex / (fourComplex * DHatComplex) + S4eq + oneDivTwoComplex * sqrt(-fourComplex * pow(S4eq, 2) - twoComplex * p4eqComplex - q4eqComplex / S4eq);
+
+	//	sigmaSurSigmaY = real(sol4eq3);
+	//}
+
+
+	// Method 2
+	double alpha = 0.;
+	double beta = 0.;
+	double gamma = 0.;
+	double P = 0.;
+	double Q = 0.;
+	double R = 0.;
+	double U = 0.;
+	double y = 0.;
+	double W = 0.;
+	//double sol4eq1_V02 = 0.;
 
 	// Check if strainPBEqTrial is equal to 0 
 	if (abs(strainPostBucklingTrial(0)) < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
@@ -1463,39 +1520,29 @@ double LocalBucklingFlangePlate::calculateSigmaSurSigmaY() {
 		GHat = -2. * BHat * CHat;
 		HHat = pow(AHat, 2) - pow(BHat, 2);
 
-		p4eq = (8. * DHat * FHat - 3. * pow(EHat, 2)) / (8. * pow(DHat, 2));
-		q4eq = (pow(EHat, 3) - 4. * DHat * EHat * FHat + 8. * pow(DHat, 2) * GHat) / (8. * pow(DHat, 3));
+		alpha = -3. * pow(EHat, 2) / (8. * pow(DHat, 2)) + FHat / DHat;
+		beta = pow(EHat, 3) / (8. * pow(DHat, 3)) - (EHat * FHat) / (2. * pow(DHat, 2)) + GHat / DHat;
+		gamma = -3. * pow(EHat, 4) / (256. * pow(DHat, 4)) + (pow(EHat, 2) * FHat) / (16. * pow(DHat, 3)) - (EHat * GHat) / (4. * pow(DHat, 2)) + HHat / DHat;
 
-		Delta0eq = pow(FHat, 2) - 3. * EHat * GHat + 12. * DHat * HHat;
-		Delta1eq = 2. * pow(FHat, 3) - 9. * EHat * FHat * GHat + 27. * pow(EHat, 2) * HHat + 27. * DHat * pow(GHat, 2) - 72. * DHat * FHat * HHat;
+		P = -pow(alpha, 2) / 12. - gamma;
+		Q = -pow(alpha, 3) / 108. + alpha * gamma / 3 - pow(beta, 2) / 8.;
+		R = -Q / 2. + sqrt(pow(Q, 2) / 4. + pow(P, 3) / 27.);
+		U = pow(R, (1. / 3.));
 
-		std::complex<double> Delta0eqComplex(Delta0eq, 0.);
-		std::complex<double> Delta1eqComplex(Delta1eq, 0.);
-		std::complex<double> fourComplex(4., 0.);
-		std::complex<double> twoComplex(2., 0.);
-		std::complex<double> Q4eq = pow(((Delta1eqComplex + sqrt(pow(Delta1eqComplex, 2) - fourComplex * pow(Delta0eqComplex, 3))) / twoComplex), 1.0 / 3.0);
+		if (U == 0.)
+		{
+			y = -5. / 6. * alpha - pow(Q, (1. / 3.));
+		}
+		else
+		{
+			y = -5. / 6. * alpha + U - P / (3. * U);
+		}
+		W = sqrt(alpha + 2. * y);
 
-		std::complex<double> oneDivTwoComplex(0.5, 0.);
-		std::complex<double> twoDivThreeComplex(2.0 / 3.0, 0.);
-		std::complex<double> oneComplex(1., 0.);
-		std::complex<double> threeComplex(3., 0.);
-		std::complex<double> p4eqComplex(p4eq, 0.);
-		std::complex<double> DHatComplex(DHat, 0.);
-		std::complex<double> q4eqComplex(q4eq, 0.);
-		std::complex<double> S4eq = oneDivTwoComplex * sqrt(-twoDivThreeComplex * p4eqComplex + oneComplex / (threeComplex * DHatComplex) * (Q4eq + Delta0eqComplex / Q4eq));
-
-		std::complex<double> EHatComplex(EHat, 0.);
-		std::complex<double> sol4eq3 = -EHatComplex / (fourComplex * DHatComplex) + S4eq + oneDivTwoComplex * sqrt(-fourComplex * pow(S4eq, 2) - twoComplex * p4eqComplex - q4eqComplex / S4eq);
-
-		sigmaSurSigmaY = real(sol4eq3);
+		sigmaSurSigmaY = -EHat / (4. * DHat) + (+W + sqrt(-(3. * alpha + 2. * y + 2. * beta / W))) / 2.;
 	}
 
-	/*if (sigmaSurSigmaY<0.1)
-	{
-		opserr << "sigmaSurSigmaY is too small " << sigmaSurSigmaY<< endln;
-		opserr << "strainPBeqTrial: " << strainPBEqTrial << endln;
-		opserr << "stressTrial: " << stressTrial << endln;
-	}*/
+	
 
 	return sigmaSurSigmaY;
 
@@ -1517,6 +1564,7 @@ double LocalBucklingFlangePlate::calculateDSigmaSurSigmaYdEpsilonPB11() {
 
 	std::complex<double> oneDivTwoComplex(0.5, 0);
 	std::complex<double> twoDivThreeComplex(2.0 / 3.0, 0);
+	std::complex<double> fiveDivSixComplex(5.0 / 6.0, 0);
 	std::complex<double> oneComplex(1, 0);
 	std::complex<double> twoComplex(2, 0);
 	std::complex<double> threeComplex(3, 0);
@@ -1524,8 +1572,11 @@ double LocalBucklingFlangePlate::calculateDSigmaSurSigmaYdEpsilonPB11() {
 	std::complex<double> eightComplex(8, 0);
 	std::complex<double> nineComplex(9, 0);
 	std::complex<double> twelveComplex(12, 0);
+	std::complex<double> sixteenComplex(16, 0);
 	std::complex<double> twentySevenComplex(27, 0);
 	std::complex<double> seventyTwoComplex(72, 0);
+	std::complex<double> oneZeroEightComplex(108, 0);
+	std::complex<double> twoFiveSixComplex(256, 0);
 	std::complex<double> tPlateComplex(tPlateThickness, 0);
 	std::complex<double> bPlateComplex(bPlateWidth, 0);
 	std::complex<double> cPlateComplex(cPlate, 0);
@@ -1541,18 +1592,46 @@ double LocalBucklingFlangePlate::calculateDSigmaSurSigmaYdEpsilonPB11() {
 	std::complex<double> GHat = -twoComplex * BHat * CHat;
 	std::complex<double> HHat = pow(AHat, 2) - pow(BHat, 2);
 
-	std::complex<double> p4eq = (eightComplex * DHat * FHat - threeComplex * pow(EHat, 2)) / (eightComplex * pow(DHat, 2));
-	std::complex<double> q4eq = (pow(EHat, 3) - fourComplex * DHat * EHat * FHat + eightComplex * pow(DHat, 2) * GHat) / (eightComplex * pow(DHat, 3));
 
-	std::complex<double> Delta0eq = pow(FHat, 2) - threeComplex * EHat * GHat + twelveComplex * DHat * HHat;
-	std::complex<double> Delta1eq = twoComplex * pow(FHat, 3) - nineComplex * EHat * FHat * GHat + twentySevenComplex * pow(EHat, 2) * HHat + twentySevenComplex * DHat * pow(GHat, 2) - seventyTwoComplex * DHat * FHat * HHat;
+	//// Method 01
+	//std::complex<double> p4eq = (eightComplex * DHat * FHat - threeComplex * pow(EHat, 2)) / (eightComplex * pow(DHat, 2));
+	//std::complex<double> q4eq = (pow(EHat, 3) - fourComplex * DHat * EHat * FHat + eightComplex * pow(DHat, 2) * GHat) / (eightComplex * pow(DHat, 3));
 
-	std::complex<double> Q4eq = pow(((Delta1eq + sqrt(pow(Delta1eq, 2) - fourComplex * pow(Delta0eq, 3))) / twoComplex), 1.0 / 3.0);
-	std::complex<double> S4eq = oneDivTwoComplex * sqrt(-twoDivThreeComplex * p4eq + oneComplex / (threeComplex * DHat) * (Q4eq + Delta0eq / Q4eq));
+	//std::complex<double> Delta0eq = pow(FHat, 2) - threeComplex * EHat * GHat + twelveComplex * DHat * HHat;
+	//std::complex<double> Delta1eq = twoComplex * pow(FHat, 3) - nineComplex * EHat * FHat * GHat + twentySevenComplex * pow(EHat, 2) * HHat + twentySevenComplex * DHat * pow(GHat, 2) - seventyTwoComplex * DHat * FHat * HHat;
 
-	std::complex<double> sol4eq3 = -EHat / (fourComplex * DHat) + S4eq + oneDivTwoComplex * sqrt(-fourComplex * pow(S4eq, 2) - twoComplex * p4eq - q4eq / S4eq);
+	//std::complex<double> Q4eq = pow(((Delta1eq + sqrt(pow(Delta1eq, 2) - fourComplex * pow(Delta0eq, 3))) / twoComplex), 1.0 / 3.0);
+	//std::complex<double> S4eq = oneDivTwoComplex * sqrt(-twoDivThreeComplex * p4eq + oneComplex / (threeComplex * DHat) * (Q4eq + Delta0eq / Q4eq));
 
-	dSigmaSurSigmaYdEpsilonPBeq = imag(sol4eq3) / hStep;
+	//std::complex<double> sol4eq3 = -EHat / (fourComplex * DHat) + S4eq + oneDivTwoComplex * sqrt(-fourComplex * pow(S4eq, 2) - twoComplex * p4eq - q4eq / S4eq);
+
+	//dSigmaSurSigmaYdEpsilonPBeq = imag(sol4eq3) / hStep;
+
+
+	// Method 02
+	std::complex<double> alpha = -threeComplex * pow(EHat, 2) / (eightComplex * pow(DHat, 2)) + FHat / DHat;
+	std::complex<double> beta = pow(EHat, 3) / (eightComplex * pow(DHat, 3)) - (EHat * FHat) / (twoComplex * pow(DHat, 2)) + GHat / DHat;
+	std::complex<double> gamma = -threeComplex * pow(EHat, 4) / (twoFiveSixComplex * pow(DHat, 4)) + (pow(EHat, 2) * FHat) / (sixteenComplex * pow(DHat, 3)) - (EHat * GHat) / (fourComplex * pow(DHat, 2)) + HHat / DHat;
+
+	std::complex<double> P = -pow(alpha, 2) / twelveComplex - gamma;
+	std::complex<double> Q = -pow(alpha, 3) / oneZeroEightComplex + alpha * gamma / threeComplex - pow(beta, 2) / eightComplex;
+	std::complex<double> R = -Q / twoComplex + sqrt(pow(Q, 2) / fourComplex + pow(P, 3) / twentySevenComplex);
+	std::complex<double>U = pow(R, (1. / 3.));
+
+	std::complex<double> y(0, 0);
+	if (U == 0.)
+	{
+		y = -fiveDivSixComplex * alpha - pow(Q, (1. / 3.));
+	}
+	else
+	{
+		y = -fiveDivSixComplex * alpha + U - P / (threeComplex * U);
+	}
+	std::complex<double>W = sqrt(alpha + twoComplex * y);
+
+	std::complex<double> sol4eq1_V02= -EHat / (fourComplex * DHat) + (+W + sqrt(-(threeComplex * alpha + twoComplex * y + twoComplex * beta / W))) / twoComplex;
+
+	dSigmaSurSigmaYdEpsilonPBeq = imag(sol4eq1_V02) / hStep;
 
 	return dSigmaSurSigmaYdEpsilonPBeq;
 
