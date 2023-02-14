@@ -1,6 +1,6 @@
 // 
-// Created by Diego Heredia on 24.01.2022
-// Version 21.01.2023
+// Created by Diego Heredia on 10.12.2021
+// Version 14.02.2023
 //
 
 #ifndef CPP_LocalBucklingFlangePlate_H
@@ -66,6 +66,10 @@ public:
 	// Returns the trial elastoplastic tangent modulus
 	const Matrix& getTangent(void);
 
+	// Returns the yield stress (accounting for isotropic hardening)
+	double getYieldStress(void);
+	//const Vector getYieldStress(void);
+
 	// Returns the tangent modulus in the undeformed configuration
 	const Matrix& getInitialTangent(void);
 
@@ -102,10 +106,10 @@ private:
 	int timeIntegration();
 
 	// Return mapping for hardening stage
-	int returnMappingHardening(Vector strain_nPlus1, Vector alpha, Vector eta_trial);
+	int returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector eta_trial, int switchUVCRecovUVCPoint);
 
 	// Return mapping for softening stage
-	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector alpha);
+	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector backstressTot);
 
 	//! Sets the elastoplastic tangent modulus for elastic stage
 	void calculateConsistentTangentModulusElastic(double etaTangent);
@@ -115,8 +119,7 @@ private:
 		const Vector& stressRelative);
 
 	// Sets the consistent tangent modulus for softening stage
-	void calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& backstressTot,
-		const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam_postBuckling);
+	void calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& backstressTot, const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam);
 
 	// Returns the dot product of two length 3 vectors
 	double dotprod3(const Vector& v1, const Vector& v2);
@@ -145,20 +148,17 @@ private:
 	// Returns the current value of the ratio sigmaSurSigmaY
 	double calculateSigmaSurSigmaY(void);
 
-	// Returns the current value of the derivative dSigmaSurSigmaYdEpsilonPB11
+	// Returns the current value of the derivative dSigmaSurSigmaYdEpsilonPBeq
 	double calculateDSigmaSurSigmaYdEpsilonPB11(void);
 
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);
 
-	// Returns the component wise multiplication of two length 3 vectors
-	Vector vecMult3(const Vector& v1, const Vector& v2);
-
-	// Returns the inverse of a 3x3 matrix
-	Matrix matinv3(const Matrix& m);
-
 	// Reverts to before the capping point
 	int revertToBeforeCapping(bool cappingPoint);
+
+	//// Initialize value of sigmaYrO
+	//void initializeSigmaYrO(void);
 
 	// Computes elastic stiffness matrix 
 	double calculateEtaTangentReduce(void);
@@ -172,6 +172,51 @@ private:
 	// Computes the values of constant c1c needed for buckling prior to yielding
 	//void calculateC1c(double yieldStress, double alphaTot11);
 	void calculateC1c(double yieldStress, Vector alphaTot);
+
+	// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
+	void setTensileEllipsoidYieldSurf(double yieldStress, Vector alphaTot);
+
+	// Returns the current value of chi1t
+	double calculateChi1t(double yieldStress, double alphaTot11);
+
+	// Computes function f1t for tensile ellipsoid yield surface evolution
+	double calculateF1t(double yieldStress, double alphaTot11);
+
+	// Computes parameter tBezier for Bezier curve
+	double calculateTBezier(void);
+
+	// Computes the two ratios for backstress update during plastic recovery stage
+	void calculateRatioAlphaBackstress(double yieldstress);
+
+	// Reverts to before the switch between Pl Recov and UVC stage
+	int revertToBeforeSwitchPlRecovUVC(bool switchPlRecovUVCPoint);
+
+	// Return mapping for plastic recovery stage
+	int returnMappingPlRecovStage(Vector strain_nPlus1);
+
+	// Sets the consistent tangent modulus for plastic recovery stage
+	void calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus1, double consistParam_plRecov, double yieldStress, Vector relativeStressNPlus1, Vector backstressTot);
+
+	// Reverts to before the switch between UVC Recov and UVC stage
+	int revertToBeforeSwitchUVCRecovUVC(bool switchUVCRecovUVCPoint);
+
+	// Return mapping for the UVC recovery stage
+	int returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot);
+
+	// Sets the consistent tangent modulus for UVC recovery stage
+	void calculateConsistentTangentModulusUVCRecov(Vector strain_nPlus1, double consistParam_plastic, double fBar, Vector relativeStressNPlus1);
+
+	// Initialize value of reference energy capacity Erc and sigmaC=sigmaC
+	void initializeErc();
+
+	// Compute capping stress with cyclic degradation rule
+	void computeSigmaCDegradation();
+
+	// Returns the component wise multiplication of two length 3 vectors
+	Vector vecMult3(const Vector& v1, const Vector& v2);
+
+	// Returns the inverse of a 3x3 matrix
+	Matrix matinv3(const Matrix& m);
 
 	/* ------------------------------------------------------------------------ */
 	/* Members                                                                  */
@@ -230,21 +275,64 @@ private:
 	double strainPEqTrial;
 	double strainPBEqConverged;  // Equivalent post buckling strain
 	double strainPBEqTrial;
-	/*double chi1cConverged;
-	double chi1cTrial;*/
 	Vector stressConverged;
 	Vector stressTrial;
-	std::vector<Vector> alphaKConverged;
-	std::vector<Vector> alphaKTrial;
+	std::vector<Vector> alphaPKConverged;
+	std::vector<Vector> alphaPKTrial;
+	std::vector<Vector> alphaPBKConverged;
+	std::vector<Vector> alphaPBKTrial;
 	Matrix stiffnessConverged;
 	Matrix stiffnessTrial;
+	double sumEjConverged; //Total energy dissipated
+	double sumEjTrial;
 	double c1cConverged;
 	double c1cTrial;
 
 	int elasticLoading;
 	int plasticLoading;
 	int postBucklingLoading;
-	//double c1c = 0.;
+	int PlRecoveryLoading;
+	int UVCRecoveryLoading;
+	/*double c1c = 0.;*/
+
+	double b_1tOConverged;
+	double b_1tSConverged;
+	double sigmaPrBezierOConverged;
+	double sigmaPrBezierSConverged;
+	double sigmaYrBezierSConverged;
+	double sigmaYrBezierOConverged;
+	double epsilonPB11UnloadConverged;
+	Vector backstressAfterCompressionConverged;
+	double epsilonPB11MinConverged;
+	double alphaPrBezierConverged;
+	double alphaYrBezierConverged;
+	double kPrBezierSConverged;
+	double kYrBezierSConverged;
+	double rAlphaBackstress1Converged;
+	double rAlphaBackstress2Converged;
+	double c1cUnloadConverged;
+	double ErcConverged;
+	double sigmaCConverged;
+
+	double b_1tOTrial;
+	double b_1tSTrial;
+	double sigmaPrBezierOTrial;
+	double sigmaPrBezierSTrial;
+	double sigmaYrBezierSTrial;
+	double sigmaYrBezierOTrial;
+	double epsilonPB11UnloadTrial;
+	Vector backstressAfterCompressionTrial;
+	double epsilonPB11MinTrial;
+	double alphaPrBezierTrial;
+	double alphaYrBezierTrial;
+	double kPrBezierSTrial;
+	double kYrBezierSTrial;
+	double rAlphaBackstress1Trial;
+	double rAlphaBackstress2Trial;
+	double c1cUnloadTrial;
+	double ErcTrial;
+	double sigmaCTrial;
+
 
 	// Projection matrices and their eigendecomposition
 	Vector pVect;
@@ -255,6 +343,32 @@ private:
 	Vector lambdaC;
 	Vector lambdaP;
 	Vector lambdapp;
+
+	// Parameters for regression formulas
+	const double beta1RegressionEuSurEl = 2.048;
+	const double beta2RegressionEuSurEl = -1.045;
+	const double beta3RegressionEuSurEl = -0.258;
+
+	const double beta1RegressionSigmaPrBezierS = 0.0174;
+	const double beta2RegressionSigmaPrBezierS = 0.0;
+	const double beta3RegressionSigmaPrBezierS = -0.692;
+	const double beta1RegressionSigmaYrBezierO = 638.5;
+	const double beta2RegressionSigmaYrBezierO = -0.0976;
+	const double beta3RegressionSigmaYrBezierO = 0.0839;
+	const double beta1RegressionKPrBezierS = -629.5;
+	const double beta2RegressionKPrBezierS = -0.948;
+	const double beta3RegressionKPrBezierS = -0.342;
+	const double beta1RegressionKYrBezierS = -0.211;
+	const double beta2RegressionKYrBezierS = 1.1148;
+	const double beta3RegressionKYrBezierS = -0.5578;
+	const double beta1RegressionAlphaPrBezier = -0.0076;
+	const double beta2RegressionAlphaPrBezier = 0.455;
+	const double beta3RegressionAlphaPrBezier = 0.654;
+	const double beta1RegressionAlphaYrBezier = 5.45;
+	const double beta2RegressionAlphaYrBezier = -0.761;
+	const double beta3RegressionAlphaYrBezier = 1.27;
+	const double beta1RegressionErc = 8.1152e3;
+	const double beta2RegressionErc = -1.0211;
 
 };
 
