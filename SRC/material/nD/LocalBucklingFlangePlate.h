@@ -229,7 +229,7 @@ private:
 	const unsigned int N_PARAM_PER_BACK = 2;
 	const double RETURN_MAP_TOL = 1.0e-6;
 	const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 1000;
-	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 1000;
+	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 4000;
 	const unsigned int N_DIRECT = 1;
 	const unsigned int N_DIMS = 3;
 

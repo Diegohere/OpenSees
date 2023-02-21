@@ -431,9 +431,9 @@ int LocalBucklingFlangePlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious = (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainConverged(0) <= -0.001828436512317031 && strainConverged(0) > -0.001828436512317032 && strainTrial(0) >= -0.001821738976073655 && strainTrial(0) < -0.001821738976073654) {
+	if (strainConverged(0) <= -0.10345 && strainConverged(0) > -0.10344 && strainTrial(0) >= -0.10283 && strainTrial(0) < -0.10282) {
 		double testBreak = 0.;
-	}*/
+	}
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
@@ -1210,7 +1210,8 @@ int LocalBucklingFlangePlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 			+ 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))))));
 		if (pow((2. * sigmaBezierO), 2) + 4. * (-pow(sigmaBezierO, 2) + pow(yieldStress, 2) - b_1tOTrial / b_1tSTrial * pow((sigmaBezierO / sigmaBezierS), 2) * (pow(yieldStress, 2) - pow((sigmaBezierS - backstressAfterCompressionTrial(0)), 2))) < 0) // catch if sqrt is negative
 		{
-			dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11);
+			/*dAlpha11TotDEpsiPb11 = 1. / (-2.) * (-dBQuadraticDEpsiPb11 + dDiscriminantQuadraticDEpsiPb11);*/
+			dAlpha11TotDEpsiPb11 = dSigmaBezierODEpsiPb11;
 		}
 		/*dAlpha11TotDLambdaPb = -dAlpha11TotDEpsiPb11 * dPhiTensdXi(0);
 		dSigmaBezierODLambdaPb = -dSigmaBezierODEpsiPb11 * dPhiTensdXi(0);*/
@@ -1255,7 +1256,7 @@ int LocalBucklingFlangePlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 		chi1t = b_1tOTrial * pow((1 - f1t), expA);
 
-		if (iterationNumber_ReturnMapping > 500)
+		if (iterationNumber_ReturnMapping > MAXIMUM_ITERATIONS_RETURNMAPPING-2)
 		{
 			//double errorNb = 1.0;
 			strainPostBucklingTrial(0) = -strainPostBucklingConverged(0); // Trick to divide strain increment by 2
@@ -1263,7 +1264,8 @@ int LocalBucklingFlangePlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		}
 
 		// Check convergence
-		if (fabs(phiTens) < RETURN_MAP_TOL) {
+		//if (fabs(phiTens) < RETURN_MAP_TOL) {
+		if (fabs(phiTens) < RETURN_MAP_TOL*2./3.*pow(yieldStress,2)) {
 			convergedReturnMapping = true;
 		}
 

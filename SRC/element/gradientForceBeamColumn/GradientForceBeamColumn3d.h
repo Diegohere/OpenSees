@@ -137,7 +137,8 @@ private:
 	Vector* eNonlocalCommit;              // array of committed section deformation vectors
 
 	enum { maxNumEleLoads = 100 };   // maximum number of element loads
-	enum { maxNumSections = 30 };  //maximum number of integration sections
+	//enum { maxNumSections = 30 };  //maximum number of integration sections
+	enum { maxNumSections = 60 };  //maximum number of integration sections
 	enum { NDM = 3 };         // dimension of the problem (3d)
 	enum { NND = 6 };         // number of nodal dof's
 	enum { NEGD = 12 };        // number of element global dof's

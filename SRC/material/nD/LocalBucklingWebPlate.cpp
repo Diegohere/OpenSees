@@ -431,7 +431,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious= (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainConverged(0) <= -0.001828436512317031 && strainConverged(0) > -0.001828436512317032 && strainTrial(0) >= -0.001821738976073655 && strainTrial(0) < -0.001821738976073654) {
+	/*if (strainConverged(0) <= -0.2207 && strainConverged(0) > -0.2208 && strainTrial(0) >= -0.7465 && strainTrial(0) < -0.7464) {
 		double testBreak = 0.;
 	}*/
 
@@ -1043,8 +1043,9 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		sigmaSurSigmaY = calculateSigmaSurSigmaY();
 		chi1c = calculateChi1c();
 
-		//// Check convergence
+		// Check convergence
 		//if (fabs(phiComp) < RETURN_MAP_TOL) {
+		////if (fabs(phiComp) < RETURN_MAP_TOL * 2. / 3. * pow(yieldStress, 2)) {
 		//	convergedReturnMapping = true;
 		//}
 		if (iterationNumber_ReturnMapping<=MAXIMUM_ITERATIONS_RETURNMAPPING/2 && fabs(phiComp) < RETURN_MAP_TOL)
@@ -1062,10 +1063,10 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		double testError = 0.;
 	}*/
 
-	if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) > RETURN_MAP_TOL)
+	/*if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) > RETURN_MAP_TOL)
 	{
 		int testError = 1;
-	}
+	}*/
 
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusSoftening(strain_nPlus1, backstressTot, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
