@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version 14.02.2023
+// Version 01.03.2023
 //
 
 #ifndef CPP_LocalBucklingFlangePlate_H
@@ -66,7 +66,7 @@ public:
 	// Returns the trial elastoplastic tangent modulus
 	const Matrix& getTangent(void);
 
-	// Returns the yield stress (accounting for isotropic hardening)
+	// Returns the total yield stress (plastic + post-buckling)
 	double getYieldStress(void);
 	//const Vector getYieldStress(void);
 
@@ -109,7 +109,7 @@ private:
 	int returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector eta_trial, int switchUVCRecovUVCPoint);
 
 	// Return mapping for softening stage
-	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector backstressTot);
+	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector backstressTot, double yieldStressTot);
 
 	//! Sets the elastoplastic tangent modulus for elastic stage
 	void calculateConsistentTangentModulusElastic(double etaTangent);
@@ -134,7 +134,7 @@ private:
 	void initializeEigendecompositions(void);
 
 	// Returns the current yield stress
-	double calculateYieldStress(void);
+	double calculateYieldStressPlastic(void);
 
 	// Returns the isotropic hardening modulus
 	double calculateIsotropicModulus(void);
@@ -171,22 +171,22 @@ private:
 
 	// Computes the values of constant c1c needed for buckling prior to yielding
 	//void calculateC1c(double yieldStress, double alphaTot11);
-	void calculateC1c(double yieldStress, Vector alphaTot);
+	void calculateC1c(double yieldStressTot, Vector alphaTot);
 
 	// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
-	void setTensileEllipsoidYieldSurf(double yieldStress, Vector alphaTot);
+	void setTensileEllipsoidYieldSurf(double yieldStressTot, Vector alphaTot);
 
 	// Returns the current value of chi1t
-	double calculateChi1t(double yieldStress, double alphaTot11);
+	double calculateChi1t(double yieldStressTot, double alphaTot11);
 
 	// Computes function f1t for tensile ellipsoid yield surface evolution
-	double calculateF1t(double yieldStress, double alphaTot11);
+	double calculateF1t(double yieldStressTot, double alphaTot11);
 
 	// Computes parameter tBezier for Bezier curve
 	double calculateTBezier(void);
 
 	// Computes the two ratios for backstress update during plastic recovery stage
-	void calculateRatioAlphaBackstress(double yieldstress);
+	void calculateRatioAlphaBackstress();
 
 	// Reverts to before the switch between Pl Recov and UVC stage
 	int revertToBeforeSwitchPlRecovUVC(bool switchPlRecovUVCPoint);
@@ -195,7 +195,7 @@ private:
 	int returnMappingPlRecovStage(Vector strain_nPlus1);
 
 	// Sets the consistent tangent modulus for plastic recovery stage
-	void calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus1, double consistParam_plRecov, double yieldStress, Vector relativeStressNPlus1, Vector backstressTot);
+	void calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus1, double consistParam_plRecov, double yieldStressTot, Vector relativeStressNPlus1, Vector backstressTot);
 
 	// Reverts to before the switch between UVC Recov and UVC stage
 	int revertToBeforeSwitchUVCRecovUVC(bool switchUVCRecovUVCPoint);
@@ -211,6 +211,21 @@ private:
 
 	// Compute capping stress with cyclic degradation rule
 	void computeSigmaCDegradation();
+
+	// Compute alphaTot_n during plastic recovery stage
+	Vector computeBackstressTotPlRecovStage();
+
+	// Compute yieldStressTot_n during plastic recovery stage
+	double computeYieldStressTotPlRecovStage();
+
+	// Compute derivative dAlpha11TotDEpsiPb11 during plastic recovery stage
+	double computeDAlpha11TotDEpsiPb11PlRecovStage();
+
+	// Compute derivative dSigmaYieldTotDEpsiPb11 during plastic recovery stage
+	double computeDSigmaYieldTotDEpsiPb11PlRecovStage();
+
+	// Compute reduction in c1c linear evolution
+	void computeReduceC1cLinearEvol();
 
 	// Returns the component wise multiplication of two length 3 vectors
 	Vector vecMult3(const Vector& v1, const Vector& v2);
@@ -229,7 +244,7 @@ private:
 	const unsigned int N_PARAM_PER_BACK = 2;
 	const double RETURN_MAP_TOL = 1.0e-6;
 	const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 1000;
-	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 4000;
+	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 1000;
 	const unsigned int N_DIRECT = 1;
 	const unsigned int N_DIMS = 3;
 
@@ -295,43 +310,45 @@ private:
 	int UVCRecoveryLoading;
 	/*double c1c = 0.;*/
 
-	double b_1tOConverged;
-	double b_1tSConverged;
-	double sigmaPrBezierOConverged;
-	double sigmaPrBezierSConverged;
-	double sigmaYrBezierSConverged;
-	double sigmaYrBezierOConverged;
+	double b_1tConverged;
+	double sigmaPrBezierConverged;
+	double sigmaYrBezierConverged;
 	double epsilonPB11UnloadConverged;
 	Vector backstressAfterCompressionConverged;
 	double epsilonPB11MinConverged;
 	double alphaPrBezierConverged;
 	double alphaYrBezierConverged;
-	double kPrBezierSConverged;
-	double kYrBezierSConverged;
+	double kPrBezierConverged;
+	double kYrBezierConverged;
 	double rAlphaBackstress1Converged;
 	double rAlphaBackstress2Converged;
 	double c1cUnloadConverged;
 	double ErcConverged;
 	double sigmaCConverged;
+	double yieldStressPBConverged;
+	double sigmaYieldAfterCompressionConverged;
+	double backstress11TotAfterFullPLRecovConverged;
+	double sigmaYieldTotAfterFullPLRecovConverged;
 
-	double b_1tOTrial;
-	double b_1tSTrial;
-	double sigmaPrBezierOTrial;
-	double sigmaPrBezierSTrial;
-	double sigmaYrBezierSTrial;
-	double sigmaYrBezierOTrial;
+	double b_1tTrial;
+	double sigmaPrBezierTrial;
+	double sigmaYrBezierTrial;
 	double epsilonPB11UnloadTrial;
 	Vector backstressAfterCompressionTrial;
 	double epsilonPB11MinTrial;
 	double alphaPrBezierTrial;
 	double alphaYrBezierTrial;
-	double kPrBezierSTrial;
-	double kYrBezierSTrial;
+	double kPrBezierTrial;
+	double kYrBezierTrial;
 	double rAlphaBackstress1Trial;
 	double rAlphaBackstress2Trial;
 	double c1cUnloadTrial;
 	double ErcTrial;
 	double sigmaCTrial;
+	double yieldStressPBTrial;
+	double sigmaYieldAfterCompressionTrial;
+	double backstress11TotAfterFullPLRecovTrial;
+	double sigmaYieldTotAfterFullPLRecovTrial;
 
 
 	// Projection matrices and their eigendecomposition
@@ -349,25 +366,26 @@ private:
 	const double beta2RegressionEuSurEl = -1.045;
 	const double beta3RegressionEuSurEl = -0.258;
 
-	const double beta1RegressionSigmaPrBezierS = 0.0174;
-	const double beta2RegressionSigmaPrBezierS = 0.0;
-	const double beta3RegressionSigmaPrBezierS = -0.692;
-	const double beta1RegressionSigmaYrBezierO = 638.5;
-	const double beta2RegressionSigmaYrBezierO = -0.0976;
-	const double beta3RegressionSigmaYrBezierO = 0.0839;
-	const double beta1RegressionKPrBezierS = -629.5;
-	const double beta2RegressionKPrBezierS = -0.948;
-	const double beta3RegressionKPrBezierS = -0.342;
-	const double beta1RegressionKYrBezierS = -0.211;
-	const double beta2RegressionKYrBezierS = 1.1148;
-	const double beta3RegressionKYrBezierS = -0.5578;
+	const double beta1RegressionSigmaPrBezier = 0.0174;
+	const double beta2RegressionSigmaPrBezier = 0.0;
+	const double beta3RegressionSigmaPrBezier = -0.692;
+	const double beta1RegressionSigmaYrBezier = 638.5;
+	const double beta2RegressionSigmaYrBezier = -0.0976;
+	const double beta3RegressionSigmaYrBezier = 0.0839;
+	const double beta1RegressionKPrBezier = -629.5;
+	const double beta2RegressionKPrBezier = -0.948;
+	const double beta3RegressionKPrBezier = -0.342;
+	const double beta1RegressionKYrBezier = -0.211;
+	const double beta2RegressionKYrBezier = 1.1148;
+	const double beta3RegressionKYrBezier = -0.5578;
 	const double beta1RegressionAlphaPrBezier = -0.0076;
 	const double beta2RegressionAlphaPrBezier = 0.455;
 	const double beta3RegressionAlphaPrBezier = 0.654;
 	const double beta1RegressionAlphaYrBezier = 5.45;
 	const double beta2RegressionAlphaYrBezier = -0.761;
 	const double beta3RegressionAlphaYrBezier = 1.27;
-	const double beta1RegressionErc = 8.1152e3;
+	//const double beta1RegressionErc = 8.1152e3;
+	const double beta1RegressionErc = 8.1152e20; //very large number so no cyclic degradation
 	const double beta2RegressionErc = -1.0211;
 
 };
