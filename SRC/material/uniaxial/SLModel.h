@@ -6,7 +6,8 @@
 class SLModel : public UniaxialMaterial
 {
 public:
-    SLModel(int tag, double Dt, double sgm_ini, double OP_Material);      
+    SLModel(int tag, double Dt, double E, double sgm_ini, double c, double gamma, double q, double beta, double sigmaCDivSigmaY, double epsiCDivEpsiY, double Ed1DivE, double Ed2DivE, double sigmaDMDivSigmaC,
+	double aSigma, double aE, double lambda1Degrad, double cDegrad);      
     SLModel();    
     ~SLModel();
 
@@ -47,10 +48,13 @@ private:
 	
 	
 	////////////////////////////////////////////////////////
-	double Dt, sgm_ini;
-	double OP_Material;
+	double Dt;
+	double E, sgm_ini, c, gamma, q, beta;
+	double sigmaCDivSigmaY, epsiCDivEpsiY, Ed1DivE, Ed2DivE, sigmaDMDivSigmaC, aSigma, aE, lambda1Degrad, cDegrad;
+	double Dteq;
+	/*double Dt, sgm_ini;
 	double E, Dteq;
-	double c, gamma, q, beta;
+	double c, gamma, q, beta;*/
 	double CapYieldStressM, CapYieldStrainM, Ed1EM, Ed2EM, DetCapStressM;
 	
 	double status;
