@@ -40,7 +40,7 @@ OPS_SLModel()
   numData = 16;
   if (OPS_GetDoubleInput(&numData, dData) != 0) {
     //opserr << "Invalid Args want: uniaxialMaterial SLModel tag? Dt?, sgm_ini?, OP_Material?";
-	  opserr << "Invalid Args want: uniaxialMaterial SLModel tag? Dt?, E?, sigmaY0?, C?, gamma?, Qinf?, b?, sigmaCDivSigmaY?, epsiCDivEpsiY?, Ed1DivE?, Ed2DivE?,sigmaDMDivSigmaC?, aSigma?, aE?, lambda1Degrad?,cDegrad?";
+	  opserr << "Invalid Args want: uniaxialMaterial SLModel tag? Dt?, E?, sigmaY0?, C?, gamma?, Qinf?, b?, sigmaC?, epsiC?, Ed1?, Ed2?,sigmaDM, aSigma?, aE?, lambda1Degrad?,cDegrad?";
     return 0;	
   }
 
@@ -61,16 +61,16 @@ OPS_SLModel()
 //MAT_TAG_SLModel or 0
 //SLModel::SLModel(int tag, double Dt_temp, double sgm_ini_temp, double OP_Material_temp)
 //:UniaxialMaterial(tag, MAT_TAG_SLModel), Dt(Dt_temp), sgm_ini(sgm_ini_temp), OP_Material(OP_Material_temp)
-SLModel::SLModel(int tag, double Dt, double E, double sgm_ini, double c, double gamma, double q, double beta, double sigmaCDivSigmaY, double epsiCDivEpsiY, double Ed1DivE, double Ed2DivE, double sigmaDMDivSigmaC,
+SLModel::SLModel(int tag, double Dt, double E, double sgm_ini, double c, double gamma, double q, double beta, double sigmaC, double epsiC, double Ed1, double Ed2, double sigmaDM,
 	double aSigma, double aE, double lambda1Degrad, double cDegrad)
-	:UniaxialMaterial(tag, MAT_TAG_SLModel), Dt(Dt), E(E), sgm_ini(sgm_ini), c(c), gamma(gamma), q(q), beta(beta), sigmaCDivSigmaY(sigmaCDivSigmaY), epsiCDivEpsiY(epsiCDivEpsiY), Ed1DivE(Ed1DivE),
-	Ed2DivE(Ed2DivE), sigmaDMDivSigmaC(sigmaDMDivSigmaC), aSigma(aSigma), aE(aE), lambda1Degrad(lambda1Degrad), cDegrad(cDegrad)
+	:UniaxialMaterial(tag, MAT_TAG_SLModel), Dt(Dt), E(E), sgm_ini(sgm_ini), c(c), gamma(gamma), q(q), beta(beta), sigmaC(sigmaC), epsiC(epsiC), Ed1(Ed1),
+	Ed2(Ed2), sigmaDM(sigmaDM), aSigma(aSigma), aE(aE), lambda1Degrad(lambda1Degrad), cDegrad(cDegrad)
 {
 	this->revertToStart();
 }
 
 SLModel::SLModel()
-:UniaxialMaterial(0, MAT_TAG_SLModel), Dt(0.0), E(0.0), sgm_ini(0.0), c(0.0), gamma(0.0), q(0.0), beta(0.0), sigmaCDivSigmaY(0.0), epsiCDivEpsiY(0.0), Ed1DivE(0.0),Ed2DivE(0.0), sigmaDMDivSigmaC(0.0),
+:UniaxialMaterial(0, MAT_TAG_SLModel), Dt(0.0), E(0.0), sgm_ini(0.0), c(0.0), gamma(0.0), q(0.0), beta(0.0), sigmaC(0.0), epsiC(0.0), Ed1(0.0),Ed2(0.0), sigmaDM(0.0),
 aSigma(0.0), aE(0.0), lambda1Degrad(0.0), cDegrad(0.0)
 {
 	 this->revertToStart();
@@ -784,6 +784,12 @@ SLModel::revertToStart(void)
 	C_beta = beta;
 	C_c = c;
 	C_gamma = gamma;
+
+	sigmaCDivSigmaY = sigmaC / sgm_ini;
+	epsiCDivEpsiY = epsiC / (sgm_ini / E);
+	Ed1DivE = Ed1 / E;
+	Ed2DivE = Ed2 / E;
+	sigmaDMDivSigmaC = sigmaDM / sigmaC;
 
 	CapYieldStressM = sigmaCDivSigmaY;
 	CapYieldStrainM = epsiCDivEpsiY;
