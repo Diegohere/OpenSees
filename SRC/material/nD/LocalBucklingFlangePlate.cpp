@@ -781,7 +781,9 @@ int LocalBucklingFlangePlate::timeIntegration() {
 					}
 
 					// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
-					setTensileEllipsoidYieldSurf(yieldStressTot, alphaTot);
+					double sumEj_4targetStress4PLRecov = sumEjConverged + 0.5 * (stressPrevious(0) + stressTrial(0)) * (strain_nPlus1(0) - strainConverged(0)) - 0.5 * pow(stressTrial(0), 2) / (etaTangent * elasticMatrix(0, 0));
+					double targetStress4PLRecov = (1 - sumEj_4targetStress4PLRecov / ErcConverged) * sigmaC0Stress;
+					setTensileEllipsoidYieldSurf(yieldStressTot, alphaTot, targetStress4PLRecov);
 				}
 			} // end IF not elastic
 
@@ -2881,7 +2883,7 @@ void LocalBucklingFlangePlate::calculateC1c(double yieldStress, Vector alphaTot)
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void LocalBucklingFlangePlate::setTensileEllipsoidYieldSurf(double yieldStressTot, Vector alphaTot) {
+void LocalBucklingFlangePlate::setTensileEllipsoidYieldSurf(double yieldStressTot, Vector alphaTot, double targetStress4PLRecov) {
 	double sigmaPr_regression = 0.;
 	double scaleFactorBezierStress = 0.;
 
@@ -2922,8 +2924,8 @@ void LocalBucklingFlangePlate::setTensileEllipsoidYieldSurf(double yieldStressTo
 	sigmaYieldAfterCompressionTrial = yieldStressTot;
 
 	// Compute yield surface center and radius after full plastic recovery stage
-	backstress11TotAfterFullPLRecovTrial = 0.5 * (sigmaYrBezierTrial + (-sigmaCTrial));
-	sigmaYieldTotAfterFullPLRecovTrial = 0.5 * (sigmaYrBezierTrial - (-sigmaCTrial));
+	backstress11TotAfterFullPLRecovTrial = 0.5 * (sigmaYrBezierTrial + (-targetStress4PLRecov));
+	sigmaYieldTotAfterFullPLRecovTrial = 0.5 * (sigmaYrBezierTrial - (-targetStress4PLRecov));
 
 	//Compute ratios for backstress update during plastic recovery stage
 	calculateRatioAlphaBackstress();

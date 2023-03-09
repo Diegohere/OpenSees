@@ -174,7 +174,7 @@ private:
 	void calculateC1c(double yieldStressTot, Vector alphaTot);
 
 	// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
-	void setTensileEllipsoidYieldSurf(double yieldStressTot, Vector alphaTot);
+	void setTensileEllipsoidYieldSurf(double yieldStressTot, Vector alphaTot, double targetStress4PLRecov);
 
 	// Returns the current value of chi1t
 	double calculateChi1t(double yieldStressTot, double alphaTot11);
@@ -385,9 +385,9 @@ private:
 	const double beta1RegressionAlphaYrBezier = 5.45;
 	const double beta2RegressionAlphaYrBezier = -0.761;
 	const double beta3RegressionAlphaYrBezier = 1.27;
-	//const double beta1RegressionErc = 8.1152e3;
-	const double beta1RegressionErc = 8.1152e20; //very large number so no cyclic degradation
-	const double beta2RegressionErc = -1.0211;
+	//const double beta1RegressionErc = 1e20; // very large number so no cyclic degradation
+	const double beta1RegressionErc = 1.5403e4;
+	const double beta2RegressionErc = -1.4398;
 
 };
 
