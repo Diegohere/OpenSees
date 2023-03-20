@@ -437,7 +437,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	etaTangent = calculateEtaTangentReduce();
 	stressPrevious = (etaTangent * elasticMatrix) * (strainConverged - strainPlasticConverged - strainPostBucklingConverged);
 
-	/*if (strainConverged(0) <= -0.10345 && strainConverged(0) > -0.10344 && strainTrial(0) >= -0.10283 && strainTrial(0) < -0.10282) {
+	/*if (strainConverged(0) <= 0.0011 && strainConverged(0) > 0.0010 && strainTrial(0) >= 0.0012 && strainTrial(0) < 0.0013) {
 		double testBreak = 0.;
 	}*/
 
@@ -664,7 +664,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 						cappingPoint = 1;
 						if (convergedMatLaw == 0)
 						{
-							if (abs(strainPostBucklingTrial(0) < SMALL_NUMBER))
+							if (abs(strainPostBucklingTrial(0)) < SMALL_NUMBER)
 							{
 								strainPostBucklingTrial(0) = -SMALL_NUMBER;
 							}
@@ -781,7 +781,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 					// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
 					double sumEj_4targetStress4PLRecov = sumEjConverged + 0.5 * (stressPrevious(0) + stressTrial(0)) * (strain_nPlus1(0) - strainConverged(0)) - 0.5 * pow(stressTrial(0),2) / (etaTangent * elasticMatrix(0, 0));
-					double targetStress4PLRecov = (1 - sumEj_4targetStress4PLRecov / ErcConverged) * sigmaC0Stress;
+					double beta = std::min(1., sumEj_4targetStress4PLRecov / ErcConverged);
+					double targetStress4PLRecov = (1 - beta) * sigmaC0Stress;
 					setTensileEllipsoidYieldSurf(yieldStressTot, alphaTot, targetStress4PLRecov);
 				}
 			} // end IF not elastic
@@ -2761,12 +2762,13 @@ double LocalBucklingWebPlate::calculateEtaTangentReduce() {
 	}*/
 
 	// Try to solve oscillation trap
-	double bound4Smoothin = 5. / 100. * abs(epsiPb11_min);
+	double bound4Smoothin = 50. / 100. * abs(epsiPb11_min);
 
 	double a1XTilda = 1.;
 	double a2XTilda = beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionEuSurEl);
 
-	double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2. * bound4Smoothin);
+	/*double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2. * bound4Smoothin);*/
+	double xTilda = (strainPostBucklingTrial(0) + epsiPb11_min + bound4Smoothin) / (2. * bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -2779,7 +2781,8 @@ double LocalBucklingWebPlate::calculateEtaTangentReduce() {
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	double etaTangentIntermed = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda;
+	/*double etaTangentIntermed = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda;*/
+	double etaTangentIntermed = gXTilda * a1XTilda + (1. - gXTilda) * a2XTilda;
 	etaTangent = std::min(1., etaTangentIntermed);
 
 	return etaTangent;
@@ -2828,10 +2831,11 @@ double LocalBucklingWebPlate::calculateDEtaTangentdEpsiPb11() {
 	}*/
 
 	// Try to solve oscillation trap
-	double bound4Smoothin = 5. / 100. * abs(epsiPb11_min);
+	double bound4Smoothin = 50. / 100. * abs(epsiPb11_min);
 	double a2XTilda = beta3RegressionEuSurEl * beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(strainPostBucklingTrial(0)), (beta3RegressionEuSurEl - 1.));
 
-	double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
+	/*double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);*/
+	double xTilda = (strainPostBucklingTrial(0) + epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -2845,7 +2849,8 @@ double LocalBucklingWebPlate::calculateDEtaTangentdEpsiPb11() {
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	dEtaTangentdEpsiPb11 = gXTilda * a2XTilda;
+	/*dEtaTangentdEpsiPb11 = gXTilda * a2XTilda;*/
+	dEtaTangentdEpsiPb11 = (1. - gXTilda) * a2XTilda;
 
 	return dEtaTangentdEpsiPb11;
 }
@@ -2923,8 +2928,10 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStressTot, 
 	sigmaYieldAfterCompressionTrial = yieldStressTot;
 
 	// Compute yield surface center and radius after full plastic recovery stage
-	backstress11TotAfterFullPLRecovTrial = 0.5 * (sigmaYrBezierTrial + (-targetStress4PLRecov));
-	sigmaYieldTotAfterFullPLRecovTrial = 0.5 * (sigmaYrBezierTrial - (-targetStress4PLRecov));
+	/*backstress11TotAfterFullPLRecovTrial = 0.5 * (sigmaYrBezierTrial + (-targetStress4PLRecov));
+	sigmaYieldTotAfterFullPLRecovTrial = 0.5 * (sigmaYrBezierTrial - (-targetStress4PLRecov));*/
+	sigmaYieldTotAfterFullPLRecovTrial = std::max(initialYield, 0.5 * (sigmaYrBezierTrial - (-targetStress4PLRecov)));
+	backstress11TotAfterFullPLRecovTrial = sigmaYrBezierTrial - sigmaYieldTotAfterFullPLRecovTrial;
 
 	//Compute ratios for backstress update during plastic recovery stage
 	calculateRatioAlphaBackstress();
@@ -3076,12 +3083,14 @@ void LocalBucklingWebPlate::computeSigmaCDegradation() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 Vector LocalBucklingWebPlate::computeBackstressTotPlRecovStage() {
-	double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);
+	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = backstress11TotAfterFullPLRecovTrial;
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial(0) - backstress11TotAfterFullPLRecovTrial) * strainPostBucklingTrial(0) + backstress11TotAfterFullPLRecovTrial;
 
-	double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);
+	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
+	double xTilda = (strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3095,7 +3104,8 @@ Vector LocalBucklingWebPlate::computeBackstressTotPlRecovStage() {
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
 	Vector alphaP = alphaPBKTrial[0] + alphaPBKTrial[1];
-	double alpha11Pb_nPlus1 = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda - alphaP(0);
+	/*double alpha11Pb_nPlus1 = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda - alphaP(0);*/
+	double alpha11Pb_nPlus1 = gXTilda * a1XTilda + (1. - gXTilda) * a2XTilda - alphaP(0);
 	Vector alphaPb_nPlus1 = Vector(N_DIMS);
 	alphaPb_nPlus1(0) = alpha11Pb_nPlus1;
 	Vector BackstressTot = alphaP + alphaPb_nPlus1;
@@ -3106,12 +3116,14 @@ Vector LocalBucklingWebPlate::computeBackstressTotPlRecovStage() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 double LocalBucklingWebPlate::computeYieldStressTotPlRecovStage() {
-	double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);
+	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = sigmaYieldTotAfterFullPLRecovTrial;
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (sigmaYieldAfterCompressionTrial - sigmaYieldTotAfterFullPLRecovTrial) * strainPostBucklingTrial(0) + sigmaYieldTotAfterFullPLRecovTrial;
 
-	double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);
+	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
+	double xTilda = (strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3124,19 +3136,22 @@ double LocalBucklingWebPlate::computeYieldStressTotPlRecovStage() {
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	double yieldStressTot = gXTilda * a2XTilda + (1 - gXTilda) * a1XTilda;
+	/*double yieldStressTot = gXTilda * a2XTilda + (1 - gXTilda) * a1XTilda;*/
+	double yieldStressTot = gXTilda * a1XTilda + (1 - gXTilda) * a2XTilda;
 
 	return yieldStressTot;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 double LocalBucklingWebPlate::computeDAlpha11TotDEpsiPb11PlRecovStage() {
-	double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);
+	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = 0.;
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial(0) - backstress11TotAfterFullPLRecovTrial);
 
-	double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);
+	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
+	double xTilda = (strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3149,19 +3164,22 @@ double LocalBucklingWebPlate::computeDAlpha11TotDEpsiPb11PlRecovStage() {
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	double dAlpha11TotDEpsiPb11 = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda;
+	/*double dAlpha11TotDEpsiPb11 = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda;*/
+	double dAlpha11TotDEpsiPb11 = gXTilda * a1XTilda + (1. - gXTilda) * a2XTilda;
 
 	return dAlpha11TotDEpsiPb11;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 double LocalBucklingWebPlate::computeDSigmaYieldTotDEpsiPb11PlRecovStage() {
-	double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);
+	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = 0.;
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (sigmaYieldAfterCompressionTrial - sigmaYieldTotAfterFullPLRecovTrial);
 
-	double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);
+	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
+	double xTilda = (strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3174,19 +3192,22 @@ double LocalBucklingWebPlate::computeDSigmaYieldTotDEpsiPb11PlRecovStage() {
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	double dSigmaYieldTotDEpsiPb11 = gXTilda * a2XTilda + (1 - gXTilda) * a1XTilda;
+	/*double dSigmaYieldTotDEpsiPb11 = gXTilda * a2XTilda + (1 - gXTilda) * a1XTilda;*/
+	double dSigmaYieldTotDEpsiPb11 = gXTilda * a1XTilda + (1 - gXTilda) * a2XTilda;
 
 	return dSigmaYieldTotDEpsiPb11;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 void LocalBucklingWebPlate::computeReduceC1cLinearEvol() {
-	double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);
+	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = 0.;
 	double a2XTilda = c1cUnloadTrial * (strainPostBucklingTrial(0) / epsilonPB11UnloadTrial);
 
-	double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);
+	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
+	double xTilda = (strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3199,7 +3220,10 @@ void LocalBucklingWebPlate::computeReduceC1cLinearEvol() {
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	c1cTrial = gXTilda * a2XTilda + (1 - gXTilda) * a1XTilda;
+	/*c1cTrial = gXTilda * a2XTilda + (1 - gXTilda) * a1XTilda;*/
+	c1cTrial = gXTilda * a1XTilda + (1 - gXTilda) * a2XTilda;
+
+	double test = 0.;
 
 }
 
