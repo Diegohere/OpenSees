@@ -1220,7 +1220,7 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingConverged(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * backstressTot(1) - gammaDiag(1) * dCdLambdaPB(1) * backstressTot(1);
 		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingConverged(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * backstressTot(2) - gammaDiag(2) * dCdLambdaPB(2) * backstressTot(2);
 
-		dPhiTensdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1t * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2) * dChi1tDLambdaPB + 2 * chi1t * stressTrial(0) * dAlpha11TotDLambdaPb;
+		dPhiTensdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1t * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2) * dChi1tDLambdaPB + 2 * chi1t * stressTrial(0) * dAlpha11TotDLambdaPb - 2 * dSigmaYieldTotDLambdaPb * yieldStressTot;
 
 		// Do the Newton Step
 		consistParam_plRecov = consistParam_plRecov - phiTens / dPhiTensdLambdaPB;
