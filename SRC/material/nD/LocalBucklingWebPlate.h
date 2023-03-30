@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version 04.03.2023
+// Version 30.03.2023
 //
 
 #ifndef CPP_LocalBucklingWebPlate_H
@@ -157,6 +157,9 @@ private:
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);
 
+	// Initialize value of floorF1c
+	void initializeFloorF1c(void);
+
 	//// Initialize value of sigmaYrO
 	//void initializeSigmaYrO(void);
 
@@ -239,7 +242,7 @@ private:
 	const double RETURN_MAP_TOL = 1.0e-8;
 	const double SMALL_NUMBER = 1.0e-6;
 	const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 1000;
-	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 500;
+	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 1000;
 	const unsigned int N_DIRECT = 1;
 	const unsigned int N_DIMS = 3;
 
@@ -272,6 +275,7 @@ private:
 	const double sigmaDMStress = 10; // in MPa
 	//const double sigmaDMStress = 1.45; // in ksi
 	double b_chi1c;
+	double floorF1c;
 
 	// Internal variables
 	Vector strainConverged;

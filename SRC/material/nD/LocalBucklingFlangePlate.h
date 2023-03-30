@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version 04.03.2023
+// Version 30.03.2023
 //
 
 #ifndef CPP_LocalBucklingFlangePlate_H
@@ -105,8 +105,11 @@ private:
 	// Determines the trial stress for the given strain increment and which return mapping could be needed
 	int timeIntegration();
 
+	// Sets the intermediate variables
+	void setIntermediateVariables();
+
 	// Return mapping for hardening stage
-	int returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector eta_trial, int switchUVCRecovUVCPoint);
+	int returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector eta_trial);
 
 	// Return mapping for softening stage
 	int returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector backstressTot, double yieldStressTot);
@@ -134,19 +137,19 @@ private:
 	void initializeEigendecompositions(void);
 
 	// Returns the current yield stress
-	double calculateYieldStressPlastic(void);
+	double calculateYieldStressPlastic(double epsiPeq);
 
 	// Returns the isotropic hardening modulus
-	double calculateIsotropicModulus(void);
+	double calculateIsotropicModulus(double epsiPeq);
 
 	// Returns the current eK value
 	double calculateEk(unsigned int i);
 
 	// Returns the current value of chi1c
-	double calculateChi1c(void);
+	double calculateChi1c(double epsiPb11);
 
 	// Returns the current value of the ratio sigmaSurSigmaY
-	double calculateSigmaSurSigmaY(void);
+	double calculateSigmaSurSigmaY(double epsiPb11);
 
 	// Returns the current value of the derivative dSigmaSurSigmaYdEpsilonPBeq
 	double calculateDSigmaSurSigmaYdEpsilonPB11(void);
@@ -154,14 +157,14 @@ private:
 	// Initialize value of b_chi1c
 	void initializeBChi1c(void);
 
-	// Reverts to before the capping point
-	int revertToBeforeCapping(bool cappingPoint);
+	// Initialize value of floorF1c
+	void initializeFloorF1c(void);
 
 	//// Initialize value of sigmaYrO
 	//void initializeSigmaYrO(void);
 
 	// Computes elastic stiffness matrix 
-	double calculateEtaTangentReduce(void);
+	double calculateEtaTangentReduce(double epsiPb11);
 
 	// Computes derivative of C elastic matrix moduli with respect to lambda_Pb
 	Vector calculateDCdLambdaPB(double etaTangent, double dPhiCompdXiVector11);
@@ -171,34 +174,28 @@ private:
 
 	// Computes the values of constant c1c needed for buckling prior to yielding
 	//void calculateC1c(double yieldStress, double alphaTot11);
-	void calculateC1c(double yieldStressTot, Vector alphaTot);
+	void calculateC1c(double yieldStressTot, Vector alphaTot, double epsiPb11);
 
 	// Set tensile ellipsoid yield surface properties for end of elastic recovery stage
 	void setTensileEllipsoidYieldSurf(double yieldStressTot, Vector alphaTot, double targetStress4PLRecov);
 
 	// Returns the current value of chi1t
-	double calculateChi1t(double yieldStressTot, double alphaTot11);
+	double calculateChi1t(double yieldStressTot, double alphaTot11, double epsiPb11);
 
 	// Computes function f1t for tensile ellipsoid yield surface evolution
-	double calculateF1t(double yieldStressTot, double alphaTot11);
+	double calculateF1t(double yieldStressTot, double alphaTot11, double epsiPb11);
 
 	// Computes parameter tBezier for Bezier curve
-	double calculateTBezier(void);
+	double calculateTBezier(double epsiPb11);
 
 	// Computes the two ratios for backstress update during plastic recovery stage
 	void calculateRatioAlphaBackstress();
-
-	// Reverts to before the switch between Pl Recov and UVC stage
-	int revertToBeforeSwitchPlRecovUVC(bool switchPlRecovUVCPoint);
 
 	// Return mapping for plastic recovery stage
 	int returnMappingPlRecovStage(Vector strain_nPlus1);
 
 	// Sets the consistent tangent modulus for plastic recovery stage
 	void calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus1, double consistParam_plRecov, double yieldStressTot, Vector relativeStressNPlus1, Vector backstressTot);
-
-	// Reverts to before the switch between UVC Recov and UVC stage
-	int revertToBeforeSwitchUVCRecovUVC(bool switchUVCRecovUVCPoint);
 
 	// Return mapping for the UVC recovery stage
 	int returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot);
@@ -213,10 +210,10 @@ private:
 	void computeSigmaCDegradation();
 
 	// Compute alphaTot_n during plastic recovery stage
-	Vector computeBackstressTotPlRecovStage();
+	Vector computeBackstressTotPlRecovStage(double epsiPb11);
 
 	// Compute yieldStressTot_n during plastic recovery stage
-	double computeYieldStressTotPlRecovStage();
+	double computeYieldStressTotPlRecovStage(double epsiPb11);
 
 	// Compute derivative dAlpha11TotDEpsiPb11 during plastic recovery stage
 	double computeDAlpha11TotDEpsiPb11PlRecovStage();
@@ -279,6 +276,7 @@ private:
 	const double sigmaDMStress = 10; // in MPa
 	//const double sigmaDMStress = 1.45; // in ksi
 	double b_chi1c;
+	double floorF1c;
 
 	// Internal variables
 	Vector strainConverged;
@@ -351,6 +349,37 @@ private:
 	double backstress11TotAfterFullPLRecovTrial;
 	double sigmaYieldTotAfterFullPLRecovTrial;
 
+	// Variables for intermediate state
+	Vector strainIntermed;
+	Vector strainPlasticIntermed;
+	Vector strainPostBucklingIntermed;
+	double strainPEqIntermed;
+	double strainPBEqIntermed;
+	Vector stressIntermed;
+	std::vector<Vector> alphaPKIntermed;
+	std::vector<Vector> alphaPBKIntermed;
+	Matrix stiffnessIntermed;
+	double sumEjIntermed;
+	double c1cIntermed;
+	double b_1tIntermed;
+	double sigmaPrBezierIntermed;
+	double sigmaYrBezierIntermed;
+	double epsilonPB11UnloadIntermed;
+	Vector backstressAfterCompressionIntermed;
+	double epsilonPB11MinIntermed;
+	double alphaPrBezierIntermed;
+	double alphaYrBezierIntermed;
+	double kPrBezierIntermed;
+	double kYrBezierIntermed;
+	double rAlphaBackstress1Intermed;
+	double rAlphaBackstress2Intermed;
+	double c1cUnloadIntermed;
+	double ErcIntermed;
+	double sigmaCIntermed;
+	double yieldStressPBIntermed;
+	double sigmaYieldAfterCompressionIntermed;
+	double backstress11TotAfterFullPLRecovIntermed;
+	double sigmaYieldTotAfterFullPLRecovIntermed;
 
 	// Projection matrices and their eigendecomposition
 	Vector pVect;

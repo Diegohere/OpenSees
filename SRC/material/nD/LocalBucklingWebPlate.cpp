@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version 04.03.2023
+// Version 30.03.2023
 //
 
 #include "LocalBucklingWebPlate.h"
@@ -269,11 +269,11 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	// Set the value of b_chi1c
 	initializeBChi1c();
 
-	//// Set the value of sigmaYrO
-	//initializeSigmaYrO();
-
 	// Set the value of Erc
 	initializeErc();
+
+	// Set the value of floorF1c
+	initializeFloorF1c();
 };
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -421,11 +421,11 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 	// Set the value of b_chi1c
 	initializeBChi1c();
 
-	//// Set the value of sigmaYrO
-	//initializeSigmaYrO();
-
 	// Set the value of Erc
 	initializeErc();
+
+	// Set the value of floorF1c
+	initializeFloorF1c();
 
 }
 
@@ -477,9 +477,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 
-	/*if (strainConverged(0) <= 0.0011 && strainConverged(0) > 0.0010 && strainTrial(0) >= 0.0012 && strainTrial(0) < 0.0013) {
+	if (strainConverged(0) <= -0.069 && strainConverged(0) > -0.070 && strainTrial(0) >= -0.06992 && strainTrial(0) < -0.06991) {
 		double testBreak = 0.;
-	}*/
+	}
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
@@ -489,7 +489,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 		strain_nPlus1 = strainIntermed + deltaStrain_trial;
 
 		// Compute reduction factor for elastic stiffness matrix
-		etaTangent = calculateEtaTangentReduce(strainPostBucklingIntermed(0));
+		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingIntermed(0));
 
 		// Compute the yield stress
 		yieldStressP = calculateYieldStressPlastic(strainPEqIntermed);
@@ -507,7 +507,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 		// Select which return mapping to do
 		if (triaxiality >= 0) { // if in tension
-			chi1t = calculateChi1t(yieldStressTot, alphaTot(0), strainPostBucklingIntermed(0));
+			chi1t = calculateChi1t(yieldStressTot, alphaTot(0), alphaRegularization * strainPostBucklingIntermed(0));
 			phiTension = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2)) + chi1t * pow(stressTrial(0), 2) - pow(yieldStressTot, 2);
 
 			// Check if trial state is elastic or if need return map approach
@@ -670,6 +670,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 				calculateConsistentTangentModulusElastic(etaTangent);
 
 				// Check if the initial capping stress sigmaC0 has been passed
+				double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+				double sigmaVMConverged = pow((3. / 2. * (2. / 3. * pow(stressConverged(0), 2) + 2. * pow(stressConverged(1), 2) + 2. * pow(stressConverged(2), 2))), 0.5);
+				double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));
 				//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
 				if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress,2) <= SMALL_NUMBER) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
@@ -688,7 +691,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
 					//double diffStress = 3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2);
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
-					if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) >= -SMALL_NUMBER) { // capping point is reached
+					if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // capping point is reached
 						if (abs(strainPostBucklingIntermed(0)) < SMALL_NUMBER)
 						{
 							strainPostBucklingIntermed(0) = -SMALL_NUMBER;
@@ -709,7 +712,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 					retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial);
 
 					// Check if the initial capping stress sigmaC0 has been passed
-					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					double sigmaVMConverged = pow((3. / 2. * (2. / 3. * pow(stressConverged(0), 2) + 2. * pow(stressConverged(1), 2) + 2. * pow(stressConverged(2), 2))), 0.5);
+					double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
 					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // not yet at capping point
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
@@ -729,7 +734,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 						// Check if capping point is reached
 						//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
-						if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) >= -SMALL_NUMBER) { // capping point is reached
+						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER) { // capping point is reached
 							strainPostBucklingIntermed(0) = -SMALL_NUMBER;
 							strainPlasticIntermed = strainPlasticTrial;
 							strainPEqIntermed = strainPEqTrial;
@@ -749,6 +754,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 					// Check if the initial capping stress  has been passed (due to reduction in sigmaC)
 					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
 					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // not yet at capping point
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
@@ -767,8 +774,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 
 						// Check if capping point is reached
 						//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
-						if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) >= -SMALL_NUMBER) { // capping point is reached
-							calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
+						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER) { // capping point is reached
+							calculateC1c(yieldStressTot, alphaTot, strainPostBucklingTrial(0));
 						}
 
 					}
@@ -840,7 +847,7 @@ int LocalBucklingWebPlate::returnMappingHardening(Vector strain_nPlus1, Vector a
 	std::vector<Vector> alpha12Tot_Vector;
 	double etaTangent = 0.;
 
-	etaTangent = calculateEtaTangentReduce(strainPostBucklingIntermed(0));
+	etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingIntermed(0));
 
 	// Fill alphaTot_Vector with the two vector
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
@@ -984,7 +991,7 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
 		iterationNumber_ReturnMapping++;
 
-		etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial(0));
+		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
 		LambdaC_nPlus1Diag = etaTangent * lambdaC;
 
 		gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_postBuckling * (2. + 2. * chi1c));
@@ -1124,11 +1131,11 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 	strainPostBucklingTrial = strainPostBucklingIntermed;
 
-	tBezier = calculateTBezier(strainPostBucklingTrial(0));
+	tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial(0));
 	sigmaBezier = pow((1. - tBezier), 3) * sigmaPrBezierTrial + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) + pow(tBezier, 3) * sigmaYrBezierTrial;
-	yieldStressTot = computeYieldStressTotPlRecovStage(strainPostBucklingTrial(0));
-	backstressTot = computeBackstressTotPlRecovStage(strainPostBucklingTrial(0));
-	f1t = calculateF1t(yieldStressTot, backstressTot(0),strainPostBucklingTrial(0));
+	yieldStressTot = computeYieldStressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
+	backstressTot = computeBackstressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
+	f1t = calculateF1t(yieldStressTot, backstressTot(0), alphaRegularization * strainPostBucklingTrial(0));
 	chi1t = b_1tTrial * (1 - f1t);
 
 	// Do the return mapping algorithm for plastic recovery stage
@@ -1136,7 +1143,7 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	{
 		iterationNumber_ReturnMapping++;
 
-		etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial(0));
+		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
 		LambdaC_nPlus1Diag = etaTangent * lambdaC;
 
 		gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_plRecov * (2. + 2. * chi1t));
@@ -1157,16 +1164,16 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 		dSigmaBezierDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierTrial + 3. * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierTrial;
 		dEpsiBezierdtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11UnloadTrial) + 3. * (abs(epsilonPB11UnloadTrial) + alphaPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
-		dSigmaBezierDLambdaPb = -dSigmaBezierDtBezier / dEpsiBezierdtBezier * dPhiTensdXi(0);
+		dSigmaBezierDLambdaPb = -alphaRegularization * dSigmaBezierDtBezier / (dEpsiBezierdtBezier + RETURN_MAP_TOL) * dPhiTensdXi(0);
 
-		dAlpha11TotDLambdaPb = computeDAlpha11TotDEpsiPb11PlRecovStage() * dPhiTensdXi(0);
-		dSigmaYieldTotDLambdaPb = computeDSigmaYieldTotDEpsiPb11PlRecovStage() * dPhiTensdXi(0);
+		dAlpha11TotDLambdaPb = alphaRegularization * computeDAlpha11TotDEpsiPb11PlRecovStage() * dPhiTensdXi(0);
+		dSigmaYieldTotDLambdaPb = alphaRegularization * computeDSigmaYieldTotDEpsiPb11PlRecovStage() * dPhiTensdXi(0);
 
 		dFchi1tdLambdaPb = -1 / pow((b_1tTrial * pow(sigmaBezier, 2)), 2) * ((2 * yieldStressTot * dSigmaYieldTotDLambdaPb - 2 * (dSigmaBezierDLambdaPb - dAlpha11TotDLambdaPb) *
 			(sigmaBezier - backstressTot(0))) * (b_1tTrial * pow(sigmaBezier, 2)) - (pow(yieldStressTot, 2) - pow((sigmaBezier - backstressTot(0)), 2)) * 2 * b_1tTrial * dSigmaBezierDLambdaPb * sigmaBezier);
 		dChi1tDLambdaPB = -b_1tTrial * dFchi1tdLambdaPb;
 
-		dCdLambdaPB = calculateDCdLambdaPB(etaTangent, dPhiTensdXi(0));
+		dCdLambdaPB = alphaRegularization * calculateDCdLambdaPB(etaTangent, dPhiTensdXi(0));
 
 		gammaDiagPrime(0) = -pow(gammaDiag(0), 2) * (dCdLambdaPB(0) + 2. * (1. + chi1t) + 2. * consistParam_plRecov * dChi1tDLambdaPB);
 		gammaDiagPrime(1) = -pow(gammaDiag(1), 2) * (dCdLambdaPB(1) + 6.);
@@ -1188,11 +1195,11 @@ int LocalBucklingWebPlate::returnMappingPlRecovStage(Vector strain_nPlus1) {
 			break;
 		}
 
-		tBezier = calculateTBezier(strainPostBucklingTrial(0));
+		tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial(0));
 		sigmaBezier = pow((1. - tBezier), 3) * sigmaPrBezierTrial + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) + pow(tBezier, 3) * sigmaYrBezierTrial;
-		yieldStressTot = computeYieldStressTotPlRecovStage(strainPostBucklingTrial(0));
-		backstressTot = computeBackstressTotPlRecovStage(strainPostBucklingTrial(0));
-		f1t = calculateF1t(yieldStressTot, backstressTot(0), strainPostBucklingTrial(0));
+		yieldStressTot = computeYieldStressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
+		backstressTot = computeBackstressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
+		f1t = calculateF1t(yieldStressTot, backstressTot(0), alphaRegularization * strainPostBucklingTrial(0));
 		chi1t = b_1tTrial * (1 - f1t);
 
 		//if (iterationNumber_ReturnMapping > MAXIMUM_ITERATIONS_RETURNMAPPING - 2)
@@ -1297,7 +1304,7 @@ int LocalBucklingWebPlate::returnMappingUVCRecovStage(Vector strain_nPlus1, Vect
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
 		iterationNumber_ReturnMapping++;
 
-		etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial(0));
+		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
 		LambdaC_nPlus1Diag = etaTangent * lambdaC;
 
 		// Isotropic hardening parameters
@@ -2567,7 +2574,7 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY(double epsiPb11) {
 	//double sol4eq1_V02 = 0.;
 
 	// Check if strainPBEqTrial is equal to 0 
-	if (abs(strainPostBucklingTrial(0)) < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
+	if (abs(epsiPb11) < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
 		sigmaSurSigmaY = 1.;
 	}
 	else {
@@ -2588,6 +2595,10 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY(double epsiPb11) {
 		P = -pow(alpha, 2) / 12. - gamma;
 		Q = -pow(alpha, 3) / 108. + alpha * gamma / 3 - pow(beta, 2) / 8.;
 		R = -Q / 2. + sqrt(pow(Q, 2) / 4. + pow(P, 3) / 27.);
+		if (pow(Q, 2) / 4. + pow(P, 3) / 27.<0)
+		{
+			R = -Q / 2.;
+		}
 		U = pow(R, (1. / 3.));
 
 		if (U == 0.)
@@ -2600,10 +2611,32 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY(double epsiPb11) {
 		}
 		W = sqrt(alpha + 2. * y);
 
-		sigmaSurSigmaY = -EHat / (4. * DHat) + (+W + sqrt(-(3. * alpha + 2. * y + 2. * beta / W))) / 2.;
+
+		double bound4Smoothin = 2. * SMALL_NUMBER;
+
+		double sigmaSurSigmaY1XTilda = -EHat / (4. * DHat) + (+W + sqrt(-(3. * alpha + 2. * y + 2. * beta / W))) / 2.;
+		if (-(3. * alpha + 2. * y + 2. * beta / W)<0)
+		{
+			double sigmaSurSigmaY1XTilda = -EHat / (4. * DHat) + (+W ) / 2.;
+		}
+		double sigmaSurSigmaY2XTilda = floorF1c + (strainPB11TrialRegularized - 1) * 1. / 1000.;
+
+		double xTilda = (strainPB11TrialRegularized - 1. + SMALL_NUMBER) / bound4Smoothin;
+		double fXTilda = 0.;
+		double f1MinusXTilda = 0.;
+		if (xTilda > 0.)
+		{
+			fXTilda = exp(-1. / xTilda);
+		}
+		if (1. - xTilda > 0.)
+		{
+			f1MinusXTilda = exp(-1. / (1. - xTilda));
+		}
+		double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
+
+		sigmaSurSigmaY= gXTilda * sigmaSurSigmaY2XTilda + (1. - gXTilda) * sigmaSurSigmaY1XTilda;
+
 	}
-
-
 
 	return sigmaSurSigmaY;
 
@@ -2612,7 +2645,7 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY(double epsiPb11) {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPB11() {
-	double dSigmaSurSigmaYdEpsilonPBeq = 0.;
+	double dSigmaSurSigmaYdEpsilonPB11 = 0.;
 	double hStep = 1e-10;
 	double alphaAngle = 0.;
 	double cPlate = 0.;
@@ -2692,9 +2725,31 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPB11() {
 
 	std::complex<double> sol4eq1_V02 = -EHat / (fourComplex * DHat) + (+W + sqrt(-(threeComplex * alpha + twoComplex * y + twoComplex * beta / W))) / twoComplex;
 
-	dSigmaSurSigmaYdEpsilonPBeq = imag(sol4eq1_V02) / hStep;
 
-	return dSigmaSurSigmaYdEpsilonPBeq;
+
+	double bound4Smoothin = 2. * SMALL_NUMBER;
+
+	double dSigmaSurSigmaYdEpsilonPBeq1XTilda = imag(sol4eq1_V02) / hStep;
+	double dSigmaSurSigmaYdEpsilonPBeq2XTilda = 1./1000.;
+
+	double xTilda = (real(epsilonPB11Regularized) - 1. + SMALL_NUMBER) / bound4Smoothin;
+	double fXTilda = 0.;
+	double f1MinusXTilda = 0.;
+	if (xTilda > 0.)
+	{
+		fXTilda = exp(-1. / xTilda);
+	}
+	if (1. - xTilda > 0.)
+	{
+		f1MinusXTilda = exp(-1. / (1. - xTilda));
+	}
+	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
+
+	dSigmaSurSigmaYdEpsilonPB11 = gXTilda * dSigmaSurSigmaYdEpsilonPBeq2XTilda + (1. - gXTilda) * dSigmaSurSigmaYdEpsilonPBeq1XTilda;
+
+
+
+	return dSigmaSurSigmaYdEpsilonPB11;
 
 }
 
@@ -2702,6 +2757,61 @@ double LocalBucklingWebPlate::calculateDSigmaSurSigmaYdEpsilonPB11() {
 
 void LocalBucklingWebPlate::initializeBChi1c() {
 	b_chi1c = (pow(sigmaC0Stress, 2)) / ((pow(sigmaC0Stress, 2) - pow(sigmaDMStress, 2)) * pow(alpha_chi1c, 2));
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+void LocalBucklingWebPlate::initializeFloorF1c() {
+	double alphaAngle = 0.;
+	double cPlate = 0.;
+	double AHat = 0., BHat = 0., CHat = 0.;
+	double DHat = 0., EHat = 0., FHat = 0., GHat = 0., HHat = 0.;
+
+	alphaAngle = 55. * 3.1416 / 180.;
+	cPlate = bPlateWidth / (2. * tan(alphaAngle));
+
+	double alpha = 0.;
+	double beta = 0.;
+	double gamma = 0.;
+	double P = 0.;
+	double Q = 0.;
+	double R = 0.;
+	double U = 0.;
+	double y = 0.;
+	double W = 0.;
+
+	BHat = (pow(tPlateThickness, 2.) * (bPlateWidth - 2. * cPlate)) / (bPlateWidth);
+	CHat = (tPlateThickness * sqrt(pow(cPlate, 2.) + pow((bPlateWidth / 2. ), 2)) - bPlateWidth * tPlateThickness);
+
+	DHat = -pow((BHat), 2);
+	EHat = 2. * BHat * CHat;
+	FHat = -pow((AHat), 2) + 2. * pow((BHat), 2) - pow(CHat, 2);
+	GHat = -2. * BHat * CHat;
+	HHat = pow(AHat, 2) - pow(BHat, 2);
+
+	alpha = -3. * pow(EHat, 2) / (8. * pow(DHat, 2)) + FHat / DHat;
+	beta = pow(EHat, 3) / (8. * pow(DHat, 3)) - (EHat * FHat) / (2. * pow(DHat, 2)) + GHat / DHat;
+	gamma = -3. * pow(EHat, 4) / (256. * pow(DHat, 4)) + (pow(EHat, 2) * FHat) / (16. * pow(DHat, 3)) - (EHat * GHat) / (4. * pow(DHat, 2)) + HHat / DHat;
+
+	P = -pow(alpha, 2) / 12. - gamma;
+	Q = -pow(alpha, 3) / 108. + alpha * gamma / 3 - pow(beta, 2) / 8.;
+	R = -Q / 2. + sqrt(pow(Q, 2) / 4. + pow(P, 3) / 27.);
+	U = pow(R, (1. / 3.));
+
+	if (U == 0.)
+	{
+		y = -5. / 6. * alpha - pow(Q, (1. / 3.));
+	}
+	else
+	{
+		y = -5. / 6. * alpha + U - P / (3. * U);
+	}
+	W = sqrt(alpha + 2. * y);
+
+
+	floorF1c = -EHat / (4. * DHat) + (+W) / 2.;
+
+
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2782,10 +2892,10 @@ double LocalBucklingWebPlate::calculateDEtaTangentdEpsiPb11() {
 
 	// Try to solve oscillation trap
 	double bound4Smoothin = 50. / 100. * abs(epsiPb11_min);
-	double a2XTilda = beta3RegressionEuSurEl * beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(strainPostBucklingTrial(0)), (beta3RegressionEuSurEl - 1.));
+	double a2XTilda = beta3RegressionEuSurEl * beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), (beta3RegressionEuSurEl - 1.));
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);*/
-	double xTilda = (strainPostBucklingTrial(0) + epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -2845,15 +2955,30 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStressTot, 
 	scaleFactorBezierStress = 2 * yieldStressTot - (yieldStressTot - alphaTot(0));
 
 	// Set quantities for Bezier curve
-	alphaPrBezierTrial = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaPrBezier);
-	alphaYrBezierTrial = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
-	sigmaYrBezierTrial = beta1RegressionSigmaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezier);
-	kPrBezierTrial = beta1RegressionKPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezier) * sigmaYrBezierTrial;
-	kYrBezierTrial = beta1RegressionKYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezier) * sigmaYrBezierTrial;
+	alphaPrBezierTrial = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(alphaRegularization*abs(strainPostBucklingTrial(0)), beta3RegressionAlphaPrBezier);
+	alphaYrBezierTrial = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
+	sigmaYrBezierTrial = beta1RegressionSigmaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezier);
+	kPrBezierTrial = beta1RegressionKPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezier) * sigmaYrBezierTrial;
+	kYrBezierTrial = beta1RegressionKYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezier) * sigmaYrBezierTrial;
 
 	// Determine different stresses sigmaPr
-	sigmaPr_regression = beta1RegressionSigmaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaPrBezier) * pow(abs(strainPostBucklingTrial(0)), beta3RegressionSigmaPrBezier);
+	sigmaPr_regression = beta1RegressionSigmaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaPrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionSigmaPrBezier);
 	sigmaPrBezierTrial = std::min(scaleFactorBezierStress, sigmaPr_regression * sigmaYrBezierTrial);
+
+	// Check if Bezier curve becomes larger than sigmaY + alphaAfterCompression(1) this fixes issue with f1t > 1
+	double AderivSigmaBezier = 6. * sigmaPrBezierTrial - 6. * sigmaYrBezierTrial + 9. * alphaPrBezierTrial * kPrBezierTrial - 9. * alphaYrBezierTrial * kYrBezierTrial;
+	double BderivSigmaBezier = 6. * sigmaYrBezierTrial - 6. * sigmaPrBezierTrial - 12. * alphaPrBezierTrial * kPrBezierTrial + 6. * alphaYrBezierTrial * kYrBezierTrial;
+	double CderivSigmaBezier = 3. * alphaPrBezierTrial * kPrBezierTrial;
+	double tHat1 = (-BderivSigmaBezier + sqrt(pow(BderivSigmaBezier, 2.) - 4. * AderivSigmaBezier * CderivSigmaBezier)) / (2. * AderivSigmaBezier);
+	double tHat2 = (-BderivSigmaBezier - sqrt(pow(BderivSigmaBezier, 2.) - 4. * AderivSigmaBezier * CderivSigmaBezier)) / (2. * AderivSigmaBezier);
+	double sigmaBezierSAtTHat1 = pow((1. - tHat1), 3) * sigmaPrBezierTrial + 3. * pow((1. - tHat1), 2) * tHat1 * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) + 3. * (1. - tHat1) * pow(tHat1, 2) * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) + pow(tHat1, 3) * sigmaYrBezierTrial;
+	double sigmaBezierSAtTHat2 = pow((1. - tHat2), 3) * sigmaPrBezierTrial + 3. * pow((1. - tHat2), 2) * tHat2 * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) + 3. * (1. - tHat2) * pow(tHat2, 2) * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) + pow(tHat2, 3) * sigmaYrBezierTrial;
+	/*if (sigmaBezierSAtTHat1 < sigmaPrBezierTrial || sigmaBezierSAtTHat2 < sigmaPrBezierTrial)*/
+	if (sigmaBezierSAtTHat1 < 0. || sigmaBezierSAtTHat2 < 0.)
+	{
+		alphaPrBezierTrial = 0;
+		alphaYrBezierTrial = 0;
+	}
 
 	// Determine epsiPb11Min
 	//epsilonPB11MinTrial = -pow((1. / sigmaYrBezierTrial * scaleFactorBezierStress * 1. / beta1RegressionSigmaPrBezier * pow((bPlateWidth / tPlateThickness), -beta2RegressionSigmaPrBezier)), (1. / beta3RegressionSigmaPrBezier));
@@ -2861,7 +2986,7 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStressTot, 
 		1. / (beta3RegressionSigmaPrBezier + beta3RegressionSigmaYrBezier));
 
 	// Compute b_1t
-	if (strainPostBucklingTrial(0) < epsilonPB11MinTrial)
+	if (alphaRegularization * strainPostBucklingTrial(0) < epsilonPB11MinTrial)
 	{
 		b_1tTrial = (pow(yieldStressTot, 2) - pow((sigmaPrBezierTrial - alphaTot(0)), 2)) / pow(sigmaPrBezierTrial, 2);
 	}
@@ -2871,7 +2996,7 @@ void LocalBucklingWebPlate::setTensileEllipsoidYieldSurf(double yieldStressTot, 
 	}
 
 	// Set epsilonPb11Unload
-	epsilonPB11UnloadTrial = strainPostBucklingTrial(0);
+	epsilonPB11UnloadTrial = alphaRegularization * strainPostBucklingTrial(0);
 
 	// Compute yield surface center and radius after compression stage
 	backstressAfterCompressionTrial = alphaTot;
@@ -2997,7 +3122,7 @@ void LocalBucklingWebPlate::calculateRatioAlphaBackstress() {
 
 	// Compute tangent Bezier curve
 	kYr = beta1RegressionKYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezier) * pow(abs(epsilonPB11UnloadTrial), beta3RegressionKYrBezier);
-	dSigmaBezierDEpsiPb11 = -kYr * sigmaYrBezierTrial;
+	dSigmaBezierDEpsiPb11 = -kYr * sigmaYrBezierTrial * alphaRegularization;
 
 	// Compute variables for UVC tangent
 	backstressP1 = alphaPKConverged[0];
@@ -3027,7 +3152,7 @@ void LocalBucklingWebPlate::initializeErc() {
 void LocalBucklingWebPlate::computeSigmaCDegradation() {
 	double betaDegradationParam = 0.;
 
-	betaDegradationParam = sumEjTrial / ErcTrial;
+	betaDegradationParam = std::min(1., sumEjTrial / ErcTrial);
 	sigmaCTrial = (1 - betaDegradationParam) * sigmaC0Stress;
 }
 
@@ -3101,7 +3226,7 @@ double LocalBucklingWebPlate::computeDAlpha11TotDEpsiPb11PlRecovStage() {
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial(0) - backstress11TotAfterFullPLRecovTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3129,7 +3254,7 @@ double LocalBucklingWebPlate::computeDSigmaYieldTotDEpsiPb11PlRecovStage() {
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (sigmaYieldAfterCompressionTrial - sigmaYieldTotAfterFullPLRecovTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3154,10 +3279,10 @@ void LocalBucklingWebPlate::computeReduceC1cLinearEvol() {
 	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = 0.;
-	double a2XTilda = c1cUnloadTrial * (strainPostBucklingTrial(0) / epsilonPB11UnloadTrial);
+	double a2XTilda = c1cUnloadTrial * (alphaRegularization * strainPostBucklingTrial(0) / epsilonPB11UnloadTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
