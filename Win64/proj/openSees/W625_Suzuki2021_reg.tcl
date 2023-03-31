@@ -23,10 +23,10 @@
 	set bSurTFlange [expr $bf/(2*$tf)];
 	set bSurTWeb [expr $h/$tw];
 	
-	set sigmaC0_Web [expr 1.2*421.2];
-	set sigmaC0_Flange [expr 1.0*511.9];
-	#set sigmaC0_Web [expr 1.2*420.0];
-	#set sigmaC0_Flange [expr 1.0*510.0];
+	#set sigmaC0_Web [expr 1.2*421.2];
+	#set sigmaC0_Flange [expr 1.0*511.9];
+	set sigmaC0_Web [expr 1.2*421.0];
+	set sigmaC0_Flange [expr 1.0*522.0];
 	
 	#set alphaRegularization_Web 0.14;							# Factor for regularization web 
 	#set alphaRegularization_Flange 0.18;							# Factor for regularization flange
@@ -107,7 +107,7 @@
 
 	
 	set integration "NewtonCotes 1 5"
-	element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 20 1e-6
+	element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
 	#set lc [expr 1.5*$bf];
 	#element gradientForceBeamColumn 12 1 2 $ColTransfTag Simpson 1 11 20 1e-5 $lc
 	
@@ -122,41 +122,41 @@ puts "Recorders ..."
 
 #lc20bfLcSurDx1
 # Record displacements 
-	recorder Node -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_Disp.txt -node 2 -dof 1 2 disp;
+	recorder Node -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_Disp.txt -node 2 -dof 1 2 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_RBase.txt -node 1 -dof 1 2 6 reaction;
+	recorder Node -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_RBase.txt -node 1 -dof 1 2 6 reaction;
 	
 # Record stress and strains for fibers
-#recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberExtremePos.txt -ele 12 section 1 fiber 170.7 32.13 strain; 
-#recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberExtremePos.txt -ele 12 section 1 fiber 170.7 32.13 stress; 
-#recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberExtremeNeg.txt -ele 12 section 1 fiber -170.7 32.13 strain;
-#recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberExtremeNeg.txt -ele 12 section 1 fiber -170.7 32.13 stress;
+#recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberExtremePos.txt -ele 12 section 1 fiber 170.7 32.13 strain; 
+#recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberExtremePos.txt -ele 12 section 1 fiber 170.7 32.13 stress; 
+#recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberExtremeNeg.txt -ele 12 section 1 fiber -170.7 32.13 strain;
+#recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberExtremeNeg.txt -ele 12 section 1 fiber -170.7 32.13 stress;
 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY171Z32.txt -ele 12 section 1 fiber 170.65 32.13 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY171Z32.txt -ele 12 section 1 fiber 170.65 32.13 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY144Z0.txt -ele 12 section 1 fiber 143.82 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY144Z0.txt -ele 12 section 1 fiber 143.82 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY112Z0.txt -ele 12 section 1 fiber 111.86 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY112Z0.txt -ele 12 section 1 fiber 111.86 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY80Z0.txt -ele 12 section 1 fiber 79.90 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY80Z0.txt -ele 12 section 1 fiber 79.90 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY48Z0.txt -ele 12 section 1 fiber 47.94 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY48Z0.txt -ele 12 section 1 fiber 47.94 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY16Z0.txt -ele 12 section 1 fiber 15.98 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY16Z0.txt -ele 12 section 1 fiber 15.98 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY-16Z0.txt -ele 12 section 1 fiber -15.98 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY-16Z0.txt -ele 12 section 1 fiber -15.98 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY-48Z0.txt -ele 12 section 1 fiber -47.94 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY-48Z0.txt -ele 12 section 1 fiber -47.94 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY-80Z0.txt -ele 12 section 1 fiber -79.90 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY-80Z0.txt -ele 12 section 1 fiber -79.90 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY-112Z0.txt -ele 12 section 1 fiber -111.86 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY-112Z0.txt -ele 12 section 1 fiber -111.86 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY-144Z0.txt -ele 12 section 1 fiber -143.82 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY-144Z0.txt -ele 12 section 1 fiber -143.82 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_stressFiberY-171Z32.txt -ele 12 section 1 fiber -170.65 32.13 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_regularizV02_strainFiberY-171Z32.txt -ele 12 section 1 fiber -170.65 32.13 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY171Z32.txt -ele 12 section 1 fiber 170.65 32.13 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY171Z32.txt -ele 12 section 1 fiber 170.65 32.13 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY144Z0.txt -ele 12 section 1 fiber 143.82 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY144Z0.txt -ele 12 section 1 fiber 143.82 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY112Z0.txt -ele 12 section 1 fiber 111.86 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY112Z0.txt -ele 12 section 1 fiber 111.86 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY80Z0.txt -ele 12 section 1 fiber 79.90 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY80Z0.txt -ele 12 section 1 fiber 79.90 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY48Z0.txt -ele 12 section 1 fiber 47.94 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY48Z0.txt -ele 12 section 1 fiber 47.94 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY16Z0.txt -ele 12 section 1 fiber 15.98 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY16Z0.txt -ele 12 section 1 fiber 15.98 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY-16Z0.txt -ele 12 section 1 fiber -15.98 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY-16Z0.txt -ele 12 section 1 fiber -15.98 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY-48Z0.txt -ele 12 section 1 fiber -47.94 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY-48Z0.txt -ele 12 section 1 fiber -47.94 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY-80Z0.txt -ele 12 section 1 fiber -79.90 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY-80Z0.txt -ele 12 section 1 fiber -79.90 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY-112Z0.txt -ele 12 section 1 fiber -111.86 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY-112Z0.txt -ele 12 section 1 fiber -111.86 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY-144Z0.txt -ele 12 section 1 fiber -143.82 0.00 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY-144Z0.txt -ele 12 section 1 fiber -143.82 0.00 strain; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_stressFiberY-171Z32.txt -ele 12 section 1 fiber -170.65 32.13 stress; 
+recorder Element -file $dataDir/W625C1C30_Suzuki2021_OS_OS_regulariz_strainFiberY-171Z32.txt -ele 12 section 1 fiber -170.65 32.13 strain; 
 
 
 # Define display;	

@@ -477,13 +477,18 @@ int LocalBucklingWebPlate::timeIntegration() {
 	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 
-	if (strainConverged(0) <= -0.069 && strainConverged(0) > -0.070 && strainTrial(0) >= -0.06992 && strainTrial(0) < -0.06991) {
+	/*if (strainConverged(0) <= -0.069 && strainConverged(0) > -0.070 && strainTrial(0) >= -0.06994 && strainTrial(0) < -0.06993) {
 		double testBreak = 0.;
-	}
+	}*/
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		iterationNumber_timeIntegration++;
+
+		if (isnan(strainTrial(0) + strainTrial(1) + strainTrial(2)))
+		{
+			iterationNumber_timeIntegration = MAXIMUM_ITERATIONS_TIMEINTEGRATION + 1;
+		}
 
 		// Update the total strain vector for time integration iteration
 		strain_nPlus1 = strainIntermed + deltaStrain_trial;
@@ -670,9 +675,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 				calculateConsistentTangentModulusElastic(etaTangent);
 
 				// Check if the initial capping stress sigmaC0 has been passed
-				double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+				/*double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
 				double sigmaVMConverged = pow((3. / 2. * (2. / 3. * pow(stressConverged(0), 2) + 2. * pow(stressConverged(1), 2) + 2. * pow(stressConverged(2), 2))), 0.5);
-				double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));
+				double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));*/
 				//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
 				if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress,2) <= SMALL_NUMBER) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
@@ -712,9 +717,9 @@ int LocalBucklingWebPlate::timeIntegration() {
 					retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial);
 
 					// Check if the initial capping stress sigmaC0 has been passed
-					double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					/*double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
 					double sigmaVMConverged = pow((3. / 2. * (2. / 3. * pow(stressConverged(0), 2) + 2. * pow(stressConverged(1), 2) + 2. * pow(stressConverged(2), 2))), 0.5);
-					double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));
+					double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));*/
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
 					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // not yet at capping point
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
@@ -753,9 +758,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 					retVal = returnMappingSoftening(strain_nPlus1, xiTrial, alphaTot, yieldStressTot);
 
 					// Check if the initial capping stress  has been passed (due to reduction in sigmaC)
-					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
-					double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
-					double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));
+					/*double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));*/
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
 					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // not yet at capping point
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
@@ -775,7 +779,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 						// Check if capping point is reached
 						//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
 						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER) { // capping point is reached
-							calculateC1c(yieldStressTot, alphaTot, strainPostBucklingTrial(0));
+							calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
 						}
 
 					}

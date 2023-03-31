@@ -485,6 +485,11 @@ int LocalBucklingFlangePlate::timeIntegration() {
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		iterationNumber_timeIntegration++;
 
+		if (isnan(strainTrial(0)+ strainTrial(1)+ strainTrial(2)))
+		{
+			iterationNumber_timeIntegration = MAXIMUM_ITERATIONS_TIMEINTEGRATION + 1;
+		}
+
 		// Update the total strain vector for time integration iteration
 		strain_nPlus1 = strainIntermed + deltaStrain_trial;
 
