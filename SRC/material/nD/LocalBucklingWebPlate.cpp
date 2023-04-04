@@ -477,7 +477,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 
-	/*if (strainConverged(0) <= -0.069 && strainConverged(0) > -0.070 && strainTrial(0) >= -0.06994 && strainTrial(0) < -0.06993) {
+	/*if (strainConverged(0) <= -0.06879 && strainConverged(0) > -0.06880 && strainTrial(0) >= -0.06987 && strainTrial(0) < -0.06986) {
 		double testBreak = 0.;
 	}*/
 
@@ -700,6 +700,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 						if (abs(strainPostBucklingIntermed(0)) < SMALL_NUMBER)
 						{
 							strainPostBucklingIntermed(0) = -SMALL_NUMBER;
+							strainPostBucklingTrial = strainPostBucklingIntermed;
 						}
 						calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
 					}
@@ -741,6 +742,7 @@ int LocalBucklingWebPlate::timeIntegration() {
 						//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
 						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER) { // capping point is reached
 							strainPostBucklingIntermed(0) = -SMALL_NUMBER;
+							strainPostBucklingTrial = strainPostBucklingIntermed;
 							strainPlasticIntermed = strainPlasticTrial;
 							strainPEqIntermed = strainPEqTrial;
 							alphaPKIntermed = alphaPKTrial;
@@ -758,8 +760,8 @@ int LocalBucklingWebPlate::timeIntegration() {
 					retVal = returnMappingSoftening(strain_nPlus1, xiTrial, alphaTot, yieldStressTot);
 
 					// Check if the initial capping stress  has been passed (due to reduction in sigmaC)
-					/*double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
-					double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));*/
+					//double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
+					//double diff4Capping = pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2);
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
 					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // not yet at capping point
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
@@ -1025,9 +1027,9 @@ int LocalBucklingWebPlate::returnMappingSoftening(Vector strain_nPlus1, Vector r
 		gammaDiagPrime(1) = -pow(gammaDiag(1), 2) * (dCdLambdaPB(1) + 6.);
 		gammaDiagPrime(2) = -pow(gammaDiag(2), 2) * (dCdLambdaPB(2) + 6.);
 
-		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingIntermed(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - 2 * chi1c * gammaDiag(0) * backstressTot(0) - 2 * consistParam_postBuckling * gammaDiag(0) * backstressTot(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * backstressTot(0) - gammaDiag(0) * dCdLambdaPB(0) * backstressTot(0);
-		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingIntermed(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * backstressTot(1) - gammaDiag(1) * dCdLambdaPB(1) * backstressTot(1);
-		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingIntermed(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * backstressTot(2) - gammaDiag(2) * dCdLambdaPB(2) * backstressTot(2);
+		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - 2 * chi1c * gammaDiag(0) * backstressTot(0) - 2 * consistParam_postBuckling * gammaDiag(0) * backstressTot(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * backstressTot(0) - gammaDiag(0) * dCdLambdaPB(0) * backstressTot(0);
+		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticIntermed(1) - strainPostBucklingIntermed(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * backstressTot(1) - gammaDiag(1) * dCdLambdaPB(1) * backstressTot(1);
+		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticIntermed(2) - strainPostBucklingIntermed(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * backstressTot(2) - gammaDiag(2) * dCdLambdaPB(2) * backstressTot(2);
 
 		dPhiCompdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2) * dChi1cDLambdaPB;
 
@@ -2800,6 +2802,10 @@ void LocalBucklingWebPlate::initializeFloorF1c() {
 	P = -pow(alpha, 2) / 12. - gamma;
 	Q = -pow(alpha, 3) / 108. + alpha * gamma / 3 - pow(beta, 2) / 8.;
 	R = -Q / 2. + sqrt(pow(Q, 2) / 4. + pow(P, 3) / 27.);
+	if (pow(Q, 2) / 4. + pow(P, 3) / 27. < 0)
+	{
+		R = -Q / 2.;
+	}
 	U = pow(R, (1. / 3.));
 
 	if (U == 0.)
@@ -2940,6 +2946,7 @@ void LocalBucklingWebPlate::calculateC1c(double yieldStress, Vector alphaTot, do
 	double xiVonMisesSquared = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2));
 
 	double chi_1c = (pow(yieldStress, 2) - xiVonMisesSquared) / pow(sigma11UpdatedTol, 2);
+	//double chi_1c= (pow(yieldStress, 2) - pow((sigma11UpdatedTol - alphaTot(0)), 2)) / pow(sigma11UpdatedTol, 2);
 
 	//c1cTrial = (pow(yieldStress, 2) - xiVonMisesSquared) / pow(sigma11UpdatedTol, 2);
 

@@ -697,6 +697,7 @@ int LocalBucklingFlangePlate::timeIntegration() {
 						if (abs(strainPostBucklingIntermed(0)) < SMALL_NUMBER)
 						{
 							strainPostBucklingIntermed(0) = -SMALL_NUMBER;
+							strainPostBucklingTrial = strainPostBucklingIntermed;
 						}
 						calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
 					}
@@ -736,6 +737,7 @@ int LocalBucklingFlangePlate::timeIntegration() {
 						//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
 						if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) >= -SMALL_NUMBER) { // capping point is reached
 							strainPostBucklingIntermed(0) = -SMALL_NUMBER;
+							strainPostBucklingTrial = strainPostBucklingIntermed;
 							strainPlasticIntermed = strainPlasticTrial;
 							strainPEqIntermed = strainPEqTrial;
 							alphaPKIntermed = alphaPKTrial;
@@ -2794,6 +2796,10 @@ void LocalBucklingFlangePlate::initializeFloorF1c() {
 	P = -pow(alpha, 2) / 12. - gamma;
 	Q = -pow(alpha, 3) / 108. + alpha * gamma / 3 - pow(beta, 2) / 8.;
 	R = -Q / 2. + sqrt(pow(Q, 2) / 4. + pow(P, 3) / 27.);
+	if (pow(Q, 2) / 4. + pow(P, 3) / 27. < 0)
+	{
+		R = -Q / 2.;
+	}
 	U = pow(R, (1. / 3.));
 
 	if (U == 0.)
