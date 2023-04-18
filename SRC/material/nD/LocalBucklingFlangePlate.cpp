@@ -1641,19 +1641,19 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusPlRecovStage(Vec
 	double dSigmaYieldTotDEpsiPb11 = 0.;
 	double dPhiTensDSigmaYield = 0.;
 
-	chi1t = calculateChi1t(yieldStressTot, backstressTot(0), strainPostBucklingTrial(0));
+	chi1t = calculateChi1t(yieldStressTot, backstressTot(0), alphaRegularization * strainPostBucklingTrial(0));
 
-	etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial(0));
+	etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
 	LambdaC_nPlus1Diag = etaTangent * lambdaC;
 
-	tBezier = calculateTBezier(strainPostBucklingTrial(0));
+	tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial(0));
 	sigmaBezier = pow((1. - tBezier), 3) * sigmaPrBezierTrial + 3. * pow((1 - tBezier), 2) * tBezier * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) + 3. * (1 - tBezier) * pow(tBezier, 2) * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) + pow(tBezier, 3) * sigmaYrBezierTrial;
 	dSigmaBezierDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierTrial + 3. * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierTrial;
 	dEpsiBezierDtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11UnloadTrial) + 3. * (abs(epsilonPB11UnloadTrial) + alphaPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
-	dSigmaBezierDEpsiPb11 = -dSigmaBezierDtBezier / dEpsiBezierDtBezier;
+	dSigmaBezierDEpsiPb11 = -alphaRegularization * dSigmaBezierDtBezier / dEpsiBezierDtBezier;
 
-	dAlpha11TotDEpsiPb11 = computeDAlpha11TotDEpsiPb11PlRecovStage();
-	dSigmaYieldTotDEpsiPb11 = computeDSigmaYieldTotDEpsiPb11PlRecovStage();
+	dAlpha11TotDEpsiPb11 = alphaRegularization * computeDAlpha11TotDEpsiPb11PlRecovStage();
+	dSigmaYieldTotDEpsiPb11 = alphaRegularization * computeDSigmaYieldTotDEpsiPb11PlRecovStage();
 
 	gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_plRecov * (2. + 2. * chi1t));
 	gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_plRecov * 6.);
@@ -1693,7 +1693,7 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusPlRecovStage(Vec
 
 	B = 1. / (1. + 2 * consistParam_plRecov * dAlpha11TotDEpsiPb11 - dChi1tDEpsiPB11 * consistParam_plRecov * d2PhiTensDSigmaDChi1t(0));
 
-	dEtaTangentdEpsiPb11 = calculateDEtaTangentdEpsiPb11();
+	dEtaTangentdEpsiPb11 = alphaRegularization * calculateDEtaTangentdEpsiPb11();
 
 	H(0) = -2. / dChi1tDEpsiPB11 * dAlpha11TotDEpsiPb11 + d2PhiTensDSigmaDChi1t(0);
 
