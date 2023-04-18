@@ -2640,7 +2640,15 @@ double LocalBucklingWebPlate::calculateSigmaSurSigmaY(double epsiPb11) {
 		}
 		double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-		sigmaSurSigmaY= gXTilda * sigmaSurSigmaY2XTilda + (1. - gXTilda) * sigmaSurSigmaY1XTilda;
+		//sigmaSurSigmaY = gXTilda * sigmaSurSigmaY2XTilda + (1. - gXTilda) * sigmaSurSigmaY1XTilda;
+		if (gXTilda == 1.0)
+		{
+			sigmaSurSigmaY = gXTilda * sigmaSurSigmaY2XTilda;
+		}
+		else
+		{
+			sigmaSurSigmaY = gXTilda * sigmaSurSigmaY2XTilda + (1. - gXTilda) * sigmaSurSigmaY1XTilda;
+		}
 
 	}
 
