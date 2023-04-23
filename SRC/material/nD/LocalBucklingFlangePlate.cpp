@@ -1598,6 +1598,9 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusSoftening(const 
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
 	//opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
 
+	// Try to fix flat tangent issue
+	stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
+
 	return;
 
 }
@@ -1738,6 +1741,9 @@ void LocalBucklingFlangePlate::calculateConsistentTangentModulusPlRecovStage(Vec
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
 	/*opserr << "This is tangentModulusPlRecovStage" << stiffnessTrial << endln;
 	opserr << "This is strain vector:" << strainTrial << endln;*/
+
+	// Try to fix flat tangent issue
+	stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
 
 	return;
 }
