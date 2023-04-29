@@ -437,10 +437,10 @@ private:
 	const double beta1RegressionAlphaYrBezier = 1.0459;
 	const double beta2RegressionAlphaYrBezier = -0.3699;
 	const double beta3RegressionAlphaYrBezier = 0.9629;
-	const double beta1RegressionErc = 1e20; // very large number so no cyclic degradation
-	const double beta2RegressionErc = 1.0; // very large number so no cyclic degradation
-	/*const double beta1RegressionErc = 2.6207e5;
-	const double beta2RegressionErc = -1.9363;*/
+	//const double beta1RegressionErc = 1e20; // very large number so no cyclic degradation
+	//const double beta2RegressionErc = 1.0; // very large number so no cyclic degradation
+	const double beta1RegressionErc = 2.6207e5;
+	const double beta2RegressionErc = -1.9363;
 
 };
 
