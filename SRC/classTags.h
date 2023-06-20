@@ -809,6 +809,7 @@
 #define ELE_TAG_ExternalElement           99990
 #define ELE_TAG_GradientForceBeamColumn2d 222 // by Diego Heredia
 #define ELE_TAG_GradientForceBeamColumn3d 223 // by Diego Heredia
+#define ELE_TAG_TestNonlocalElement3dDH 224 // by Diego Heredia
 
 
 

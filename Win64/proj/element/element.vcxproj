@@ -277,6 +277,8 @@
     <ClCompile Include="..\..\..\SRC\element\shell\ShellNLDKGT.cpp" />
     <ClCompile Include="..\..\..\SRC\element\surfaceLoad\TriSurfaceLoad.cpp" />
     <ClCompile Include="..\..\..\SRC\element\TclElementCommands.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TclTestNonlocalElementDH.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement3dDH.cpp" />
     <ClCompile Include="..\..\..\SRC\element\tetrahedron\FourNodeTetrahedron.cpp" />
     <ClCompile Include="..\..\..\SRC\element\truss\InertiaTruss.cpp" />
     <ClCompile Include="..\..\..\SRC\element\truss\N4BiaxialTruss.cpp" />
@@ -561,6 +563,7 @@
     <ClInclude Include="..\..\..\SRC\element\shell\ShellNLDKGQThermal.h" />
     <ClInclude Include="..\..\..\SRC\element\shell\ShellNLDKGT.h" />
     <ClInclude Include="..\..\..\SRC\element\surfaceLoad\TriSurfaceLoad.h" />
+    <ClInclude Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement3dDH.h" />
     <ClInclude Include="..\..\..\SRC\element\tetrahedron\FourNodeTetrahedron.h" />
     <ClInclude Include="..\..\..\SRC\element\truss\InertiaTruss.h" />
     <ClInclude Include="..\..\..\SRC\element\truss\N4BiaxialTruss.h" />
@@ -741,6 +744,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\SRC\element\gradientForceBeamColumn\Makefile" />
+    <None Include="..\..\..\SRC\element\testNonlocalElementDH\Makefile" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

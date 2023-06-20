@@ -235,6 +235,7 @@ void *OPS_ASDAbsorbingBoundary3D(void);
 //Added by Diego Heredia
 void* OPS_GradientForceBeamColumn2d();
 void* OPS_GradientForceBeamColumn3d();
+void* OPS_TestNonlocalElement3dDH();
 
 namespace {
 
@@ -509,6 +510,13 @@ namespace {
 		  return OPS_GradientForceBeamColumn3d();
 	  }
   }
+  static void* OPS_TestNonlocalElementDH()
+  {
+	  int ndm = OPS_GetNDM();
+	  if (ndm == 3) {
+		  return OPS_TestNonlocalElement3dDH();
+	  }
+  }
 
   static void* OPS_DispBeamColumn3dID()
   {
@@ -711,7 +719,8 @@ namespace {
 	functionMap.insert(std::make_pair("InertiaTruss", &OPS_InertiaTrussElement));
 	functionMap.insert(std::make_pair("ASDAbsorbingBoundary2D", &OPS_ASDAbsorbingBoundary2D));
 	functionMap.insert(std::make_pair("ASDAbsorbingBoundary3D", &OPS_ASDAbsorbingBoundary3D));
-	functionMap.insert(std::make_pair("gradientForceBeamColumn", &OPS_GradientForceBeamColumn));
+	functionMap.insert(std::make_pair("gradientForceBeamColumn", &OPS_GradientForceBeamColumn)); // Added by Diego Heredia
+	functionMap.insert(std::make_pair("TestNonlocalElementDH", &OPS_TestNonlocalElementDH)); // Added by Diego Heredia
 	return 0;
     }
 }

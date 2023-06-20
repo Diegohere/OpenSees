@@ -200,8 +200,11 @@ extern void* OPS_MixedBeamColumnAsym3dTcl(); //Xinlong Du
 extern void* OPS_ZeroLengthContactASDimplex(void); // Onur Deniz Akan (IUSS), Massimo Petracca (ASDEA)
 
 // Added by Diego Heredia 10.09.2022
-extern void* OPS__GradientForceBeamColumn2d();
-extern void* OPS__GradientForceBeamColumn3d();
+extern void* OPS_GradientForceBeamColumn2d();
+extern void* OPS_GradientForceBeamColumn3d();
+
+// Added by Diego Heredia 19.06.2023
+extern void* OPS_TestNonlocalElement3dDH();
 
 
 extern int TclModelBuilder_addFeapTruss(ClientData clientData, Tcl_Interp *interp,  int argc,
@@ -393,6 +396,11 @@ extern int
 TclModelBuilder_addGradientForceBeamColumn(ClientData clientData, Tcl_Interp* interp, int argc, TCL_Char** argv,
     Domain*, TclModelBuilder*);
 
+// Added by Diego Heredia on 19.06.2023 (EPFL)
+extern int
+TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* interp, int argc, TCL_Char** argv,
+    Domain*, TclModelBuilder*);
+
 int
 TclModelBuilderElementCommand(ClientData clientData, Tcl_Interp *interp,
 			      int argc, TCL_Char **argv,
@@ -565,6 +573,22 @@ TclModelBuilderElementCommand(ClientData clientData, Tcl_Interp *interp,
       return TCL_ERROR;
     }
   }*/
+
+  ////Added by Diego Heredia 19.06.2023
+  //}
+  //else if (strcmp(argv[1], "testNonlocalElementDH") == 0) {
+  //Element* theEle = 0;
+  //int nNDM = OPS_GetNDM();
+  //opserr << "This is NDM : " << nNDM << endln;
+  //if (OPS_GetNDM() == 3)
+  //    theEle = (Element*)OPS_TestNonlocalElement3dDH();
+
+  //if (theEle != 0)
+  //    theElement = theEle;
+  //else {
+  //    opserr << "TclElementCommand -- unable to create element of type : " << argv[1] << endln;
+  //    return TCL_ERROR;
+  //}
     
 #if defined(_HAVE_LHNMYS) || defined(OPSDEF_ELEMENT_LHNMYS)    
   } else if (strcmp(argv[1],"beamColumn2DwLHNMYS") == 0) {
@@ -1832,6 +1856,13 @@ TclModelBuilderElementCommand(ClientData clientData, Tcl_Interp *interp,
     // Added by Diego Heredia on 10.09.2022
     else if (strcmp(argv[1], "gradientForceBeamColumn") == 0) {
     int result = TclModelBuilder_addGradientForceBeamColumn(clientData, interp, argc, argv,
+        theTclDomain, theTclBuilder);
+    return result;
+    }
+
+    // Added by Diego Heredia on 19.06.2023
+    else if (strcmp(argv[1], "testNonlocalElementDH") == 0) {
+    int result = TclModelBuilder_addTestNonlocalElementDH(clientData, interp, argc, argv,
         theTclDomain, theTclBuilder);
     return result;
     }

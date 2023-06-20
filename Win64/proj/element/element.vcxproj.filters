@@ -141,6 +141,9 @@
     <Filter Include="gradientForceBeamColumn">
       <UniqueIdentifier>{6c5b1a0e-c4ec-43fa-8494-287c55c73671}</UniqueIdentifier>
     </Filter>
+    <Filter Include="testNonlocalElementDH">
+      <UniqueIdentifier>{52cc67e3-45fd-417f-9056-2211ef518c22}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\SRC\element\Element.cpp">
@@ -1001,6 +1004,12 @@
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\NewtonCotesBeamIntegrationUpdated.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TclTestNonlocalElementDH.cpp">
+      <Filter>testNonlocalElementDH</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement3dDH.cpp">
+      <Filter>testNonlocalElementDH</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\element\Element.h">
@@ -1768,6 +1777,9 @@
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\NewtonCotesBeamIntegrationUpdated.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement3dDH.h">
+      <Filter>testNonlocalElementDH</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="element.rc">
@@ -1777,6 +1789,9 @@
   <ItemGroup>
     <None Include="..\..\..\SRC\element\gradientForceBeamColumn\Makefile">
       <Filter>gradientForceBeamColumn</Filter>
+    </None>
+    <None Include="..\..\..\SRC\element\testNonlocalElementDH\Makefile">
+      <Filter>testNonlocalElementDH</Filter>
     </None>
   </ItemGroup>
 </Project>
