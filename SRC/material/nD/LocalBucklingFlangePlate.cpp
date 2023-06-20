@@ -153,6 +153,7 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poi
 	strainPEqTrial(0.),
 	strainPBEqConverged(0.),
 	strainPBEqTrial(0.),
+	strainIncrementDecomposition(N_DIMS, N_DIMS),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
 	sumEjConverged(0.),
@@ -305,6 +306,7 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate()
 	strainPEqTrial(0.),
 	strainPBEqConverged(0.),
 	strainPBEqTrial(0.),
+	strainIncrementDecomposition(N_DIMS, N_DIMS),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
 	sumEjConverged(0.),
@@ -1886,6 +1888,9 @@ int LocalBucklingFlangePlate::setTrialStrain(const Vector& v, const Vector& r) {
 	// Do the return mapping and calculate the tangent modulus
 	timeIntegration();
 
+	// Return strain increment decomposition Vector(epsiE, epsiP, epsiPb)
+	Matrix& getStrainIncrementDecomposition(void);
+
 	return 0;
 }
 
@@ -1965,6 +1970,26 @@ double LocalBucklingFlangePlate::getYieldStress() {
 	yieldStressTot = yieldStressP + yieldStressPBTrial;
 	return yieldStressTot;
 
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+Matrix& LocalBucklingFlangePlate::getStrainIncrementDecomposition() {
+
+	//Compute each increment
+	Vector deltaEpsiP = strainPlasticTrial - strainPlasticConverged;
+	Vector deltaEpsiPb = strainPostBucklingTrial - strainPostBucklingConverged;
+	Vector deltaEpsiE = strainTrial - strainConverged - deltaEpsiP - deltaEpsiPb;
+
+	// Put everything in the matrix
+	for (int i = 0; i < 2; i++)
+	{
+		strainIncrementDecomposition(i, 0) = deltaEpsiE(i);
+		strainIncrementDecomposition(i, 1) = deltaEpsiP(i);
+		strainIncrementDecomposition(i, 2) = deltaEpsiPb(i);
+	}
+
+	return strainIncrementDecomposition;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */

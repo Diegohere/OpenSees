@@ -69,9 +69,10 @@ class NDMaterial : public Material
 	virtual const Vector& getTempAndElong(void);
 	//Added by L.Jiang, [SIF]
 
-    // Start addition by Diego Heredia 13.01.2023
+    // Start addition by Diego Heredia 
     virtual double getYieldStress(void);
-    // End addition by Diego Heredia 13.01.2023
+    virtual Matrix& getStrainIncrementDecomposition(void);
+    // End addition by Diego Heredia 
 
     virtual const Vector &getStress(void);
     virtual const Vector &getStrain(void);

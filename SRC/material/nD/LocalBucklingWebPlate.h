@@ -101,6 +101,9 @@ public:
 	// Adds the print information to the stream
 	void Print(OPS_Stream& s, int flag = 0);
 
+	// Return strain increment decomposition Vector(epsiE, epsiP, epsiPb)
+	Matrix& getStrainIncrementDecomposition(void);
+
 private:
 	// Determines the trial stress for the given strain increment and which return mapping could be needed
 	int timeIntegration();
@@ -288,6 +291,8 @@ private:
 	double strainPEqTrial;
 	double strainPBEqConverged;  // Equivalent post buckling strain
 	double strainPBEqTrial;
+	Matrix strainIncrementDecomposition;
+
 	Vector stressConverged;
 	Vector stressTrial;
 	std::vector<Vector> alphaPKConverged;

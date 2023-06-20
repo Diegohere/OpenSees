@@ -232,14 +232,21 @@ NDMaterial::getTempAndElong()
 //end of adding thermo-mechanical functions, L.Jiang [SIF]
 
 
-// Start addition by Diego Heredia 13.01.2023
+// Start addition by Diego Heredia 
 double 
 NDMaterial::getYieldStress()
  {
      opserr << "NDMaterial::getYieldStress -- subclass responsibility\n";
      return -1;
  }
-// End addition by Diego Heredia 13.01.2023
+
+Matrix&
+NDMaterial::getStrainIncrementDecomposition()
+{
+    opserr << "NDMaterial::getStrainIncrementDecomposition -- subclass responsibility\n";
+    return errMatrix;
+}
+// End addition by Diego Heredia 
 
 
 Response*

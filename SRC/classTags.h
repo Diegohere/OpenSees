@@ -332,6 +332,7 @@
 #define SEC_TAG_MembranePlateFiberSectionThermal 34  // L.Jiang[SIF]
 #define SEC_TAG_LayeredShellFiberSectionThermal 35     //L.Jiang[SIF]
 #define SEC_TAG_BiaxialHysteretic 36
+#define SEC_TAG_NDTestNonlocalFiberSection3d 37 //Added by Diego Heredia
 
 #define SEC_TAG_MCFTFiberSection2d 7601
 

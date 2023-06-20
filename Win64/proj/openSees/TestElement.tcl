@@ -78,7 +78,8 @@
 	set yJS [expr $absCoordCorner];
 
 	
-	section NDFiber 1 -GJ $GJ {;	
+	#section NDFiber 1 -GJ $GJ {;	
+	section NDFiberTestNonlocal 1 -GJ $GJ {;
 	#			 matTag  umSubdivY  numSubdivZ  yI  	zI  	yJ    zJ
 	patch rect 1 $N_LoadingDir $N_TranverseDir $yIS $zIS $yJS $zJS;
 

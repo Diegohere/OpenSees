@@ -93,6 +93,8 @@ extern "C" int         OPS_ResetInputNoBuilder(ClientData clientData, Tcl_Interp
 
 //#include <McftSection2dfiber.h>
 
+#include <NDTestNonlocalFiberSection3d.h> // Added by Diego Heredia
+
 #include <string.h>
 #include <fstream>
 using std::ifstream;
@@ -523,7 +525,8 @@ TclModelBuilderSectionCommand (ClientData clientData, Tcl_Interp *interp, int ar
     else if (strcmp(argv[1],"Fiber") == 0 || 
 	     strcmp(argv[1],"fiberSec") == 0 ||
 	     strcmp(argv[1],"NDFiberWarping") == 0 ||
-	     strcmp(argv[1],"NDFiber") == 0)
+	     strcmp(argv[1],"NDFiber") == 0 
+		 || strcmp(argv[1], "NDFiberTestNonlocal") == 0) //added by Diego Heredia
 
 	return TclCommand_addFiberSection (clientData, interp, argc, argv,
 					   theTclBuilder);
@@ -955,6 +958,7 @@ static int currentSectionTag = 0;
 static bool currentSectionIsND = false;
 static bool currentSectionIsWarping = false;
 static bool currentSectionComputeCentroid = true;
+static bool currentSectionIsNDFiberTestNonlocal = false; // added by Diego Heredia
 
 int
 buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
@@ -995,7 +999,9 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
     if (strcmp(argv[1],"NDFiberWarping") == 0) {
       currentSectionIsND = true;
       currentSectionIsWarping = true;
-    }
+	}
+	if (strcmp(argv[1], "NDFiberTestNonlocal")==0) // added by Diego Heredia
+	  currentSectionIsNDFiberTestNonlocal=true;
 
     // create the fiber section representation (with the geometric information) 
       
@@ -2275,7 +2281,7 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	 for (i = numSectionRepresFibers; i < numFibers; i++) {
 	   fiberPosition(0) = fibersPosition(0,k);
 	   fiberPosition(1) = fibersPosition(1,k);  
-	   if (currentSectionIsND) {
+	   if (currentSectionIsND || currentSectionIsNDFiberTestNonlocal) { // Modified by Diego Heredia
 	     ndmaterial = OPS_getNDMaterial(fibersMaterial(k));
 	     if (ndmaterial == 0) {
                opserr <<  "WARNING invalid NDmaterial ID for patch\n";
@@ -2303,6 +2309,10 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	 SectionForceDeformation *section = 0;
 	 if (currentSectionIsND)
 	   section = new NDFiberSection3d(secTag, numFibers, fiber, currentSectionComputeCentroid);
+	 else if (currentSectionIsNDFiberTestNonlocal) // Added by Diego Heredia
+	 {
+		 section = new NDTestNonlocalFiberSection3d(secTag, numFibers, fiber, currentSectionComputeCentroid);
+	 }
 	 else
 	   section = new FiberSection3d(secTag, numFibers, fiber, theTorsion, currentSectionComputeCentroid);
    
