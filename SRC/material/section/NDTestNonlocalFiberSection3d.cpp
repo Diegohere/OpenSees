@@ -46,12 +46,12 @@ void* OPS_NDTestNonlocalFiberSection3d()
 }
 
 // constructors:
-NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, Fiber **fibers, double a, bool compCentroid): 
-  SectionForceDeformation(tag, SEC_TAG_NDTestNonlocalFiberSection3d),
-  numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
-  Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
-  alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-  parameterID(0), dedh(6), indexExtremeFibers(2)
+NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, Fiber** fibers, double a, bool compCentroid) :
+    SectionForceDeformation(tag, SEC_TAG_NDTestNonlocalFiberSection3d),
+    numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
+    Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
+    alpha(a), sectionIntegr(0), e(6), s(0), ks(0),
+    parameterID(0), dedh(6), indexExtremeFibers(2), coordinatesExtremeFibers(2, 2), incrementSectionDeformationsDecomposition(6, 3), AMat4SecDefoSystem(6, 6)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -119,7 +119,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, dou
     numFibers(0), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-    parameterID(0), dedh(6), indexExtremeFibers(2)
+    parameterID(0), dedh(6), indexExtremeFibers(2), coordinatesExtremeFibers(2,2), incrementSectionDeformationsDecomposition(6,3), AMat4SecDefoSystem(6, 6)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
@@ -170,7 +170,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, NDM
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-  parameterID(0), dedh(6)
+  parameterID(0), dedh(6), indexExtremeFibers(2), coordinatesExtremeFibers(2, 2), incrementSectionDeformationsDecomposition(6, 3), AMat4SecDefoSystem(6, 6)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -234,6 +234,11 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, NDM
   code(3) = SECTION_RESPONSE_VY;
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
+
+  indexExtremeFibers = Vector(2);
+  coordinatesExtremeFibers = Matrix(2, 2);
+  incrementSectionDeformationsDecomposition = Matrix(6, 3);
+  getIndexExtremeFibers();
 }
 
 // constructor for blank object that recvSelf needs to be invoked upon
@@ -242,7 +247,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d():
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   alpha(1.0), sectionIntegr(0), e(6), s(0), ks(0),
-  parameterID(0), dedh(6)
+  parameterID(0), dedh(6), indexExtremeFibers(2), coordinatesExtremeFibers(2, 2), incrementSectionDeformationsDecomposition(6, 3), AMat4SecDefoSystem(6, 6)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -259,6 +264,8 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d():
   code(3) = SECTION_RESPONSE_VY;
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
+
+  getIndexExtremeFibers();
 }
 
 int
@@ -1226,11 +1233,82 @@ NDTestNonlocalFiberSection3d::getIndexExtremeFibers()
                 maxDistance = d;
                 index1 = i;
                 index2 = j;
+                coordinatesExtremeFibers(0, 0) = yLocs(i) - yBar;
+                coordinatesExtremeFibers(0, 1) = zLocs(i) - zBar;
+                coordinatesExtremeFibers(1, 0) = yLocs(j) - yBar;
+                coordinatesExtremeFibers(1, 1) = zLocs(j) - zBar;
             }
         }
     }
-    /*opserr << "These are the coordinates of extreme fiber 1:" << yLocs(index1) << " and " << zLocs(index1) << endln;
-    opserr << "These are the coordinates of extreme fiber 2:" << yLocs(index2) << " and " << zLocs(index2) << endln;*/
+    //opserr << "These are the coordinates of extreme fibers:" << coordinatesExtremeFibers << endln; 
+    indexExtremeFibers(0) = index1;
+    indexExtremeFibers(1) = index2;
+
+    AMat4SecDefoSystem(0, 0) = 1.0;
+    AMat4SecDefoSystem(0, 1) = -coordinatesExtremeFibers(0, 0);
+    AMat4SecDefoSystem(0, 4) = coordinatesExtremeFibers(0, 1);
+    AMat4SecDefoSystem(1, 2) = 1.0;
+    AMat4SecDefoSystem(1, 3) = -coordinatesExtremeFibers(0, 1);
+    AMat4SecDefoSystem(2, 3) = coordinatesExtremeFibers(0, 0);
+    AMat4SecDefoSystem(2, 5) = 1.0;
+    AMat4SecDefoSystem(3, 0) = 1.0;
+    AMat4SecDefoSystem(3, 1) = -coordinatesExtremeFibers(1, 0);
+    AMat4SecDefoSystem(3, 4) = coordinatesExtremeFibers(1, 1);
+    AMat4SecDefoSystem(4, 2) = 1.0;
+    AMat4SecDefoSystem(4, 3) = -coordinatesExtremeFibers(1, 1);
+    AMat4SecDefoSystem(5, 3) = coordinatesExtremeFibers(1, 0);
+    AMat4SecDefoSystem(5, 5) = 1.0;
+    opserr << "This is AMat4SecDefoSystem:" << AMat4SecDefoSystem << endln;
+
+    Matrix I = Matrix(6, 6);
+    I.Zero();
+    for (int i = 0; i < 6; i++)
+    {
+        I(i, i) = 1.0;
+    }
+    Matrix AMatInv = Matrix(6, 6);
+    AMatInv.Zero();
+    if (AMat4SecDefoSystem.Solve(I, AMatInv)<0)
+    {
+        opserr << "NDTestNonlocalFiberSection3d::getIndexExtremeFibers() -- could not invert matrix A\n";
+    }
+    opserr << "This is I:" << I << endln;
+    opserr << "This is AMatInv:" << AMatInv << endln;
+}
+
+Matrix &
+NDTestNonlocalFiberSection3d::getIncrementSectionDeformationsDecomposition()
+{       
+    // Infos of the two extreme fibers
+    int indexExtremeFib1 = indexExtremeFibers(0);
+    int indexExtremeFib2 = indexExtremeFibers(1);
+    NDMaterial* theMatExtremeFib1 = theMaterials[indexExtremeFib1];
+    NDMaterial* theMatExtremeFib2 = theMaterials[indexExtremeFib2];
+
+    // Take the strain increment decomposition in the two extremefibers
+    Matrix& strainIncrementDecompositionExtremeFib1 = theMatExtremeFib1->getStrainIncrementDecomposition();
+    Matrix& strainIncrementDecompositionExtremeFib2 = theMatExtremeFib2->getStrainIncrementDecomposition();
+    //opserr << "This is strainIncrementDecomposition" << strainIncrementDecompositionExtremeFib1 << endln;
+
+    //Fill the different vector and matrices needed to solve 
+    Vector allStrainE = Vector(6);
+    Vector allStrainP = Vector(6);
+    Vector allStrainPb = Vector(6);
+    for (int i = 0; i < 3; i++) // loop to go over strain component
+    {
+        allStrainE(i) = strainIncrementDecompositionExtremeFib1(i, 0);
+        allStrainE(i+3) = strainIncrementDecompositionExtremeFib2(i, 0);
+        allStrainP(i) = strainIncrementDecompositionExtremeFib1(i, 1);
+        allStrainP(i + 3) = strainIncrementDecompositionExtremeFib2(i, 1);
+        allStrainPb(i) = strainIncrementDecompositionExtremeFib1(i, 2);
+        allStrainPb(i + 3) = strainIncrementDecompositionExtremeFib2(i, 2);
+    }
+    
+    //Solve the system for each section deformation type
+    //Vector eE=m
+
+    // Solve the system to find section deformations
+    return coordinatesExtremeFibers;
 }
 
 void

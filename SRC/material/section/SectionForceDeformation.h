@@ -111,6 +111,8 @@ class SectionForceDeformation : public Material
   virtual const Vector &getTemperatureStress(const Vector &tData);//27 is for 'FireLoadPattern'
   //--- Adding Thermal Functions:[END]   by UoE OpenSees Group ----//
 
+  virtual Matrix& getIncrementSectionDeformationsDecomposition(); // added by Diego Heredia
+
   virtual const Vector& getThermalElong(void);
   virtual double getEnergy() const { return 0; };		//by SAJalali
 

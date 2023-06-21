@@ -519,3 +519,11 @@ const Vector& SectionForceDeformation::getThermalElong(void)
   errRes.resize(this->getStressResultant().Size());
   return errRes;
 }
+
+
+Matrix& SectionForceDeformation::getIncrementSectionDeformationsDecomposition() // added by Diego Heredia
+{
+    opserr << "SectionForceDeformation::getIncrementSectionDeformationsDecomposition: Only works with nonlocal element" << endln;
+    Matrix errMatrix(1, 1);
+    return errMatrix;
+}

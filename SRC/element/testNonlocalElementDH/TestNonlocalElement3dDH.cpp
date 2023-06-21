@@ -829,6 +829,9 @@ TestNonlocalElement3dDH::update(void)
 							return -1;
 						}
 
+						// Get the decomposition of increment section deformations
+						sections[i]->getIncrementSectionDeformationsDecomposition();
+
 						// get section resisting forces
 						srSubdivide[i] = sections[i]->getStressResultant();
 
