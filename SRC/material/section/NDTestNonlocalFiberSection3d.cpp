@@ -51,7 +51,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, Fib
     numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     alpha(a), sectionIntegr(0), e(6), s(0), ks(0),
-    parameterID(0), dedh(6), indexExtremeFibers(2), coordinatesExtremeFibers(2, 2), incrementSectionDeformationsDecomposition(6, 3), AMat4SecDefoSystem(6, 6)
+    parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef125(3, 3), AInvMat4SecDef346(3, 3), e4Output(6,3)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -119,7 +119,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, dou
     numFibers(0), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-    parameterID(0), dedh(6), indexExtremeFibers(2), coordinatesExtremeFibers(2,2), incrementSectionDeformationsDecomposition(6,3), AMat4SecDefoSystem(6, 6)
+    parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef125(3, 3), AInvMat4SecDef346(3, 3), e4Output(6, 3)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
@@ -170,7 +170,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, NDM
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-  parameterID(0), dedh(6), indexExtremeFibers(2), coordinatesExtremeFibers(2, 2), incrementSectionDeformationsDecomposition(6, 3), AMat4SecDefoSystem(6, 6)
+  parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef125(3, 3), AInvMat4SecDef346(3, 3), e4Output(6, 3)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -235,9 +235,6 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, NDM
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
 
-  indexExtremeFibers = Vector(2);
-  coordinatesExtremeFibers = Matrix(2, 2);
-  incrementSectionDeformationsDecomposition = Matrix(6, 3);
   getIndexExtremeFibers();
 }
 
@@ -247,7 +244,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d():
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   alpha(1.0), sectionIntegr(0), e(6), s(0), ks(0),
-  parameterID(0), dedh(6), indexExtremeFibers(2), coordinatesExtremeFibers(2, 2), incrementSectionDeformationsDecomposition(6, 3), AMat4SecDefoSystem(6, 6)
+  parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef125(3, 3), AInvMat4SecDef346(3, 3), e4Output(6, 3)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -265,7 +262,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d():
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
 
-  getIndexExtremeFibers();
+  //getIndexExtremeFibers();
 }
 
 int
@@ -371,6 +368,8 @@ int
 NDTestNonlocalFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 {
   int res = 0;
+
+  //opserr << "This is AInvMat4SecDef125" << AInvMat4SecDef125 << endln;
 
   e = deforms;
 
@@ -724,6 +723,12 @@ NDTestNonlocalFiberSection3d::getCopy(void)
     theCopy->sectionIntegr = sectionIntegr->getCopy();
   else
     theCopy->sectionIntegr = 0;
+
+  theCopy->indexExtremeFibers = indexExtremeFibers;
+  theCopy->coordinatesExtremeFibers = coordinatesExtremeFibers;
+  theCopy->AInvMat4SecDef125 = AInvMat4SecDef125;
+  theCopy->AInvMat4SecDef346 = AInvMat4SecDef346;
+  //theCopy->e4Output = e4Output;
 
   return theCopy;
 }
@@ -1224,91 +1229,177 @@ NDTestNonlocalFiberSection3d::getIndexExtremeFibers()
     double maxDistance = 0.;
     int index1 = 0;
     int index2 = 0;
+    int index3 = 0;
     for (int i = 0; i < numFibers; i++) {
         for (int j = i + 1; j < numFibers; j++) {
-            double dy = yLocs(i) - yLocs(j);
-            double dz = zLocs(i) - zLocs(j);
-            double d = sqrt(dy * dy + dz * dz);
-            if (d > maxDistance) {
-                maxDistance = d;
-                index1 = i;
-                index2 = j;
-                coordinatesExtremeFibers(0, 0) = yLocs(i) - yBar;
-                coordinatesExtremeFibers(0, 1) = zLocs(i) - zBar;
-                coordinatesExtremeFibers(1, 0) = yLocs(j) - yBar;
-                coordinatesExtremeFibers(1, 1) = zLocs(j) - zBar;
+            for (int k = j + 1; k < numFibers; k++) {
+                double dy12 = yLocs(i) - yLocs(j);
+                double dz12 = zLocs(i) - zLocs(j);
+                double d12 = sqrt(dy12 * dy12 + dz12 * dz12);
+                double dy13 = yLocs(i) - yLocs(k);
+                double dz13 = zLocs(i) - zLocs(k);
+                double d13 = sqrt(dy13 * dy13 + dz13 * dz13);
+                double dy23 = yLocs(j) - yLocs(k);
+                double dz23 = zLocs(j) - zLocs(k);
+                double d23 = sqrt(dy23 * dy23 + dz23 * dz23);
+                double dTot = d12 + d13 + d23;
+                if (dTot > maxDistance && (yLocs(j) * zLocs(i) - yLocs(i) * zLocs(j) + yLocs(i) * zLocs(k) - yLocs(k) * zLocs(i) - yLocs(j) * zLocs(k) + yLocs(k) * zLocs(j))!=0. && (zLocs(j)- zLocs(i))!=0.) {
+                    maxDistance = dTot;
+                    index1 = i;
+                    index2 = j;
+                    index3 = k;
+                    coordinatesExtremeFibers(0, 0) = yLocs(i) - yBar;
+                    coordinatesExtremeFibers(0, 1) = zLocs(i) - zBar;
+                    coordinatesExtremeFibers(1, 0) = yLocs(j) - yBar;
+                    coordinatesExtremeFibers(1, 1) = zLocs(j) - zBar;
+                    coordinatesExtremeFibers(2, 0) = yLocs(k) - yBar;
+                    coordinatesExtremeFibers(2, 1) = zLocs(k) - zBar;
+                }
             }
         }
     }
     //opserr << "These are the coordinates of extreme fibers:" << coordinatesExtremeFibers << endln; 
     indexExtremeFibers(0) = index1;
     indexExtremeFibers(1) = index2;
+    indexExtremeFibers(2) = index3;
 
-    AMat4SecDefoSystem(0, 0) = 1.0;
-    AMat4SecDefoSystem(0, 1) = -coordinatesExtremeFibers(0, 0);
-    AMat4SecDefoSystem(0, 4) = coordinatesExtremeFibers(0, 1);
-    AMat4SecDefoSystem(1, 2) = 1.0;
-    AMat4SecDefoSystem(1, 3) = -coordinatesExtremeFibers(0, 1);
-    AMat4SecDefoSystem(2, 3) = coordinatesExtremeFibers(0, 0);
-    AMat4SecDefoSystem(2, 5) = 1.0;
-    AMat4SecDefoSystem(3, 0) = 1.0;
-    AMat4SecDefoSystem(3, 1) = -coordinatesExtremeFibers(1, 0);
-    AMat4SecDefoSystem(3, 4) = coordinatesExtremeFibers(1, 1);
-    AMat4SecDefoSystem(4, 2) = 1.0;
-    AMat4SecDefoSystem(4, 3) = -coordinatesExtremeFibers(1, 1);
-    AMat4SecDefoSystem(5, 3) = coordinatesExtremeFibers(1, 0);
-    AMat4SecDefoSystem(5, 5) = 1.0;
-    opserr << "This is AMat4SecDefoSystem:" << AMat4SecDefoSystem << endln;
+    Matrix AMat4SecDef125 = Matrix(3, 3);
+    Matrix AMat4SecDef346 = Matrix(3, 3);
+   AMat4SecDef125(0, 0) = 1.0;
+   AMat4SecDef125(0, 1) = -coordinatesExtremeFibers(0, 0);
+   AMat4SecDef125(0, 2) = coordinatesExtremeFibers(0, 1);
+   AMat4SecDef125(1, 0) = 1.0;
+   AMat4SecDef125(1, 1) = -coordinatesExtremeFibers(1, 0);
+   AMat4SecDef125(1, 2) = coordinatesExtremeFibers(1, 1);
+   AMat4SecDef125(2, 0) = 1.0;
+   AMat4SecDef125(2, 1) = -coordinatesExtremeFibers(2, 0);
+   AMat4SecDef125(2, 2) = coordinatesExtremeFibers(2, 1);
 
-    Matrix I = Matrix(6, 6);
+    AMat4SecDef346(0, 0) = 1.0;
+    AMat4SecDef346(0, 1) = -coordinatesExtremeFibers(0, 1);
+    AMat4SecDef346(1, 1) = coordinatesExtremeFibers(0, 0);
+    AMat4SecDef346(1, 2) = 1.0;
+    AMat4SecDef346(2, 0) = 1.0;
+    AMat4SecDef346(2, 1) = -coordinatesExtremeFibers(1, 1);
+
+    //opserr << "This is AMat4SecDef125:" << AMat4SecDef125 << endln;
+    //opserr << "This is AMat4SecDef346:" << AMat4SecDef346 << endln;
+
+    Matrix I = Matrix(3, 3);
     I.Zero();
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 3; i++)
     {
         I(i, i) = 1.0;
     }
-    Matrix AMatInv = Matrix(6, 6);
-    AMatInv.Zero();
-    if (AMat4SecDefoSystem.Solve(I, AMatInv)<0)
+
+    if (AMat4SecDef125.Solve(I, AInvMat4SecDef125)<0)
     {
-        opserr << "NDTestNonlocalFiberSection3d::getIndexExtremeFibers() -- could not invert matrix A\n";
+        opserr << "NDTestNonlocalFiberSection3d::getIndexExtremeFibers() -- could not invert matrix A125\n";
+        opserr << "This is AMat4SecDef125:" << AMat4SecDef125 << endln;
     }
-    opserr << "This is I:" << I << endln;
-    opserr << "This is AMatInv:" << AMatInv << endln;
+    if (AMat4SecDef346.Solve(I, AInvMat4SecDef346) < 0)
+    {
+        opserr << "NDTestNonlocalFiberSection3d::getIndexExtremeFibers() -- could not invert matrix A346\n";
+        opserr << "This is AMat4SecDef346:" << AMat4SecDef346 << endln;
+    }
+    //opserr << "This is AInvMat4SecDef125:" << AInvMat4SecDef125 << endln;
+    //opserr << "This is AInvMat4SecDef346:" << AInvMat4SecDef346 << endln;
 }
 
 Matrix &
 NDTestNonlocalFiberSection3d::getIncrementSectionDeformationsDecomposition()
 {       
-    // Infos of the two extreme fibers
+    // Infos of the three extreme fibers
     int indexExtremeFib1 = indexExtremeFibers(0);
     int indexExtremeFib2 = indexExtremeFibers(1);
+    int indexExtremeFib3 = indexExtremeFibers(2);
     NDMaterial* theMatExtremeFib1 = theMaterials[indexExtremeFib1];
     NDMaterial* theMatExtremeFib2 = theMaterials[indexExtremeFib2];
+    NDMaterial* theMatExtremeFib3 = theMaterials[indexExtremeFib3];
 
     // Take the strain increment decomposition in the two extremefibers
     Matrix& strainIncrementDecompositionExtremeFib1 = theMatExtremeFib1->getStrainIncrementDecomposition();
     Matrix& strainIncrementDecompositionExtremeFib2 = theMatExtremeFib2->getStrainIncrementDecomposition();
+    Matrix& strainIncrementDecompositionExtremeFib3 = theMatExtremeFib3->getStrainIncrementDecomposition();
     //opserr << "This is strainIncrementDecomposition" << strainIncrementDecompositionExtremeFib1 << endln;
 
     //Fill the different vector and matrices needed to solve 
-    Vector allStrainE = Vector(6);
-    Vector allStrainP = Vector(6);
-    Vector allStrainPb = Vector(6);
-    for (int i = 0; i < 3; i++) // loop to go over strain component
-    {
-        allStrainE(i) = strainIncrementDecompositionExtremeFib1(i, 0);
-        allStrainE(i+3) = strainIncrementDecompositionExtremeFib2(i, 0);
-        allStrainP(i) = strainIncrementDecompositionExtremeFib1(i, 1);
-        allStrainP(i + 3) = strainIncrementDecompositionExtremeFib2(i, 1);
-        allStrainPb(i) = strainIncrementDecompositionExtremeFib1(i, 2);
-        allStrainPb(i + 3) = strainIncrementDecompositionExtremeFib2(i, 2);
-    }
+    Vector allStrainAxialE = Vector(3);
+    Vector allStrainShearE = Vector(3);
+    Vector allStrainAxialP = Vector(3);
+    Vector allStrainShearP = Vector(3);
+    Vector allStrainAxialPb = Vector(3);
+    Vector allStrainShearPb = Vector(3);
+    //Column for elastic strains
+    allStrainAxialE(0) = strainIncrementDecompositionExtremeFib1(0, 0);
+    allStrainAxialE(1) = strainIncrementDecompositionExtremeFib2(0, 0);
+    allStrainAxialE(2) = strainIncrementDecompositionExtremeFib3(0, 0);
+    allStrainShearE(0) = strainIncrementDecompositionExtremeFib1(1, 0);
+    allStrainShearE(1) = strainIncrementDecompositionExtremeFib1(2, 0);
+    allStrainShearE(2) = strainIncrementDecompositionExtremeFib2(1, 0);
+    //Column for plastic strains
+    allStrainAxialP(0) = strainIncrementDecompositionExtremeFib1(0, 1);
+    allStrainAxialP(1) = strainIncrementDecompositionExtremeFib2(0, 1);
+    allStrainAxialP(2) = strainIncrementDecompositionExtremeFib3(0, 1);
+    allStrainShearP(0) = strainIncrementDecompositionExtremeFib1(1, 1);
+    allStrainShearP(1) = strainIncrementDecompositionExtremeFib1(2, 1);
+    allStrainShearP(2) = strainIncrementDecompositionExtremeFib2(1, 1);
+    //Column for post-buckling strains
+    allStrainAxialPb(0) = strainIncrementDecompositionExtremeFib1(0, 2);
+    allStrainAxialPb(1) = strainIncrementDecompositionExtremeFib2(0, 2);
+    allStrainAxialPb(2) = strainIncrementDecompositionExtremeFib3(0, 2);
+    allStrainShearPb(0) = strainIncrementDecompositionExtremeFib1(1, 2);
+    allStrainShearPb(1) = strainIncrementDecompositionExtremeFib1(2, 2);
+    allStrainShearPb(2) = strainIncrementDecompositionExtremeFib2(1, 2);
     
-    //Solve the system for each section deformation type
-    //Vector eE=m
+    //Solve the system for each section deformation type axial or shear
+    Vector e125E = AInvMat4SecDef125 * allStrainAxialE;
+    Vector e346E = AInvMat4SecDef346 * allStrainShearE;
+    Vector e125P = AInvMat4SecDef125 * allStrainAxialP;
+    Vector e346P = AInvMat4SecDef346 * allStrainShearP;
+    Vector e125Pb = AInvMat4SecDef125 * allStrainAxialPb;
+    Vector e346Pb = AInvMat4SecDef346 * allStrainShearPb;
 
-    // Solve the system to find section deformations
-    return coordinatesExtremeFibers;
+    //opserr << "This is AInvMat4SecDef125" << AInvMat4SecDef125 << endln;
+
+    // Intermediate vectors before filling output matrix
+    Vector e123456E = Vector(6);
+    Vector e123456P = Vector(6);
+    Vector e123456Pb = Vector(6);
+    //Elastic part
+    e123456E(0) = e125E(0);
+    e123456E(1) = e125E(1);
+    e123456E(2) = e346E(0);
+    e123456E(3) = e346E(1);
+    e123456E(4) = e125E(2);
+    e123456E(5) = e346E(2);
+    //Plastic part
+    e123456P(0) = e125P(0);
+    e123456P(1) = e125P(1);
+    e123456P(2) = e346P(0);
+    e123456P(3) = e346P(1);
+    e123456P(4) = e125P(2);
+    e123456P(5) = e346P(2);
+    //Post-buckling part
+    e123456Pb(0) = e125Pb(0);
+    e123456Pb(1) = e125Pb(1);
+    e123456Pb(2) = e346Pb(0);
+    e123456Pb(3) = e346Pb(1);
+    e123456Pb(4) = e125Pb(2);
+    e123456Pb(5) = e346Pb(2);
+
+    // Fill the output matrix
+    //Matrix e4Output = Matrix(6, 3);
+    for (int i = 0; i < 6; i++)
+    {
+        e4Output(i, 0) = e123456E(i);
+        e4Output(i, 1) = e123456P(i);
+        e4Output(i, 2) = e123456Pb(i);
+    }
+
+    //opserr << "This is sectionDeformationIncrementDecomposition" << e4Output << endln;
+
+    return e4Output;
 }
 
 void
