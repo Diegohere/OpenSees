@@ -97,7 +97,8 @@ private:
 	void computeMatrixH(Matrix& H);
 	void computeMatrixH_inv(Matrix H, Matrix& H_inv);
 
-	void computeEu_nonlocal(int numSections, Matrix& eu_nonlocal, Matrix H_inv, Matrix eu_local);
+	void computeDEPbNonlocalAll();
+	void updateIncrementTotalSectionDeformWithNonlocalPb();
 
 
 /* ----------------------------------------------------------------------------- */
@@ -157,9 +158,16 @@ private:
 	// following are added for subdivision of displacement increment
 	int    maxSubdivisions;       // maximum number of subdivisons of dv for local iterations
 
-	static Vector eTotSubdivide[];
+	static Vector eTotSubdivide[]; // value for index j
+	static Vector eTotPreviousSubdivide[]; // value for index j-1
 	static Vector srSubdivide[];
 	static Matrix FSectionSubdivide[];
+	static Matrix sectionDeformIncrDecompSubdivide[];
+	static Vector sSubdivide[];
+	static Vector deltaETotSubdivide[];
+	static Vector euSubdivide[];
+
+	Matrix dEPbNonlocalAll;
 
 	bool isTorsion;
 

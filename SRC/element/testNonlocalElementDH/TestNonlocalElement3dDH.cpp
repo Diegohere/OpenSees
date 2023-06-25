@@ -37,6 +37,12 @@ Vector TestNonlocalElement3dDH::eTotSubdivide[maxNumSections];
 Matrix TestNonlocalElement3dDH::FSectionSubdivide[maxNumSections];
 Vector TestNonlocalElement3dDH::srSubdivide[maxNumSections];
 
+Matrix TestNonlocalElement3dDH::sectionDeformIncrDecompSubdivide[maxNumSections];
+Vector TestNonlocalElement3dDH::sSubdivide[maxNumSections];
+Vector TestNonlocalElement3dDH::deltaETotSubdivide[maxNumSections];
+Vector TestNonlocalElement3dDH::euSubdivide[maxNumSections];
+Vector TestNonlocalElement3dDH::eTotPreviousSubdivide[maxNumSections];
+
 // Method to read the command arguments
 void* OPS_TestNonlocalElement3dDH()
 {
@@ -115,7 +121,7 @@ maxIters(0), Tol(0), lc(0), initialFlag(0),
 Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
 FSection(0), eTot(0), sr(0), eTotCommit(0),
 numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
-KelementInitial(0), isTorsion(false)
+KelementInitial(0), dEPbNonlocalAll(NEBD, 10), isTorsion(false)
 // complete
 {
 	// Set Node Pointers to 0
@@ -133,7 +139,7 @@ TestNonlocalElement3dDH::TestNonlocalElement3dDH(int tag, int nodeI, int nodeJ, 
 	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(6* numSec,6* numSec), H_inv(6 * numSec, 6 * numSec),
 	FSection(0), eTot(0), sr(0), eTotCommit(0), 
 	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
-	KelementInitial(0), isTorsion(false)
+	KelementInitial(0), dEPbNonlocalAll(NEBD,numSec), isTorsion(false)
 	// complete
 {
 	// Pointers to Nodes and Their IDs
@@ -506,6 +512,12 @@ TestNonlocalElement3dDH::initializeSectionHistoryVariables(void)
 		eTot[i] = Vector(order);
 		sr[i] = Vector(order);
 		eTotCommit[i] = Vector(order);
+
+		sectionDeformIncrDecompSubdivide[i] = Matrix(order, 3);
+		sSubdivide[i] = Vector(order);
+		deltaETotSubdivide[i] = Vector(order);
+		euSubdivide[i] = Vector(order);
+		eTotPreviousSubdivide[i] = Vector(order);
 	}
 }
 
@@ -586,10 +598,8 @@ TestNonlocalElement3dDH::update(void)
 	Vector deltaETot_isec(NEBD);
 	Vector eu_isec(NEBD);
 
-	Matrix deltaETot_All(NEBD, numSections);
-	Matrix eu_All(NEBD, numSections);
-	deltaETot_All.Zero();
-	eu_All.Zero();
+	/*Matrix eu_All(NEBD, numSections);
+	eu_All.Zero();*/
 
 	//Determination of matrix H
 	H.Zero();
@@ -694,10 +704,9 @@ TestNonlocalElement3dDH::update(void)
 						Fb.Zero();
 						deltaETot_isec.Zero();
 
-
 						double xL = xi[i];
 						double xL1 = xL - 1.0;
-						double wtL = wt[i] * L;
+						//double wtL = wt[i] * L;
 
 						// calculate total section forces s = b*q + bp*currDistrLoad;
 						int ii;
@@ -729,6 +738,9 @@ TestNonlocalElement3dDH::update(void)
 						// Add the effects of element loads, if present s = b*q + sp
 						if (numEleLoads > 0)
 							this->computeSectionForces(s_seci, i);
+
+						// Store s_seci to sSubdivide
+						sSubdivide[i] = s_seci;
 
 						//// ds = s - sr[i];
 						//ds = s_seci;
@@ -796,13 +808,19 @@ TestNonlocalElement3dDH::update(void)
 						}
 
 						// Add unbalanced section deformation
-						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++) {
+						/*for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++) {
 							deltaETot_isec(iiLineComponent) += eu_All(iiLineComponent, i);
-						}
+						}*/
+						eu_isec = euSubdivide[i];
+						deltaETot_isec += eu_isec;
+
+						//Fill the array with all increment total section deformations
+						deltaETotSubdivide[i] = deltaETot_isec;
 
 						// Update total section deformations
 						if (initialFlag != 0)
-							eTotSubdivide[i] += deltaETot_isec;
+							//eTotSubdivide[i] += deltaETotSubdivide[i];
+							eTotSubdivide[i] = eTotPreviousSubdivide[i] + deltaETotSubdivide[i];
 						/*opserr << "This is ds:" << ds << endln;
 						opserr << "This is deltaETot_isec:" << deltaETot_isec << endln;
 						opserr << "This is eTotSubdivide:" << eTotSubdivide[i] << endln;
@@ -825,14 +843,36 @@ TestNonlocalElement3dDH::update(void)
 						if (sections[i]->setTrialSectionDeformation(eTotSubdivide[i]) < 0)
 						{
 							opserr << "TestNonlocalElement3dDH::update() - section failed in setTrial\n";
-							opserr << "This is section: " << i+1 << endln;
+							opserr << "This is section: " << i + 1 << endln;
 							return -1;
 						}
 
 						// Get the decomposition of increment section deformations
-						Matrix& TestGetIncrementSectionDeformationsDecomposition = Matrix(6, 3);
-						TestGetIncrementSectionDeformationsDecomposition = sections[i]->getIncrementSectionDeformationsDecomposition();
-						//opserr << "This is TestGetIncrementSectionDeformationsDecomposition:  " << TestGetIncrementSectionDeformationsDecomposition << endln;
+						sectionDeformIncrDecompSubdivide[i] = sections[i]->getIncrementSectionDeformationsDecomposition();
+						//opserr << "This is sectionDeformIncrDecompSubdivide[i]:  " << sectionDeformIncrDecompSubdivide[i] << endln;
+
+						//// Little test
+						//opserr << "This is deltaETotSubdivide[i](0): " << deltaETotSubdivide[i](0) << endln;
+						//opserr << "This is deltaETotSubdivide[i](0): " << deltaETot_isec(0) << endln;
+
+					}
+
+					// Compute nonlocal increment in post-buckling section deformations
+					computeDEPbNonlocalAll();
+
+					// Update total increment in section deformations
+					updateIncrementTotalSectionDeformWithNonlocalPb();
+
+					// Update total section deformations
+					// STOPPED HERE 25.06.2023
+
+					for (i = 0; i < numSections; i++)
+					{
+						int order = sections[i]->getOrder();
+						const ID& code = sections[i]->getType();
+						double xL = xi[i];
+						double xL1 = xL - 1.0;
+						double wtL = wt[i] * L;
 
 						// get section resisting forces
 						srSubdivide[i] = sections[i]->getStressResultant();
@@ -841,24 +881,27 @@ TestNonlocalElement3dDH::update(void)
 						FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 
 						// calculate section residual deformations de = FSection * (s - sr);
-						su = s_seci;  //take the corresponding section force from matrix with all section forces
+						//su = s_seci;  //take the corresponding section force from matrix with all section forces
+						su = sSubdivide[i];  //take the corresponding section force from matrix with all section forces
 						su.addVector(1.0, srSubdivide[i], -1.0);  // ds = s - sr[i];
-						/*opserr << "This is s_seci: " << s_seci << endln;
-						opserr << "This is srSubdivide[i]: " << srSubdivide[i] << endln;
-						opserr << "This is su: " << su << endln;*/
+						//opserr << "this is s_seci: " << sSubdivide[i] << endln;
+						/*opserr << "this is srsubdivide[i]: " << srsubdivide[i] << endln;
+						opserr << "this is su: " << su << endln;*/
 
 						//compute eu_local for section i
 						eu_isec.addMatrixVector(0.0, FSectionSubdivide[i], su, 1.0);
 						// Add to matrix with all sections
-						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
+						/*for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
 						{
 							eu_All(iiLineComponent, i) = eu_isec(iiLineComponent);
-						}
+						}*/
+						euSubdivide[i] = eu_isec;
 						//opserr << "This is eu_isec: " << eu_isec << endln;
 
 						//This is from local formulation
 						//integrate element flexibility matrix f = f + (b^ fs * b) * wtL;
 
+						int ii;
 						int jj;
 						const Matrix& FSec = FSectionSubdivide[i];
 						Fb.Zero();
@@ -1052,6 +1095,11 @@ TestNonlocalElement3dDH::update(void)
 							dvTrial /= factor;
 							numSubdivide++;
 						}
+					}
+					// Update eTot from index j-1 to index j
+					for (int i = 0; i < numSections; i++)
+					{
+						eTotPreviousSubdivide[i] = eTotSubdivide[i];
 					}
 				}// for (j=0; j<numIters; j++)
 			}// if (initialFlag != 2)
@@ -1906,6 +1954,60 @@ TestNonlocalElement3dDH::computeMatrixH_inv(Matrix H, Matrix& H_inv)
 		opserr << "TestNonlocalElement3dDH::update() -- could not invert matrix H\n";
 }
 
+//Method to compute computeDEPbNonlocalAll
+void
+TestNonlocalElement3dDH::computeDEPbNonlocalAll()
+{
+	Vector dEPbLocalAll_Vector = Vector(NEBD * numSections);
+	Vector dEPbNonlocalAll_Vector = Vector(NEBD * numSections);
+	Matrix sectionDeformIncrDecomp = Matrix(NEBD, 3);
+
+	// Fill the vector with all the local section deformations
+	for (int i = 0; i < numSections; i++)
+	{
+		sectionDeformIncrDecomp = sectionDeformIncrDecompSubdivide[i];
+		for (int j = 0; j < NEBD; j++)
+		{
+			dEPbLocalAll_Vector(i * NEBD + j) = sectionDeformIncrDecomp(j, 2);
+		}
+	}
+	//opserr << "This is dEPbLocalAll_Vector:" << dEPbLocalAll_Vector << endln;
+
+	// Compute the vector with all the nonlocal section deformations
+	dEPbNonlocalAll_Vector = H_inv * dEPbLocalAll_Vector;
+	//opserr << "This is dEPbNonlocalAll_Vector:" << dEPbNonlocalAll_Vector << endln;
+
+	//Fill the matrix eu_nonlocal
+	for (int i = 0; i < numSections; i++)
+	{
+		for (int j = 0; j < NEBD; j++)
+		{
+			dEPbNonlocalAll(j, i) = dEPbLocalAll_Vector(i * NEBD + j);
+		}
+	}
+	//opserr << "This is dEPbNonlocalAll:" << dEPbNonlocalAll << endln;
+}
+
+// Method to update the increment in total section deformations with nonlocal Pb component
+void
+TestNonlocalElement3dDH::updateIncrementTotalSectionDeformWithNonlocalPb()
+{
+	//Matrix oldEIncrementTotalSectionDeform = Matrix(NEBD, 3);
+	//Matrix newEIncrementTotalSectionDeform = Matrix(NEBD, 3);
+	for (int i = 0; i < numSections; i++)
+	{
+		//oldEIncrementTotalSectionDeform = sectionDeformIncrDecompSubdivide[i]; // Take the matrix corresponding to section i
+		//newEIncrementTotalSectionDeform = oldEIncrementTotalSectionDeform; // Start by equating new and old matrix
+		for (int j = 0; j < NEBD; j++)
+		{
+			//newEIncrementTotalSectionDeform(j, 2) = dEPbNonlocalAll(j, 2); // Update third column with nonlocal post-buckling increment section deformations
+			sectionDeformIncrDecompSubdivide[i](j, 2) = dEPbNonlocalAll(j, 2);
+		}
+		//sectionDeformIncrDecompSubdivide[i] = newEIncrementTotalSectionDeform; // Update matrix containing the results
+	}
+
+}
+
 ////Method to compute e_local[]
 //void
 //TestNonlocalElement3dDH::computeE_local(int numSections, Vector eNonLocalSubdivide[], Matrix H, Matrix& e_local_tot)
@@ -1946,36 +2048,4 @@ TestNonlocalElement3dDH::computeMatrixH_inv(Matrix H, Matrix& H_inv)
 //
 //	/*opserr << "This is e_local_tot:" << e_local_tot << endln;
 //	double test = 0.;*/
-//}
-
-////Method to compute eu_nonlocal_Tot
-//void
-//TestNonlocalElement3dDH::computeEu_nonlocal(int numSections, Matrix& eu_nonlocal, Matrix H_inv, Matrix eu_local)
-//{
-//	eu_nonlocal.Zero();
-//
-//	Vector euLocal_MatrixFormALLSections = Vector(NEBD * numSections);
-//	Vector euNonLocal_MatrixFormALLSections = Vector(NEBD * numSections);
-//
-//
-//	// Fill the vector with all the local section deformations
-//	for (int i = 0; i < numSections; i++)
-//	{
-//		for (int j = 0; j < NEBD; j++)
-//		{
-//			euLocal_MatrixFormALLSections(i * NEBD + j) = eu_local(j, i);
-//		}
-//	}
-//
-//	// Compute the vector with all the nonlocal section deformations
-//	euNonLocal_MatrixFormALLSections = H_inv * euLocal_MatrixFormALLSections;
-//
-//	//Fill the matrix eu_nonlocal
-//	for (int i = 0; i < numSections; i++)
-//	{
-//		for (int j = 0; j < NEBD; j++)
-//		{
-//			eu_nonlocal(j, i) = euNonLocal_MatrixFormALLSections(i * NEBD + j);
-//		}
-//	}
 //}
