@@ -165,9 +165,12 @@ private:
 	static Matrix sectionDeformIncrDecompSubdivide[];
 	static Vector sSubdivide[];
 	static Vector deltaETotSubdivide[];
+	static Vector deltaETotPreviousSubdivide[]; // value for index i-1 (loop for equilibrium of increment total section deformation)
 	static Vector euSubdivide[];
 
+	Matrix dEPbLocalAll;
 	Matrix dEPbNonlocalAll;
+	double dDeltaETot;
 
 	bool isTorsion;
 

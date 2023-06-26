@@ -94,8 +94,8 @@ class NDTestNonlocalFiberSection3d : public SectionForceDeformation
     Vector indexExtremeFibers;
     Matrix coordinatesExtremeFibers;
     //Matrix incrementSectionDeformationsDecomposition;
-    Matrix AInvMat4SecDef125;
-    Matrix AInvMat4SecDef346;
+    Matrix AInvMat4SecDef123;
+    Matrix AInvMat4SecDef456;
     Matrix e4Output;
 
 // AddingSensitivity:BEGIN //////////////////////////////////////////

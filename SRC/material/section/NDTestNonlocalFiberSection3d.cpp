@@ -51,7 +51,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, Fib
     numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     alpha(a), sectionIntegr(0), e(6), s(0), ks(0),
-    parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef125(3, 3), AInvMat4SecDef346(3, 3), e4Output(6,3)
+    parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef123(3, 3), AInvMat4SecDef456(3, 3), e4Output(6,3)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -119,7 +119,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, dou
     numFibers(0), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-    parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef125(3, 3), AInvMat4SecDef346(3, 3), e4Output(6, 3)
+    parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef123(3, 3), AInvMat4SecDef456(3, 3), e4Output(6, 3)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
@@ -170,7 +170,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d(int tag, int num, NDM
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-  parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef125(3, 3), AInvMat4SecDef346(3, 3), e4Output(6, 3)
+  parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef123(3, 3), AInvMat4SecDef456(3, 3), e4Output(6, 3)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -244,7 +244,7 @@ NDTestNonlocalFiberSection3d::NDTestNonlocalFiberSection3d():
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   alpha(1.0), sectionIntegr(0), e(6), s(0), ks(0),
-  parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef125(3, 3), AInvMat4SecDef346(3, 3), e4Output(6, 3)
+  parameterID(0), dedh(6), indexExtremeFibers(3), coordinatesExtremeFibers(3, 2), AInvMat4SecDef123(3, 3), AInvMat4SecDef456(3, 3), e4Output(6, 3)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -726,8 +726,8 @@ NDTestNonlocalFiberSection3d::getCopy(void)
 
   theCopy->indexExtremeFibers = indexExtremeFibers;
   theCopy->coordinatesExtremeFibers = coordinatesExtremeFibers;
-  theCopy->AInvMat4SecDef125 = AInvMat4SecDef125;
-  theCopy->AInvMat4SecDef346 = AInvMat4SecDef346;
+  theCopy->AInvMat4SecDef123 = AInvMat4SecDef123;
+  theCopy->AInvMat4SecDef456 = AInvMat4SecDef456;
   //theCopy->e4Output = e4Output;
 
   return theCopy;
@@ -1263,27 +1263,28 @@ NDTestNonlocalFiberSection3d::getIndexExtremeFibers()
     indexExtremeFibers(1) = index2;
     indexExtremeFibers(2) = index3;
 
-    Matrix AMat4SecDef125 = Matrix(3, 3);
-    Matrix AMat4SecDef346 = Matrix(3, 3);
-   AMat4SecDef125(0, 0) = 1.0;
-   AMat4SecDef125(0, 1) = -coordinatesExtremeFibers(0, 0);
-   AMat4SecDef125(0, 2) = coordinatesExtremeFibers(0, 1);
-   AMat4SecDef125(1, 0) = 1.0;
-   AMat4SecDef125(1, 1) = -coordinatesExtremeFibers(1, 0);
-   AMat4SecDef125(1, 2) = coordinatesExtremeFibers(1, 1);
-   AMat4SecDef125(2, 0) = 1.0;
-   AMat4SecDef125(2, 1) = -coordinatesExtremeFibers(2, 0);
-   AMat4SecDef125(2, 2) = coordinatesExtremeFibers(2, 1);
+    //Matrix As based on Opensees definition (see near top)
+    Matrix AMat4SecDef123 = Matrix(3, 3);
+    Matrix AMat4SecDef456 = Matrix(3, 3);
+   AMat4SecDef123(0, 0) = 1.0;
+   AMat4SecDef123(0, 1) = -coordinatesExtremeFibers(0, 0);
+   AMat4SecDef123(0, 2) = coordinatesExtremeFibers(0, 1);
+   AMat4SecDef123(1, 0) = 1.0;
+   AMat4SecDef123(1, 1) = -coordinatesExtremeFibers(1, 0);
+   AMat4SecDef123(1, 2) = coordinatesExtremeFibers(1, 1);
+   AMat4SecDef123(2, 0) = 1.0;
+   AMat4SecDef123(2, 1) = -coordinatesExtremeFibers(2, 0);
+   AMat4SecDef123(2, 2) = coordinatesExtremeFibers(2, 1);
 
-    AMat4SecDef346(0, 0) = 1.0;
-    AMat4SecDef346(0, 1) = -coordinatesExtremeFibers(0, 1);
-    AMat4SecDef346(1, 1) = coordinatesExtremeFibers(0, 0);
-    AMat4SecDef346(1, 2) = 1.0;
-    AMat4SecDef346(2, 0) = 1.0;
-    AMat4SecDef346(2, 1) = -coordinatesExtremeFibers(1, 1);
+    AMat4SecDef456(0, 0) = 1.0;
+    AMat4SecDef456(0, 2) = -coordinatesExtremeFibers(0, 1);
+    AMat4SecDef456(1, 1) = 1.0;
+    AMat4SecDef456(1, 2) = coordinatesExtremeFibers(0, 0);
+    AMat4SecDef456(2, 0) = 1.0;
+    AMat4SecDef456(2, 2) = -coordinatesExtremeFibers(1, 1);
 
-    //opserr << "This is AMat4SecDef125:" << AMat4SecDef125 << endln;
-    //opserr << "This is AMat4SecDef346:" << AMat4SecDef346 << endln;
+    //opserr << "This is AMat4SecDef123:" << AMat4SecDef123 << endln;
+    //opserr << "This is AMat4SecDef456:" << AMat4SecDef456 << endln;
 
     Matrix I = Matrix(3, 3);
     I.Zero();
@@ -1292,15 +1293,15 @@ NDTestNonlocalFiberSection3d::getIndexExtremeFibers()
         I(i, i) = 1.0;
     }
 
-    if (AMat4SecDef125.Solve(I, AInvMat4SecDef125)<0)
+    if (AMat4SecDef123.Solve(I, AInvMat4SecDef123)<0)
     {
-        opserr << "NDTestNonlocalFiberSection3d::getIndexExtremeFibers() -- could not invert matrix A125\n";
-        opserr << "This is AMat4SecDef125:" << AMat4SecDef125 << endln;
+        opserr << "NDTestNonlocalFiberSection3d::getIndexExtremeFibers() -- could not invert matrix A123\n";
+        opserr << "This is AMat4SecDef123:" << AMat4SecDef123 << endln;
     }
-    if (AMat4SecDef346.Solve(I, AInvMat4SecDef346) < 0)
+    if (AMat4SecDef456.Solve(I, AInvMat4SecDef456) < 0)
     {
-        opserr << "NDTestNonlocalFiberSection3d::getIndexExtremeFibers() -- could not invert matrix A346\n";
-        opserr << "This is AMat4SecDef346:" << AMat4SecDef346 << endln;
+        opserr << "NDTestNonlocalFiberSection3d::getIndexExtremeFibers() -- could not invert matrix A456\n";
+        opserr << "This is AMat4SecDef456:" << AMat4SecDef456 << endln;
     }
     //opserr << "This is AInvMat4SecDef125:" << AInvMat4SecDef125 << endln;
     //opserr << "This is AInvMat4SecDef346:" << AInvMat4SecDef346 << endln;
@@ -1353,12 +1354,12 @@ NDTestNonlocalFiberSection3d::getIncrementSectionDeformationsDecomposition()
     allStrainShearPb(2) = strainIncrementDecompositionExtremeFib2(1, 2);
     
     //Solve the system for each section deformation type axial or shear
-    Vector e125E = AInvMat4SecDef125 * allStrainAxialE;
-    Vector e346E = AInvMat4SecDef346 * allStrainShearE;
-    Vector e125P = AInvMat4SecDef125 * allStrainAxialP;
-    Vector e346P = AInvMat4SecDef346 * allStrainShearP;
-    Vector e125Pb = AInvMat4SecDef125 * allStrainAxialPb;
-    Vector e346Pb = AInvMat4SecDef346 * allStrainShearPb;
+    Vector e123E = AInvMat4SecDef123 * allStrainAxialE;
+    Vector e456E = AInvMat4SecDef456 * allStrainShearE;
+    Vector e123P = AInvMat4SecDef123 * allStrainAxialP;
+    Vector e456P = AInvMat4SecDef456 * allStrainShearP;
+    Vector e123Pb = AInvMat4SecDef123 * allStrainAxialPb;
+    Vector e456Pb = AInvMat4SecDef456 * allStrainShearPb;
 
     //opserr << "This is AInvMat4SecDef125" << AInvMat4SecDef125 << endln;
 
@@ -1367,26 +1368,26 @@ NDTestNonlocalFiberSection3d::getIncrementSectionDeformationsDecomposition()
     Vector e123456P = Vector(6);
     Vector e123456Pb = Vector(6);
     //Elastic part
-    e123456E(0) = e125E(0);
-    e123456E(1) = e125E(1);
-    e123456E(2) = e346E(0);
-    e123456E(3) = e346E(1);
-    e123456E(4) = e125E(2);
-    e123456E(5) = e346E(2);
+    e123456E(0) = e123E(0);
+    e123456E(1) = e123E(1);
+    e123456E(2) = e123E(2);
+    e123456E(3) = e456E(0);
+    e123456E(4) = e456E(1);
+    e123456E(5) = e456E(2);
     //Plastic part
-    e123456P(0) = e125P(0);
-    e123456P(1) = e125P(1);
-    e123456P(2) = e346P(0);
-    e123456P(3) = e346P(1);
-    e123456P(4) = e125P(2);
-    e123456P(5) = e346P(2);
+    e123456P(0) = e123P(0);
+    e123456P(1) = e123P(1);
+    e123456P(2) = e123P(2);
+    e123456P(3) = e456P(0);
+    e123456P(4) = e456P(1);
+    e123456P(5) = e456P(2);
     //Post-buckling part
-    e123456Pb(0) = e125Pb(0);
-    e123456Pb(1) = e125Pb(1);
-    e123456Pb(2) = e346Pb(0);
-    e123456Pb(3) = e346Pb(1);
-    e123456Pb(4) = e125Pb(2);
-    e123456Pb(5) = e346Pb(2);
+    e123456Pb(0) = e123Pb(0);
+    e123456Pb(1) = e123Pb(1);
+    e123456Pb(2) = e123Pb(2);
+    e123456Pb(3) = e456Pb(0);
+    e123456Pb(4) = e456Pb(1);
+    e123456Pb(5) = e456Pb(2);
 
     // Fill the output matrix
     //Matrix e4Output = Matrix(6, 3);

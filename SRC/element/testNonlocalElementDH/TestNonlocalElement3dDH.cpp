@@ -42,6 +42,7 @@ Vector TestNonlocalElement3dDH::sSubdivide[maxNumSections];
 Vector TestNonlocalElement3dDH::deltaETotSubdivide[maxNumSections];
 Vector TestNonlocalElement3dDH::euSubdivide[maxNumSections];
 Vector TestNonlocalElement3dDH::eTotPreviousSubdivide[maxNumSections];
+Vector TestNonlocalElement3dDH::deltaETotPreviousSubdivide[maxNumSections];
 
 // Method to read the command arguments
 void* OPS_TestNonlocalElement3dDH()
@@ -121,7 +122,7 @@ maxIters(0), Tol(0), lc(0), initialFlag(0),
 Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
 FSection(0), eTot(0), sr(0), eTotCommit(0),
 numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
-KelementInitial(0), dEPbNonlocalAll(NEBD, 10), isTorsion(false)
+KelementInitial(0), dEPbLocalAll(NEBD, 10), dEPbNonlocalAll(NEBD, 10), dDeltaETot(0), isTorsion(false)
 // complete
 {
 	// Set Node Pointers to 0
@@ -139,7 +140,7 @@ TestNonlocalElement3dDH::TestNonlocalElement3dDH(int tag, int nodeI, int nodeJ, 
 	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(6* numSec,6* numSec), H_inv(6 * numSec, 6 * numSec),
 	FSection(0), eTot(0), sr(0), eTotCommit(0), 
 	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
-	KelementInitial(0), dEPbNonlocalAll(NEBD,numSec), isTorsion(false)
+	KelementInitial(0), dEPbLocalAll(NEBD, numSec), dEPbNonlocalAll(NEBD,numSec), dDeltaETot(0), isTorsion(false)
 	// complete
 {
 	// Pointers to Nodes and Their IDs
@@ -518,6 +519,7 @@ TestNonlocalElement3dDH::initializeSectionHistoryVariables(void)
 		deltaETotSubdivide[i] = Vector(order);
 		euSubdivide[i] = Vector(order);
 		eTotPreviousSubdivide[i] = Vector(order);
+		deltaETotPreviousSubdivide[i] = Vector(order);
 	}
 }
 
@@ -597,6 +599,7 @@ TestNonlocalElement3dDH::update(void)
 	static Matrix Fb(NEBD, NEBD);
 	Vector deltaETot_isec(NEBD);
 	Vector eu_isec(NEBD);
+	Vector dDeltaETot_Vector(NEBD);
 
 	/*Matrix eu_All(NEBD, numSections);
 	eu_All.Zero();*/
@@ -644,6 +647,8 @@ TestNonlocalElement3dDH::update(void)
 				eTotSubdivide[i] = eTot[i];
 				FSectionSubdivide[i] = FSection[i];
 				srSubdivide[i] = sr[i];
+
+				eTotPreviousSubdivide[i]= eTot[i];
 
 				//opserr << "This is FSectionSubdivide:" << FSectionSubdivide[i] << endln;
 			}
@@ -864,7 +869,72 @@ TestNonlocalElement3dDH::update(void)
 					updateIncrementTotalSectionDeformWithNonlocalPb();
 
 					// Update total section deformations
-					// STOPPED HERE 25.06.2023
+					if (initialFlag != 0)
+					{
+						for (i = 0; i < numSections; i++)
+						{
+							//opserr << "This is eTotSubdivide[i]:" << eTotSubdivide[i] << endln;
+							//eTotSubdivide[i] = eTotPreviousSubdivide[i] + deltaETotSubdivide[i];
+							eTotSubdivide[i] = eTotCommit[i] + deltaETotSubdivide[i];
+							//opserr << "This is eTotSubdivide[i]:" << eTotSubdivide[i] << endln;
+						}
+					}
+
+					// Compute difference in total increment in section deformations
+					dDeltaETot_Vector.Zero();
+					for (i = 0; i < numSections; i++)
+					{
+						for (int ii = 0; ii < NEBD; ii++)
+						{
+							dDeltaETot_Vector(ii) += wt[i] * L * (dEPbLocalAll(ii, i) - dEPbNonlocalAll(ii, i));
+						}
+					}
+					dDeltaETot = dDeltaETot_Vector.Norm();
+
+					// Loop for equilibrium increment in total section deformations
+					for (i = 0; i < numSections; i++)
+					{
+						deltaETotPreviousSubdivide[i] = deltaETotSubdivide[i];
+					}
+					int iterationNumber_dETotEquilibrium = 0;
+					while (dDeltaETot>Tol && iterationNumber_dETotEquilibrium<20*maxIters) 
+					{
+						iterationNumber_dETotEquilibrium++;
+						for (i = 0; i < numSections; i++) // go over all the section
+						{
+							if (sections[i]->setTrialSectionDeformation(eTotSubdivide[i]) < 0) // section state determination
+							{
+								opserr << "TestNonlocalElement3dDH::update() - section failed in setTrial\n";
+								opserr << "This is section: " << i + 1 << endln;
+								return -1;
+							}
+							sectionDeformIncrDecompSubdivide[i] = sections[i]->getIncrementSectionDeformationsDecomposition(); // Get the decomposition of increment section deformations
+						}
+						computeDEPbNonlocalAll(); // Compute nonlocal increment in post-buckling section deformations
+						updateIncrementTotalSectionDeformWithNonlocalPb(); // Update total increment in section deformations
+
+						for (i = 0; i < numSections; i++) // Update total section deformations
+						{
+							eTotSubdivide[i] = eTotPreviousSubdivide[i] + deltaETotSubdivide[i];
+						}
+
+						dDeltaETot_Vector.Zero(); // Compute difference in total increment in section deformations
+						for (i = 0; i < numSections; i++)
+						{
+							dDeltaETot_Vector += wt[i] * L * (deltaETotPreviousSubdivide[i] - deltaETotSubdivide[i]);
+						}
+						dDeltaETot = dDeltaETot_Vector.Norm();
+
+						for (i = 0; i < numSections; i++)
+						{
+							deltaETotPreviousSubdivide[i] = deltaETotSubdivide[i];
+						}
+						if (iterationNumber_dETotEquilibrium >= 20 * maxIters && dDeltaETot > Tol)
+						{
+							opserr << "TestNonlocalElement3dDH::update() - failed in equilibrium increment section deformation\n";
+							return -1;
+						}
+					} // End loop for equilibrium increment in total section deformations
 
 					for (i = 0; i < numSections; i++)
 					{
@@ -1096,7 +1166,7 @@ TestNonlocalElement3dDH::update(void)
 							numSubdivide++;
 						}
 					}
-					// Update eTot from index j-1 to index j
+					//// Update eTot from index j-1 to index j
 					for (int i = 0; i < numSections; i++)
 					{
 						eTotPreviousSubdivide[i] = eTotSubdivide[i];
@@ -1968,6 +2038,11 @@ TestNonlocalElement3dDH::computeDEPbNonlocalAll()
 		sectionDeformIncrDecomp = sectionDeformIncrDecompSubdivide[i];
 		for (int j = 0; j < NEBD; j++)
 		{
+			dEPbLocalAll(j, i) = sectionDeformIncrDecomp(j, 2);
+			if (abs(dEPbLocalAll(j, i))>0.)
+			{
+				int testError = 1.;
+			}
 			dEPbLocalAll_Vector(i * NEBD + j) = sectionDeformIncrDecomp(j, 2);
 		}
 	}
@@ -1982,10 +2057,11 @@ TestNonlocalElement3dDH::computeDEPbNonlocalAll()
 	{
 		for (int j = 0; j < NEBD; j++)
 		{
-			dEPbNonlocalAll(j, i) = dEPbLocalAll_Vector(i * NEBD + j);
+			dEPbNonlocalAll(j, i) = dEPbNonlocalAll_Vector(i * NEBD + j);
 		}
 	}
-	//opserr << "This is dEPbNonlocalAll:" << dEPbNonlocalAll << endln;
+	//opserr << "This is dEPbNonlocalAll" << dEPbNonlocalAll << endln;
+	//opserr << "This is dEPbLocalAll:" << dEPbLocalAll << endln;
 }
 
 // Method to update the increment in total section deformations with nonlocal Pb component
@@ -1998,12 +2074,16 @@ TestNonlocalElement3dDH::updateIncrementTotalSectionDeformWithNonlocalPb()
 	{
 		//oldEIncrementTotalSectionDeform = sectionDeformIncrDecompSubdivide[i]; // Take the matrix corresponding to section i
 		//newEIncrementTotalSectionDeform = oldEIncrementTotalSectionDeform; // Start by equating new and old matrix
+		//opserr << "This is deltaETotSubdivide[i]:" << deltaETotSubdivide[i] << endln;
 		for (int j = 0; j < NEBD; j++)
 		{
 			//newEIncrementTotalSectionDeform(j, 2) = dEPbNonlocalAll(j, 2); // Update third column with nonlocal post-buckling increment section deformations
 			sectionDeformIncrDecompSubdivide[i](j, 2) = dEPbNonlocalAll(j, 2);
+			deltaETotSubdivide[i](j) = sectionDeformIncrDecompSubdivide[i](j, 0) + sectionDeformIncrDecompSubdivide[i](j, 1) + sectionDeformIncrDecompSubdivide[i](j, 2); // compute increment total section deformations
 		}
 		//sectionDeformIncrDecompSubdivide[i] = newEIncrementTotalSectionDeform; // Update matrix containing the results
+		//opserr << "This is sectionDeformIncrDecompSubdivide[i]:" << sectionDeformIncrDecompSubdivide[i] << endln;
+		//opserr << "This is deltaETotSubdivide[i]:" << deltaETotSubdivide[i] << endln;
 	}
 
 }
