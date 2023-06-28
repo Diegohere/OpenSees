@@ -68,6 +68,12 @@ class NDTestNonlocalFiberSection3d : public SectionForceDeformation
     // Get increment section deformation decomposition
     Matrix& getIncrementSectionDeformationsDecomposition();
 
+    // Get section deformation decomposition
+    Matrix& getSectionDeformationsDecomposition();
+
+    // Get total section deformations
+    Vector& getTotalSectionDeformations();
+
   protected:
     
     //  private:
@@ -96,7 +102,9 @@ class NDTestNonlocalFiberSection3d : public SectionForceDeformation
     //Matrix incrementSectionDeformationsDecomposition;
     Matrix AInvMat4SecDef123;
     Matrix AInvMat4SecDef456;
+    Matrix deltaE4Output;
     Matrix e4Output;
+    Vector eTotCompute;
 
 // AddingSensitivity:BEGIN //////////////////////////////////////////
     int parameterID;

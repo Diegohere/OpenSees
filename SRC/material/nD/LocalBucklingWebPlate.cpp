@@ -154,6 +154,7 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	strainPBEqConverged(0.),
 	strainPBEqTrial(0.),
 	strainIncrementDecomposition(N_DIMS,N_DIMS),
+	strainDecomposition(N_DIMS, N_DIMS),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
 	sumEjConverged(0.),
@@ -307,6 +308,7 @@ LocalBucklingWebPlate::LocalBucklingWebPlate()
 	strainPBEqConverged(0.),
 	strainPBEqTrial(0.),
 	strainIncrementDecomposition(N_DIMS, N_DIMS),
+	strainDecomposition(N_DIMS, N_DIMS),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
 	sumEjConverged(0.),
@@ -1871,8 +1873,8 @@ int LocalBucklingWebPlate::setTrialStrain(const Vector& v) {
 	// Do the return mapping and calculate the tangent modulus
 	rm_convergence = timeIntegration();
 
-	// Get the strain increment decomposition
-	strainIncrementDecomposition = getStrainIncrementDecomposition();
+	//// Get the strain increment decomposition
+	//strainIncrementDecomposition = getStrainIncrementDecomposition();
 
 	return rm_convergence;
 }
@@ -1999,6 +2001,25 @@ Matrix& LocalBucklingWebPlate::getStrainIncrementDecomposition() {
 	return strainIncrementDecomposition;
 }
 
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+Matrix& LocalBucklingWebPlate::getStrainDecomposition() {
+
+	//Compute each increment
+	Vector epsiP = strainPlasticTrial;
+	Vector epsiPb = strainPostBucklingTrial;
+	Vector epsiE = strainTrial - epsiP - epsiPb;
+
+	// Put everything in the matrix
+	for (int i = 0; i < 2; i++)
+	{
+		strainDecomposition(i, 0) = epsiE(i);
+		strainDecomposition(i, 1) = epsiP(i);
+		strainDecomposition(i, 2) = epsiPb(i);
+	}
+
+	return strainDecomposition;
+}
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 const Matrix& LocalBucklingWebPlate::getInitialTangent() {

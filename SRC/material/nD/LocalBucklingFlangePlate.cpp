@@ -154,6 +154,7 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poi
 	strainPBEqConverged(0.),
 	strainPBEqTrial(0.),
 	strainIncrementDecomposition(N_DIMS, N_DIMS),
+	strainDecomposition(N_DIMS, N_DIMS),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
 	sumEjConverged(0.),
@@ -307,6 +308,7 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate()
 	strainPBEqConverged(0.),
 	strainPBEqTrial(0.),
 	strainIncrementDecomposition(N_DIMS, N_DIMS),
+	strainDecomposition(N_DIMS, N_DIMS),
 	stressConverged(N_DIMS),
 	stressTrial(N_DIMS),
 	sumEjConverged(0.),
@@ -1992,6 +1994,25 @@ Matrix& LocalBucklingFlangePlate::getStrainIncrementDecomposition() {
 	return strainIncrementDecomposition;
 }
 
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+Matrix& LocalBucklingFlangePlate::getStrainDecomposition() {
+
+	//Compute each increment
+	Vector epsiP = strainPlasticTrial;
+	Vector epsiPb = strainPostBucklingTrial;
+	Vector epsiE = strainTrial - epsiP - epsiPb;
+
+	// Put everything in the matrix
+	for (int i = 0; i < 2; i++)
+	{
+		strainDecomposition(i, 0) = epsiE(i);
+		strainDecomposition(i, 1) = epsiP(i);
+		strainDecomposition(i, 2) = epsiPb(i);
+	}
+
+	return strainDecomposition;
+}
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 const Matrix& LocalBucklingFlangePlate::getInitialTangent() {

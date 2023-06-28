@@ -246,6 +246,13 @@ NDMaterial::getStrainIncrementDecomposition()
     opserr << "NDMaterial::getStrainIncrementDecomposition -- subclass responsibility\n";
     return errMatrix;
 }
+
+Matrix&
+NDMaterial::getStrainDecomposition()
+{
+    opserr << "NDMaterial::getStrainDecomposition -- subclass responsibility\n";
+    return errMatrix;
+}
 // End addition by Diego Heredia 
 
 

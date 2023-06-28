@@ -112,6 +112,8 @@ class SectionForceDeformation : public Material
   //--- Adding Thermal Functions:[END]   by UoE OpenSees Group ----//
 
   virtual Matrix& getIncrementSectionDeformationsDecomposition(); // added by Diego Heredia
+  virtual Matrix& getSectionDeformationsDecomposition(); // added by Diego Heredia
+  virtual Vector& getTotalSectionDeformations(); // added by Diego Heredia
 
   virtual const Vector& getThermalElong(void);
   virtual double getEnergy() const { return 0; };		//by SAJalali

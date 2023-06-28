@@ -72,6 +72,7 @@ class NDMaterial : public Material
     // Start addition by Diego Heredia 
     virtual double getYieldStress(void);
     virtual Matrix& getStrainIncrementDecomposition(void);
+    virtual Matrix& getStrainDecomposition(void);
     // End addition by Diego Heredia 
 
     virtual const Vector &getStress(void);

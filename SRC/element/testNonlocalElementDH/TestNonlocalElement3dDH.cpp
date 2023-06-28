@@ -668,8 +668,12 @@ TestNonlocalElement3dDH::update(void)
 				if (l == 1)
 					numIters = 10 * maxIters; // allow 10 times more iterations for initial tangent
 
+				// Open files for output variable
+				ofstream file4eTotLoop;
+				file4eTotLoop.open("eTotLoop.txt");
+
 				for (j = 0; j < numIters; j++)
-				{
+				{	
 					// initialize f and vr for integration
 					Felement.Zero();
 					vu.Zero();
@@ -856,6 +860,12 @@ TestNonlocalElement3dDH::update(void)
 						sectionDeformIncrDecompSubdivide[i] = sections[i]->getIncrementSectionDeformationsDecomposition();
 						//opserr << "This is sectionDeformIncrDecompSubdivide[i]:  " << sectionDeformIncrDecompSubdivide[i] << endln;
 
+						//Vector eSecIFromFibers= sections[i]->getTotalSectionDeformations();
+						////opserr << "This is eTot from section     :" << eTotSubdivide[i] << endln;
+						////opserr << "This is eTot from fiber strain:" << eSecIFromFibers << endln;
+						//opserr << "This is difference eTotSubdivide[i] and eSecIFromFibers :" << eTotSubdivide[i]- eSecIFromFibers << endln;
+						//opserr << " " << endln;
+
 						//// Little test
 						//opserr << "This is deltaETotSubdivide[i](0): " << deltaETotSubdivide[i](0) << endln;
 						//opserr << "This is deltaETotSubdivide[i](0): " << deltaETot_isec(0) << endln;
@@ -892,13 +902,26 @@ TestNonlocalElement3dDH::update(void)
 					dDeltaETot = dDeltaETot_Vector.Norm();
 
 					// Loop for equilibrium increment in total section deformations
+					if (dDeltaETot > Tol)
+					{
+						// Write text to file
+						file4eTotLoop << "This is iteration j: " << j << endln;
+					}
 					for (i = 0; i < numSections; i++)
 					{
 						deltaETotPreviousSubdivide[i] = deltaETotSubdivide[i];
 					}
 					int iterationNumber_dETotEquilibrium = 0;
-					while (dDeltaETot>Tol && iterationNumber_dETotEquilibrium<20*maxIters) 
+					while (dDeltaETot>Tol && iterationNumber_dETotEquilibrium<10*maxIters) 
 					{
+						// Write eTot before loop to file
+						for (i = 0; i < numSections; i++)
+						{
+							file4eTotLoop << eTotSubdivide[i](0) << " ";
+						}
+						file4eTotLoop << "" << endln;
+						file4eTotLoop.flush();
+
 						iterationNumber_dETotEquilibrium++;
 						for (i = 0; i < numSections; i++) // go over all the section
 						{
@@ -915,7 +938,8 @@ TestNonlocalElement3dDH::update(void)
 
 						for (i = 0; i < numSections; i++) // Update total section deformations
 						{
-							eTotSubdivide[i] = eTotPreviousSubdivide[i] + deltaETotSubdivide[i];
+							//eTotSubdivide[i] = eTotPreviousSubdivide[i] + deltaETotSubdivide[i];
+							eTotSubdivide[i] = eTotCommit[i] + deltaETotSubdivide[i];
 						}
 
 						dDeltaETot_Vector.Zero(); // Compute difference in total increment in section deformations
@@ -929,9 +953,10 @@ TestNonlocalElement3dDH::update(void)
 						{
 							deltaETotPreviousSubdivide[i] = deltaETotSubdivide[i];
 						}
-						if (iterationNumber_dETotEquilibrium >= 20 * maxIters && dDeltaETot > Tol)
+						if (iterationNumber_dETotEquilibrium >= 10 * maxIters && dDeltaETot > Tol)
 						{
 							opserr << "TestNonlocalElement3dDH::update() - failed in equilibrium increment section deformation\n";
+							file4eTotLoop.close();
 							return -1;
 						}
 					} // End loop for equilibrium increment in total section deformations
@@ -1172,6 +1197,8 @@ TestNonlocalElement3dDH::update(void)
 						eTotPreviousSubdivide[i] = eTotSubdivide[i];
 					}
 				}// for (j=0; j<numIters; j++)
+				//Close file for results
+				file4eTotLoop.close();
 			}// if (initialFlag != 2)
 		}// for (int l=0; l<2; l++)
 	}// while (converged == false)
@@ -2077,8 +2104,8 @@ TestNonlocalElement3dDH::updateIncrementTotalSectionDeformWithNonlocalPb()
 		//opserr << "This is deltaETotSubdivide[i]:" << deltaETotSubdivide[i] << endln;
 		for (int j = 0; j < NEBD; j++)
 		{
-			//newEIncrementTotalSectionDeform(j, 2) = dEPbNonlocalAll(j, 2); // Update third column with nonlocal post-buckling increment section deformations
-			sectionDeformIncrDecompSubdivide[i](j, 2) = dEPbNonlocalAll(j, 2);
+			//sectionDeformIncrDecompSubdivide[i](j, 2) = dEPbNonlocalAll(j, 2);
+			sectionDeformIncrDecompSubdivide[i](j, 2) = dEPbNonlocalAll(j, i);
 			deltaETotSubdivide[i](j) = sectionDeformIncrDecompSubdivide[i](j, 0) + sectionDeformIncrDecompSubdivide[i](j, 1) + sectionDeformIncrDecompSubdivide[i](j, 2); // compute increment total section deformations
 		}
 		//sectionDeformIncrDecompSubdivide[i] = newEIncrementTotalSectionDeform; // Update matrix containing the results

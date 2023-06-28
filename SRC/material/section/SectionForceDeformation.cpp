@@ -527,3 +527,17 @@ Matrix& SectionForceDeformation::getIncrementSectionDeformationsDecomposition() 
     Matrix errMatrix(1, 1);
     return errMatrix;
 }
+
+Matrix& SectionForceDeformation::getSectionDeformationsDecomposition() // added by Diego Heredia
+{
+    opserr << "SectionForceDeformation::getSectionDeformationsDecomposition: Only works with nonlocal element" << endln;
+    Matrix errMatrix(1, 1);
+    return errMatrix;
+}
+
+Vector& SectionForceDeformation::getTotalSectionDeformations() // added by Diego Heredia
+{
+    opserr << "SectionForceDeformation::getTotalSectionDeformations: Only works with nonlocal element" << endln;
+    Vector errVector(1);
+    return errVector;
+}

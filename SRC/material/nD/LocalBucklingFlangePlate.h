@@ -104,6 +104,9 @@ public:
 	// Return strain increment decomposition Vector(epsiE, epsiP, epsiPb)
 	Matrix& getStrainIncrementDecomposition(void);
 
+	// Return strain decomposition Vector(epsiE, epsiP, epsiPb)
+	Matrix& getStrainDecomposition(void);
+
 private:
 	// Determines the trial stress for the given strain increment and which return mapping could be needed
 	int timeIntegration();
@@ -293,6 +296,7 @@ private:
 	double strainPBEqConverged;  // Equivalent post buckling strain
 	double strainPBEqTrial;
 	Matrix strainIncrementDecomposition;
+	Matrix strainDecomposition;
 
 	Vector stressConverged;
 	Vector stressTrial;
