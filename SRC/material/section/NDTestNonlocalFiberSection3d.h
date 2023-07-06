@@ -62,17 +62,17 @@ class NDTestNonlocalFiberSection3d : public SectionForceDeformation
 			  int gradIndex, int numGrads);
     // AddingSensitivity:END ///////////////////////////////////////////
 
-    //Get extreme fibers indices 
-    void getIndexExtremeFibers();
+    ////Get extreme fibers indices 
+    //void getIndexExtremeFibers();
 
-    // Get increment section deformation decomposition
-    Matrix& getIncrementSectionDeformationsDecomposition();
+    //// Get increment section deformation decomposition
+    //Matrix& getIncrementSectionDeformationsDecomposition();
 
-    // Get section deformation decomposition
-    Matrix& getSectionDeformationsDecomposition();
+    //// Get section deformation decomposition
+    //Matrix& getSectionDeformationsDecomposition();
 
-    // Get total section deformations
-    Vector& getTotalSectionDeformations();
+    //// Get total section deformations
+    //Vector& getTotalSectionDeformations();
 
   protected:
     
@@ -96,15 +96,6 @@ class NDTestNonlocalFiberSection3d : public SectionForceDeformation
     Vector e;          // trial section deformations 
     Vector *s;         // section resisting forces  (axial force, bending moment)
     Matrix *ks;        // section stiffness
-
-    Vector indexExtremeFibers;
-    Matrix coordinatesExtremeFibers;
-    //Matrix incrementSectionDeformationsDecomposition;
-    Matrix AInvMat4SecDef123;
-    Matrix AInvMat4SecDef456;
-    Matrix deltaE4Output;
-    Matrix e4Output;
-    Vector eTotCompute;
 
 // AddingSensitivity:BEGIN //////////////////////////////////////////
     int parameterID;

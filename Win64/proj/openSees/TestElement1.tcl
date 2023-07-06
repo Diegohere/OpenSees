@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir resultsTestElement;			# name of output folder
+	set dataDir resultsTestElement_01;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 ###################################################################################################
