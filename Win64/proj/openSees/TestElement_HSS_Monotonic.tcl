@@ -21,6 +21,7 @@
 	set bPlate [expr $DHSS - 2 * $rExtHSS]
 	set bSurTPlate [expr $bPlate / $tPlate];				# b/t HSS plate
 	set sigmaC0 378.0;									    # Initial capping stress sigmaC0
+	#set sigmaC0 3780.0;
 	#set alphaRegularization 0.32;							# Factor for regularization
 	set alphaRegularization 1.0;	
 	
@@ -150,6 +151,7 @@
 	
 	set lc [expr 2.0*$DHSS];
 	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 9  20 1e-6 $lc
+	#element testNonlocalElementDH 12 1 2 $ColTransfTag NewtonCotes 1 5  20 1e-6 $lc
 	
 	element elasticBeamColumn 34 3 4 11500 [expr $E*1000.0] [expr $G*1000.0] 44500000 44500000 44500000 $BeamTransfTag 
 	element elasticBeamColumn 35 3 5 11500 [expr $E*1000.0] [expr $G*1000.0] 44500000 44500000 44500000 $ColTransfTag 
@@ -256,7 +258,7 @@ puts "Running Analysis..."
 	#algorithm NewtonLineSearch Bisection 0.75;
 
   #set Dmax  [expr 0.1*$L];            # maximum displacement
-  set N 500;                           # number of iterations
+  set N 200;                           # number of iterations
   #set Dincr [expr 0.15*$L/$N];			# increment in displacement
   set Dincr [expr -250.0/$N];			# increment in displacement
   set h 0  

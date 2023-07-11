@@ -97,7 +97,8 @@ private:
 	void computeMatrixH(Matrix& H);
 	void computeMatrixH_inv(Matrix H, Matrix& H_inv);
 
-	void computeDEPbNonlocalAll();
+	Matrix computeDENonlocalAll(Matrix deltaETot_All);
+	void computeFelement_nonlocal(Matrix& Felement, Matrix H_inv, Matrix FSectionSubdivide[]);
 
 
 /* ----------------------------------------------------------------------------- */
@@ -163,6 +164,9 @@ private:
 	//static Vector sSubdivide[];
 
 	bool isTorsion;
+
+	bool sectionSofteningTrial;
+	bool sectionSofteningCommit;
 
 	//static Vector s[];  // array of section forces
 	//static Matrix deStar_local;  // matrix of e_star_local for all sections of element

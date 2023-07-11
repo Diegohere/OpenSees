@@ -117,7 +117,7 @@ maxIters(0), Tol(0), lc(0), initialFlag(0),
 Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
 FSection(0), eTot(0), sr(0), eTotCommit(0),
 numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
-KelementInitial(0), isTorsion(false)
+KelementInitial(0), isTorsion(false), sectionSofteningTrial(false), sectionSofteningCommit(false)
 // complete
 {
 	// Set Node Pointers to 0
@@ -135,7 +135,7 @@ TestNonlocalElement3dDH::TestNonlocalElement3dDH(int tag, int nodeI, int nodeJ, 
 	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(6* numSec,6* numSec), H_inv(6 * numSec, 6 * numSec),
 	FSection(0), eTot(0), sr(0), eTotCommit(0), 
 	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
-	KelementInitial(0), isTorsion(false)
+	KelementInitial(0), isTorsion(false), sectionSofteningTrial(false), sectionSofteningCommit(false)
 	// complete
 {
 	// Pointers to Nodes and Their IDs
@@ -330,6 +330,9 @@ TestNonlocalElement3dDH::commitState()
 	if ((err = crdTransf->commitState()) != 0)
 		opserr << "WARNING! TestNonlocalElement3dDH::commitState() - element: " << this->getTag() << " - failed to commit coordinate transformation object\n";
 
+	// Commit if at least one section experiences softening
+	sectionSofteningCommit = sectionSofteningTrial;
+
 	// Complete committing the variables
 	return err;
 }
@@ -355,6 +358,9 @@ TestNonlocalElement3dDH::revertToLastCommit(void)
 	// Revert the element variables state
 	Kelement = KelementCommit;
 	q = qCommit;
+
+	// Revert if at least one section experiences softening
+	sectionSofteningTrial = sectionSofteningCommit;
 
 	initialFlag = 0;
 
@@ -386,6 +392,10 @@ TestNonlocalElement3dDH::revertToStart(void)
 	KelementCommit.Zero();
 	q.Zero();
 	Kelement.Zero();
+
+	// Revert if at least one section experiences softening
+	sectionSofteningTrial = false;
+	sectionSofteningCommit = false;
 
 	initialFlag = 0;
 	return err;
@@ -584,6 +594,7 @@ TestNonlocalElement3dDH::update(void)
 	static Matrix KelementTrial(NEBD, NEBD);
 
 	static Vector s_seci(NEBD);
+	static Matrix s_All(NEBD, numSections);
 	static Vector ds(NEBD);
 	Vector su(NEBD);
 	static Matrix Fb(NEBD, NEBD);
@@ -602,6 +613,8 @@ TestNonlocalElement3dDH::update(void)
 	//Determination of matrix H_inv
 	H_inv.Zero();
 	this->computeMatrixH_inv(H, H_inv);
+
+	double WDot ;
 
 	//todo
 	/*opserr << "this is matrix h: " << H << endln;
@@ -638,6 +651,8 @@ TestNonlocalElement3dDH::update(void)
 				eTotSubdivide[i] = eTot[i];
 				FSectionSubdivide[i] = FSection[i];
 				srSubdivide[i] = sr[i];
+
+				sectionSofteningTrial = sectionSofteningCommit;
 
 				//opserr << "This is FSectionSubdivide:" << FSectionSubdivide[i] << endln;
 			}
@@ -804,6 +819,30 @@ TestNonlocalElement3dDH::update(void)
 							deltaETot_isec(iiLineComponent) += eu_All(iiLineComponent, i);
 						}
 
+						// Add to matrix with all sections
+						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
+						{
+							deltaETot_All(iiLineComponent, i) = deltaETot_isec(iiLineComponent);
+							s_All(iiLineComponent, i) = s_seci(iiLineComponent);
+						}
+					}
+
+					//Nonlocal part if a section experiences softening
+					if (sectionSofteningTrial)
+					{
+						//opserr << "This is deltaETot_isec:" << deltaETot_isec << endln;
+						deltaETot_All = computeDENonlocalAll(deltaETot_All);
+					}
+
+					for (i = 0; i < numSections; i++)
+						{
+						//Take the column corresponding to section
+						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
+						{
+							deltaETot_isec(iiLineComponent) = deltaETot_All(iiLineComponent, i);
+							s_seci(iiLineComponent) = s_All(iiLineComponent, i);
+						}
+
 						// Update total section deformations
 						if (initialFlag != 0)
 							eTotSubdivide[i] += deltaETot_isec;
@@ -860,141 +899,211 @@ TestNonlocalElement3dDH::update(void)
 
 					}
 
+					if (sectionSofteningTrial)
+					{
+						//Compute Felement_nonlocal
+						computeFelement_nonlocal(Felement, H_inv, FSectionSubdivide);
+						//opserr << "This matrix Felement after call function:" << Felement << endln;
+
+						for (i = 0; i < numSections; i++)
+						{
+							//Compute unbalance element deformations
+							int order = sections[i]->getOrder();
+							const ID& code = sections[i]->getType();
+							double xL = xi[i];
+							double xL1 = xL - 1.0;
+							double wtL = wt[i] * L;
+							double tmp;
+
+							double dei;
+
+							for (int ii = 0; ii < order; ii++) {
+								//dei = eu_isec(ii) * wtL;
+								dei = eu_All(ii, i) * wtL;
+								switch (code(ii)) {
+								case SECTION_RESPONSE_P:
+									vu(0) += dei;
+									break;
+								case SECTION_RESPONSE_MZ:
+									vu(1) += xL1 * dei;
+									vu(2) += xL * dei;
+									break;
+								case SECTION_RESPONSE_VY:
+									tmp = oneOverL * dei;
+									vu(1) += tmp;
+									vu(2) += tmp;
+									break;
+								case SECTION_RESPONSE_MY:
+									vu(3) += xL1 * dei;
+									vu(4) += xL * dei;
+									break;
+								case SECTION_RESPONSE_VZ:
+									tmp = oneOverL * dei;
+									vu(3) += tmp;
+									vu(4) += tmp;
+									break;
+								case SECTION_RESPONSE_T:
+									vu(5) += dei;
+									break;
+								default:
+									break;
+								}
+							}
+						}
+					}
+					else
+					{
+						for (i = 0; i < numSections; i++)
+						{
+							int order = sections[i]->getOrder();
+							const ID& code = sections[i]->getType();
+							double xL = xi[i];
+							double xL1 = xL - 1.0;
+							double wtL = wt[i] * L;
+
+							int ii;
+							int jj;
+							const Matrix& FSec = FSectionSubdivide[i];
+							Fb.Zero();
+							double tmp;
+							for (ii = 0; ii < order; ii++) {
+								switch (code(ii)) {
+								case SECTION_RESPONSE_P:
+									for (jj = 0; jj < order; jj++)
+										Fb(jj, 0) += FSec(jj, ii) * wtL;
+									break;
+								case SECTION_RESPONSE_MZ:
+									for (jj = 0; jj < order; jj++) {
+										tmp = FSec(jj, ii) * wtL;
+										Fb(jj, 1) += xL1 * tmp;
+										Fb(jj, 2) += xL * tmp;
+									}
+									break;
+								case SECTION_RESPONSE_VY:
+									for (jj = 0; jj < order; jj++) {
+										tmp = oneOverL * FSec(jj, ii) * wtL;
+										Fb(jj, 1) += tmp;
+										Fb(jj, 2) += tmp;
+									}
+									break;
+								case SECTION_RESPONSE_MY:
+									for (jj = 0; jj < order; jj++) {
+										tmp = FSec(jj, ii) * wtL;
+										Fb(jj, 3) += xL1 * tmp;
+										Fb(jj, 4) += xL * tmp;
+									}
+									break;
+								case SECTION_RESPONSE_VZ:
+									for (jj = 0; jj < order; jj++) {
+										tmp = oneOverL * FSec(jj, ii) * wtL;
+										Fb(jj, 3) += tmp;
+										Fb(jj, 4) += tmp;
+									}
+									break;
+								case SECTION_RESPONSE_T:
+									for (jj = 0; jj < order; jj++)
+										Fb(jj, 5) += FSec(jj, ii) * wtL;
+									break;
+								default:
+									break;
+								}
+							}
+
+							for (ii = 0; ii < order; ii++) {
+								switch (code(ii)) {
+								case SECTION_RESPONSE_P:
+									for (jj = 0; jj < NEBD; jj++)
+										Felement(0, jj) += Fb(ii, jj);
+									break;
+								case SECTION_RESPONSE_MZ:
+									for (jj = 0; jj < NEBD; jj++) {
+										tmp = Fb(ii, jj);
+										Felement(1, jj) += xL1 * tmp;
+										Felement(2, jj) += xL * tmp;
+									}
+									break;
+								case SECTION_RESPONSE_VY:
+									for (jj = 0; jj < NEBD; jj++) {
+										tmp = oneOverL * Fb(ii, jj);
+										Felement(1, jj) += tmp;
+										Felement(2, jj) += tmp;
+									}
+									break;
+								case SECTION_RESPONSE_MY:
+									for (jj = 0; jj < NEBD; jj++) {
+										tmp = Fb(ii, jj);
+										Felement(3, jj) += xL1 * tmp;
+										Felement(4, jj) += xL * tmp;
+									}
+									break;
+								case SECTION_RESPONSE_VZ:
+									for (jj = 0; jj < NEBD; jj++) {
+										tmp = oneOverL * Fb(ii, jj);
+										Felement(3, jj) += tmp;
+										Felement(4, jj) += tmp;
+									}
+									break;
+								case SECTION_RESPONSE_T:
+									for (jj = 0; jj < NEBD; jj++)
+										Felement(5, jj) += Fb(ii, jj);
+									break;
+								default:
+									break;
+								}
+							}
+
+							// Integrate unbalanced deformations vu += (b^ (e + de)) * wtL  vr.addMatrixTransposeVector(1.0, b[i], vs[i] + dvs, wtL);;
+							double dei;
+
+							for (int ii = 0; ii < order; ii++) {
+								//dei = eu_isec(ii) * wtL;
+								dei = eu_All(ii, i) * wtL;
+								switch (code(ii)) {
+								case SECTION_RESPONSE_P:
+									vu(0) += dei;
+									break;
+								case SECTION_RESPONSE_MZ:
+									vu(1) += xL1 * dei;
+									vu(2) += xL * dei;
+									break;
+								case SECTION_RESPONSE_VY:
+									tmp = oneOverL * dei;
+									vu(1) += tmp;
+									vu(2) += tmp;
+									break;
+								case SECTION_RESPONSE_MY:
+									vu(3) += xL1 * dei;
+									vu(4) += xL * dei;
+									break;
+								case SECTION_RESPONSE_VZ:
+									tmp = oneOverL * dei;
+									vu(3) += tmp;
+									vu(4) += tmp;
+									break;
+								case SECTION_RESPONSE_T:
+									vu(5) += dei;
+									break;
+								default:
+									break;
+								}
+							}
+							//opserr << "This is vu:" << vu << endln;
+						}
+					}
+
+					// Check if section experiences softening
 					for (i = 0; i < numSections; i++)
 					{
-						int order = sections[i]->getOrder();
-						const ID& code = sections[i]->getType();
-						double xL = xi[i];
-						double xL1 = xL - 1.0;
-						double wtL = wt[i] * L;
-
-						int ii;
-						int jj;
-						const Matrix& FSec = FSectionSubdivide[i];
-						Fb.Zero();
-						double tmp;
-						for (ii = 0; ii < order; ii++) {
-							switch (code(ii)) {
-							case SECTION_RESPONSE_P:
-								for (jj = 0; jj < order; jj++)
-									Fb(jj, 0) += FSec(jj, ii) * wtL;
-								break;
-							case SECTION_RESPONSE_MZ:
-								for (jj = 0; jj < order; jj++) {
-									tmp = FSec(jj, ii) * wtL;
-									Fb(jj, 1) += xL1 * tmp;
-									Fb(jj, 2) += xL * tmp;
-								}
-								break;
-							case SECTION_RESPONSE_VY:
-								for (jj = 0; jj < order; jj++) {
-									tmp = oneOverL * FSec(jj, ii) * wtL;
-									Fb(jj, 1) += tmp;
-									Fb(jj, 2) += tmp;
-								}
-								break;
-							case SECTION_RESPONSE_MY:
-								for (jj = 0; jj < order; jj++) {
-									tmp = FSec(jj, ii) * wtL;
-									Fb(jj, 3) += xL1 * tmp;
-									Fb(jj, 4) += xL * tmp;
-								}
-								break;
-							case SECTION_RESPONSE_VZ:
-								for (jj = 0; jj < order; jj++) {
-									tmp = oneOverL * FSec(jj, ii) * wtL;
-									Fb(jj, 3) += tmp;
-									Fb(jj, 4) += tmp;
-								}
-								break;
-							case SECTION_RESPONSE_T:
-								for (jj = 0; jj < order; jj++)
-									Fb(jj, 5) += FSec(jj, ii) * wtL;
-								break;
-							default:
-								break;
-							}
+						WDot = 0.;
+						for (int iComp = 0; iComp < NEBD; iComp++)
+						{
+							WDot += 0.5 * (srSubdivide[i](iComp) - sr[i](iComp)) * (eTotSubdivide[i](iComp) - eTotCommit[i](iComp));
 						}
-
-						for (ii = 0; ii < order; ii++) {
-							switch (code(ii)) {
-							case SECTION_RESPONSE_P:
-								for (jj = 0; jj < NEBD; jj++)
-									Felement(0, jj) += Fb(ii, jj);
-								break;
-							case SECTION_RESPONSE_MZ:
-								for (jj = 0; jj < NEBD; jj++) {
-									tmp = Fb(ii, jj);
-									Felement(1, jj) += xL1 * tmp;
-									Felement(2, jj) += xL * tmp;
-								}
-								break;
-							case SECTION_RESPONSE_VY:
-								for (jj = 0; jj < NEBD; jj++) {
-									tmp = oneOverL * Fb(ii, jj);
-									Felement(1, jj) += tmp;
-									Felement(2, jj) += tmp;
-								}
-								break;
-							case SECTION_RESPONSE_MY:
-								for (jj = 0; jj < NEBD; jj++) {
-									tmp = Fb(ii, jj);
-									Felement(3, jj) += xL1 * tmp;
-									Felement(4, jj) += xL * tmp;
-								}
-								break;
-							case SECTION_RESPONSE_VZ:
-								for (jj = 0; jj < NEBD; jj++) {
-									tmp = oneOverL * Fb(ii, jj);
-									Felement(3, jj) += tmp;
-									Felement(4, jj) += tmp;
-								}
-								break;
-							case SECTION_RESPONSE_T:
-								for (jj = 0; jj < NEBD; jj++)
-									Felement(5, jj) += Fb(ii, jj);
-								break;
-							default:
-								break;
-							}
+						//opserr << "This is WDot:" << WDot << endln;
+						if (WDot < 0. && abs(WDot)>1)
+						{
+							sectionSofteningTrial = true;
 						}
-
-						// Integrate unbalanced deformations vu += (b^ (e + de)) * wtL  vr.addMatrixTransposeVector(1.0, b[i], vs[i] + dvs, wtL);;
-						double dei;
-
-						for (int ii = 0; ii < order; ii++) {
-							//dei = eu_isec(ii) * wtL;
-							dei = eu_All(ii, i) * wtL;
-							switch (code(ii)) {
-							case SECTION_RESPONSE_P:
-								vu(0) += dei;
-								break;
-							case SECTION_RESPONSE_MZ:
-								vu(1) += xL1 * dei;
-								vu(2) += xL * dei;
-								break;
-							case SECTION_RESPONSE_VY:
-								tmp = oneOverL * dei;
-								vu(1) += tmp;
-								vu(2) += tmp;
-								break;
-							case SECTION_RESPONSE_MY:
-								vu(3) += xL1 * dei;
-								vu(4) += xL * dei;
-								break;
-							case SECTION_RESPONSE_VZ:
-								tmp = oneOverL * dei;
-								vu(3) += tmp;
-								vu(4) += tmp;
-								break;
-							case SECTION_RESPONSE_T:
-								vu(5) += dei;
-								break;
-							default:
-								break;
-							}
-						}
-						//opserr << "This is vu:" << vu << endln;
 					}
 
 					// calculate element stiffness matrix invert3by3Matrix(F, Kelement);	  
@@ -1005,8 +1114,8 @@ TestNonlocalElement3dDH::update(void)
 					//opserr << "This is KelementTrial:" << KelementTrial << endln;
 
 					//todo 
-					/*opserr << "This is the element flexibility matrix:" << Felement << endln;
-					opserr << "This is the element stiffness matrix:" << KelementTrial << endln;*/
+					//opserr << "This is the element flexibility matrix:" << Felement << endln;
+					//opserr << "This is the element stiffness matrix:" << KelementTrial << endln;
 
 					dv.addVector(0.0, vu, -1.0);
 
@@ -1020,6 +1129,7 @@ TestNonlocalElement3dDH::update(void)
 					qTrial += dq;
 
 					// check for convergence of this interval
+					//opserr << "This is dv:" << dv << endln;
 					if (dv.Norm() < Tol)
 					{
 						// set the target displacement
@@ -1917,45 +2027,121 @@ TestNonlocalElement3dDH::computeMatrixH_inv(Matrix H, Matrix& H_inv)
 		opserr << "TestNonlocalElement3dDH::update() -- could not invert matrix H\n";
 }
 
-////Method to compute computeDEPbNonlocalAll
-//void
-//TestNonlocalElement3dDH::computeDEPbNonlocalAll()
-//{
-//	Vector dEPbLocalAll_Vector = Vector(NEBD * numSections);
-//	Vector dEPbNonlocalAll_Vector = Vector(NEBD * numSections);
-//	Matrix sectionDeformIncrDecomp = Matrix(NEBD, 3);
-//
-//	// Fill the vector with all the local section deformations
-//	for (int i = 0; i < numSections; i++)
-//	{
-//		sectionDeformIncrDecomp = sectionDeformIncrDecompSubdivide[i];
-//		for (int j = 0; j < NEBD; j++)
-//		{
-//			dEPbLocalAll(j, i) = sectionDeformIncrDecomp(j, 2);
-//			if (abs(dEPbLocalAll(j, i))>0.)
-//			{
-//				int testError = 1.;
-//			}
-//			dEPbLocalAll_Vector(i * NEBD + j) = sectionDeformIncrDecomp(j, 2);
-//		}
-//	}
-//	//opserr << "This is dEPbLocalAll_Vector:" << dEPbLocalAll_Vector << endln;
-//
-//	// Compute the vector with all the nonlocal section deformations
-//	dEPbNonlocalAll_Vector = H_inv * dEPbLocalAll_Vector;
-//	//opserr << "This is dEPbNonlocalAll_Vector:" << dEPbNonlocalAll_Vector << endln;
-//
-//	//Fill the matrix eu_nonlocal
-//	for (int i = 0; i < numSections; i++)
-//	{
-//		for (int j = 0; j < NEBD; j++)
-//		{
-//			dEPbNonlocalAll(j, i) = dEPbNonlocalAll_Vector(i * NEBD + j);
-//		}
-//	}
-//	//opserr << "This is dEPbNonlocalAll" << dEPbNonlocalAll << endln;
-//	//opserr << "This is dEPbLocalAll:" << dEPbLocalAll << endln;
-//}
+//Method to compute computeDENonlocalAll
+Matrix
+TestNonlocalElement3dDH::computeDENonlocalAll(Matrix deltaETot_All)
+{
+	Vector dELocalAll_Vector = Vector(NEBD * numSections);
+	Vector dENonlocalAll_Vector = Vector(NEBD * numSections);
+	Matrix dENonlocalAll = Matrix(NEBD, numSections);
+
+	// Fill the vector with all the local section deformations
+	for (int i = 0; i < numSections; i++)
+	{
+		for (int j = 0; j < NEBD; j++)
+		{
+			dELocalAll_Vector(i * NEBD + j) = deltaETot_All(j, i);
+		}
+	}
+	//opserr << "This is dELocalAll_Vector:" << dELocalAll_Vector << endln;
+
+	// Compute the vector with all the nonlocal section deformations
+	dENonlocalAll_Vector = H_inv * dELocalAll_Vector;
+	//opserr << "This is dENonlocalAll_Vector:" << dENonlocalAll_Vector << endln;
+
+	//Fill the matrix eu_nonlocal
+	for (int i = 0; i < numSections; i++)
+	{
+		for (int j = 0; j < NEBD; j++)
+		{
+			dENonlocalAll(j, i) = dENonlocalAll_Vector(i * NEBD + j);
+		}
+	}
+	//opserr << "This is deltaETot_All" << deltaETot_All << endln;
+	//opserr << "This is dENonlocalAll:" << dENonlocalAll << endln;
+
+	return dENonlocalAll;
+}
+
+
+//Method to compute Felement_nonlocal
+void 
+TestNonlocalElement3dDH::computeFelement_nonlocal(Matrix& Felement, Matrix H_inv, Matrix FSectionSubdivide[])
+{
+	Felement.Zero();
+	Matrix b(NEBD, NEBD);
+	Matrix B_Q(NEBD * numSections, NEBD);
+	Matrix B_q(NEBD, NEBD * numSections);
+	Matrix Fsection_Tot(NEBD * numSections, NEBD * numSections);
+	B_Q.Zero();
+	B_q.Zero();
+	Fsection_Tot.Zero();
+
+	//get info on integration quadrature rule
+	double L = crdTransf->getInitialLength();
+	double* xi;
+	xi = new double[numSections];
+	beamIntegr->getSectionLocations(numSections, L, xi);
+	//double wt[maxNumSections];
+	double* wt;
+	wt = new double[numSections];
+	beamIntegr->getSectionWeights(numSections, L, wt);
+
+	/*for (int i = 0; i < numSections; i++) {
+		opserr << "This xi:" << xi[i] << endln;
+	}
+	double sumWt = 0.;
+	for (int i = 0; i < numSections; i++) {
+		opserr << "This wt:" << wt[i] << endln;
+		sumWt = sumWt + wt[i];
+	}
+	opserr << "This sum(wt):" << sumWt << endln;*/
+
+	for (int i = 0; i < numSections; i++)
+	{
+		//compute matrix b
+		b.Zero();
+		const ID& code = sections[i]->getType();
+		this->getForceInterpolatMatrix(xi[i], b, code);
+
+		//compute matrices B_Q and B_q
+		double wtL = wt[i] * L;
+
+		for (int j = 0; j < NEBD; j++) //loop to over the lines of b
+		{
+			for (int k = 0; k < NEBD; k++) //loop to over the columns of b
+			{
+				B_Q(i * NEBD + j, k) = b(j, k);
+				B_q(k, i * NEBD + j) = wtL * b(j, k);
+			}
+		}
+
+		//assemble matrix Fsection_Tot
+		Matrix Fsection_interm(NEBD, NEBD); //intermediate matrix to fill Fsection_Tot
+		Fsection_interm = FSectionSubdivide[i];
+
+		//opserr << "This matrix Fsection_interm:" << Fsection_interm << endln;
+
+		for (int j = 0; j < NEBD; j++) //loop to over the lines of Fsection_interm
+		{
+			for (int k = 0; k < NEBD; k++) //loop to over the columns of Fsection_interm
+			{
+				Fsection_Tot(i * NEBD + j, i * NEBD + k) = Fsection_interm(j, k);
+			}
+		}
+	}
+
+	//compute the matrix multiplication F_element_nonLocal=B_q*inv(H)*Fsection_Tot*B_Q;
+	Felement = B_q * H_inv * Fsection_Tot * B_Q;
+
+	//opserr << "This matrix B_q:" << B_q << endln;
+	//opserr << "This matrix H:" << H << endln;
+	//opserr << "This matrix H_inv:" << H_inv << endln;
+	//opserr << "This matrix H_inv*Fsection_Tot:" << H_inv * Fsection_Tot << endln;
+	//opserr << "This matrix Fsection_Tot:" << Fsection_Tot << endln;
+	//opserr << "This matrix B_Q:" << B_Q << endln;
+	//opserr << "This matrix Felement_nonlocal:" << Felement << endln;
+}
 
 
 ////Method to compute e_local[]
