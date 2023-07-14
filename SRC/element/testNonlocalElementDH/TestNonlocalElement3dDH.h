@@ -1,5 +1,5 @@
 //
-// Created by Diego Heredia on 10.09.22
+// Created by Diego Heredia on 14.07.2023
 //
 
 #ifndef TestNonlocalElement3dDH_H 
@@ -39,7 +39,7 @@ public:
 public:
 
 	// Method to get the class type
-	const char* getClassType(void) const { return "NonlocalForceBasedBeamColumnElement"; };
+	const char* getClassType(void) const { return "TestNonlocalElement3dDH"; };
 
 	// Method to initialize the domain; base class: DomainComponent
 	void setDomain(Domain* theDomain);
@@ -94,19 +94,21 @@ private:
 
 	void computeSectionForces(Vector& sp, int isec); // Section forces due to element loads
 
-	void computeMatrixH(Matrix& H);
-	void computeMatrixH_inv(Matrix H, Matrix& H_inv);
+	void computeMatrixH();
+	void computeMatrixH_inv();
 
-	Matrix computeDENonlocalAll(Matrix deltaETot_All);
-	void computeFelement_nonlocal(Matrix& Felement, Matrix H_inv, Matrix FSectionSubdivide[]);
+	void computeDeStar_nonlocal(Matrix& deStar_nonlocal, Matrix deStar_local);
+	void computeE_local(Matrix& e_local_tot);
+	void computeEu_nonlocal(Matrix& eu_nonlocal, Matrix eu_local);
+	void computeFelement_nonlocal(Matrix& Felement_nonlocal);
 
 
-/* ----------------------------------------------------------------------------- */
-/* Members                                                                       */
-/* ----------------------------------------------------------------------------- */
+	/* ----------------------------------------------------------------------------- */
+	/* Members                                                                       */
+	/* ----------------------------------------------------------------------------- */
 private:
 
-		// Private attributes
+	// Private attributes
 	ID connectedExternalNodes;              // contains tags of end nodes
 	Node* theNodes[2];                      // pointer to nodes
 	SectionForceDeformation** sections;     // pointers to sections
@@ -130,9 +132,9 @@ private:
 	Matrix H_inv;
 
 	Matrix* FSection;                    // array of section flexibility matrices
-	Vector* eTot;                    // array of nonlocal section deformation vectors
+	Vector* eNonlocal;                    // array of nonlocal section deformation vectors
 	Vector* sr;                   // array of section resisting force vectors
-	Vector* eTotCommit;              // array of committed section deformation vectors
+	Vector* eNonlocalCommit;              // array of committed section deformation vectors
 
 	enum { maxNumEleLoads = 100 };   // maximum number of element loads
 	//enum { maxNumSections = 30 };  //maximum number of integration sections
@@ -158,15 +160,11 @@ private:
 	// following are added for subdivision of displacement increment
 	int    maxSubdivisions;       // maximum number of subdivisons of dv for local iterations
 
-	static Vector eTotSubdivide[];
+	static Vector eNonLocalSubdivide[];
 	static Vector srSubdivide[];
 	static Matrix FSectionSubdivide[];
-	//static Vector sSubdivide[];
 
 	bool isTorsion;
-
-	bool sectionSofteningTrial;
-	bool sectionSofteningCommit;
 
 	//static Vector s[];  // array of section forces
 	//static Matrix deStar_local;  // matrix of e_star_local for all sections of element
