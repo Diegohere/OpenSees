@@ -34,6 +34,7 @@ Vector TestNonlocalElement3dDH::theVector(12);
 double TestNonlocalElement3dDH::workArea[200];
 
 Vector TestNonlocalElement3dDH::eNonLocalSubdivide[maxNumSections];
+Vector TestNonlocalElement3dDH::eLocalSubdivide[maxNumSections];
 Matrix TestNonlocalElement3dDH::FSectionSubdivide[maxNumSections];
 Vector TestNonlocalElement3dDH::srSubdivide[maxNumSections];
 
@@ -121,9 +122,10 @@ void* OPS_TestNonlocalElement3dDH()
 TestNonlocalElement3dDH::TestNonlocalElement3dDH() : Element(0, ELE_TAG_TestNonlocalElement3dDH), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
 maxIters(0), Tol(0), lc(0), initialFlag(0),
 Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
-FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0),
-numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
-KelementInitial(0), isTorsion(false)
+FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
+numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0), 
+WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
+isTorsion(false)
 // complete
 {
 	// Set Node Pointers to 0
@@ -139,9 +141,10 @@ TestNonlocalElement3dDH::TestNonlocalElement3dDH(int tag, int nodeI, int nodeJ, 
 	:Element(tag, ELE_TAG_TestNonlocalElement3dDH), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
 	maxIters(maxNumIters), Tol(tolerance), lc(LC), initialFlag(0),
 	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(6 * numSec, 6 * numSec), H_inv(6 * numSec, 6 * numSec),
-	FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0),
-	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD),
-	KelementInitial(0), isTorsion(false)
+	FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
+	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0), 
+	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
+	isTorsion(false)
 	// complete
 {
 	// Pointers to Nodes and Their IDs
@@ -210,6 +213,18 @@ TestNonlocalElement3dDH::~TestNonlocalElement3dDH()
 
 	if (eNonlocalCommit != 0) {
 		delete[] eNonlocalCommit;
+	}
+
+	if (eLocalCommit != 0) {
+		delete[] eLocalCommit;
+	}
+
+	if (eLocal != 0) {
+		delete[] eLocal;
+	}
+
+	if (srCommit != 0) {
+		delete[] srCommit;
 	}
 
 	if (crdTransf != 0)
@@ -309,7 +324,20 @@ TestNonlocalElement3dDH::setDomain(Domain* theDomain)
 	}
 
 	if (initialFlag == 0)
+	{
 		this->initializeSectionHistoryVariables();
+
+		// Initialize values of Ac and Bc for matrix H
+		initCoefficientMatrixH();
+
+		//Determination of matrix H
+		H.Zero();
+		this->computeMatrixH();
+
+		//Determination of matrix H_inv
+		H_inv.Zero();
+		this->computeMatrixH_inv();
+	}
 }
 
 //Function to commit state of the element
@@ -326,6 +354,8 @@ TestNonlocalElement3dDH::commitState()
 	for (int i = 0; i < numSections; i++) {
 		err += sections[i]->commitState();
 		eNonlocalCommit[i] = eNonlocal[i];
+		eLocalCommit[i] = eLocal[i];
+		srCommit[i] = sr[i];
 	}
 
 	// Commit the element variables state
@@ -335,6 +365,8 @@ TestNonlocalElement3dDH::commitState()
 	// Commit the transformation between coord. systems
 	if ((err = crdTransf->commitState()) != 0)
 		opserr << "WARNING! TestNonlocalElement3dDH::commitState() - element: " << this->getTag() << " - failed to commit coordinate transformation object\n";
+
+	WSofteningCommit = WSofteningTrial;
 
 	// Complete committing the variables
 	return err;
@@ -349,9 +381,11 @@ TestNonlocalElement3dDH::revertToLastCommit(void)
 	for (int i = 0; i < numSections; i++) {
 		err += sections[i]->revertToLastCommit();
 		eNonlocal[i] = eNonlocalCommit[i];
+		eLocal[i] = eLocalCommit[i];
 
 		sections[i]->setTrialSectionDeformation(eNonlocal[i]);
-		sr[i] = sections[i]->getStressResultant();
+		//sr[i] = sections[i]->getStressResultant();
+		sr[i] = srCommit[i];
 		FSection[i] = sections[i]->getSectionFlexibility();
 	}
 	// Revert coordinate transformation object to last committed state
@@ -361,6 +395,8 @@ TestNonlocalElement3dDH::revertToLastCommit(void)
 	// Revert the element variables state
 	Kelement = KelementCommit;
 	q = qCommit;
+
+	WSofteningTrial = WSofteningCommit;
 
 	initialFlag = 0;
 
@@ -381,6 +417,7 @@ TestNonlocalElement3dDH::revertToStart(void)
 		FSection[i].Zero();
 		eNonlocal[i].Zero();
 		sr[i].Zero();
+		eLocal[i].Zero();
 	}
 
 	// revert the transformation to start
@@ -392,6 +429,9 @@ TestNonlocalElement3dDH::revertToStart(void)
 	KelementCommit.Zero();
 	q.Zero();
 	Kelement.Zero();
+
+	WSofteningCommit = 0.;
+	WSofteningTrial = 0.;
 
 	initialFlag = 0;
 	return err;
@@ -514,6 +554,9 @@ TestNonlocalElement3dDH::initializeSectionHistoryVariables(void)
 		eNonlocal[i] = Vector(order);
 		sr[i] = Vector(order);
 		eNonlocalCommit[i] = Vector(order);
+		eLocal[i] = Vector(order);
+		eLocalCommit[i] = Vector(order);
+		srCommit[i] = Vector(order);
 	}
 }
 
@@ -587,14 +630,6 @@ TestNonlocalElement3dDH::update(void)
 	static Vector qTrial(NEBD);
 	static Matrix KelementTrial(NEBD, NEBD);
 
-	//Determination of matrix H
-	H.Zero();
-	this->computeMatrixH();
-
-	//Determination of matrix H_inv
-	H_inv.Zero();
-	this->computeMatrixH_inv();
-
 	//todo
 	/*opserr << "this is matrix h: " << H << endln;
 	opserr << "this is matrix h_inv: " << H_inv << endln;*/
@@ -608,8 +643,6 @@ TestNonlocalElement3dDH::update(void)
 	static Matrix eu_nonlocal_Tot(NEBD, numSections);
 	/*static Vector eLocalSubdivide[maxNumSections];
 	static Vector s_Tot[maxNumSections];*/
-	Vector* eLocalSubdivide;
-	eLocalSubdivide = new Vector[numSections];
 	Vector* s_Tot;
 	s_Tot = new Vector[numSections];
 	static Matrix Felement_nonlocal(NEBD, NEBD);
@@ -618,7 +651,7 @@ TestNonlocalElement3dDH::update(void)
 	for (int ii = 0; ii < numSections; ii++) {
 		int order = sections[ii]->getOrder();
 
-		eLocalSubdivide[ii] = Vector(order);
+		//eLocalSubdivide[ii] = Vector(order);
 		s_Tot[ii] = Vector(order);
 	}
 
@@ -650,6 +683,7 @@ TestNonlocalElement3dDH::update(void)
 			for (i = 0; i < numSections; i++)
 			{
 				eNonLocalSubdivide[i] = eNonlocal[i];
+				eLocalSubdivide[i] = eLocal[i];
 				FSectionSubdivide[i] = FSection[i];
 				srSubdivide[i] = sr[i];
 
@@ -865,24 +899,13 @@ TestNonlocalElement3dDH::update(void)
 
 					//opserr << "This is e_local_Tot:" << e_local_Tot << endln;
 
-					//Loop to fill the eLocalSUbdivide vector from the matrix E_local
-					static Vector eLocalSubdivide_isec(NEBD);  //intermediate vector to fill eLocalSUbdivide
+					//Loop to fill the eLocalSubdivide vector from the matrix E_local
 					for (i = 0; i < numSections; i++)
 					{
-						eLocalSubdivide_isec.Zero();
-
-						//Fill the intermediate vector
-						/*eLocalSubdivide_isec(0) = e_local_Tot(0, i);
-						eLocalSubdivide_isec(1) = e_local_Tot(1, i);*/
 						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
 						{
-							eLocalSubdivide_isec(iiLineComponent) = e_local_Tot(iiLineComponent, i);
+							eLocalSubdivide[i](iiLineComponent) = e_local_Tot(iiLineComponent, i);
 						}
-
-						//Put the intermediate vector in the final vector
-						eLocalSubdivide[i] = eLocalSubdivide_isec;
-
-
 					}
 
 					for (i = 0; i < numSections; i++)
@@ -1063,6 +1086,25 @@ TestNonlocalElement3dDH::update(void)
 						//opserr << "This is Felement:" <<Felement<<endln;
 					}
 
+					// Check if section experiences softening
+					double WDot_isec;
+					double WDot_isec_cumulative = 0.;;
+					for (i = 0; i < numSections; i++)
+					{
+						WDot_isec = 0.;
+						for (int iComp = 0; iComp < NEBD; iComp++)
+						{
+							WDot_isec += 0.5 * (srSubdivide[i](iComp) - srCommit[i](iComp)) * (eLocalSubdivide[i](iComp) - eLocalCommit[i](iComp));
+						}
+						//opserr << "This is WDot:" << WDot << endln;
+						//if (WDot_isec < 0. && abs(WDot_isec)>1)
+						if (WDot_isec < 0.)
+						{
+							WDot_isec_cumulative += WDot_isec;
+						}
+					}
+					WSofteningTrial = WSofteningCommit + WDot_isec_cumulative;
+
 					//todo 
 					/*opserr << "This is the element flexibility matrix:" << Felement << endln;
 					opserr << "This is the element stiffness matrix:" << KelementTrial << endln;*/
@@ -1122,8 +1164,10 @@ TestNonlocalElement3dDH::update(void)
 						for (int k = 0; k < numSections; k++)
 						{
 							eNonlocal[k] = eNonLocalSubdivide[k];
+							eLocal[k] = eLocalSubdivide[k];
 							FSection[k] = FSectionSubdivide[k];
 							sr[k] = srSubdivide[k];
+
 						}
 
 						// break out of j & l loops
@@ -1965,6 +2009,53 @@ TestNonlocalElement3dDH::setSectionPointers(int numSec, SectionForceDeformation*
 		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate vscommit array";
 	}
 
+	eLocal = new Vector[numSections];
+	if (eLocal == 0) {
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate vs array";
+	}
+
+	srCommit = new Vector[numSections];
+	if (srCommit == 0) {
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate Ssr array";
+	}
+
+	eLocalCommit = new Vector[numSections];
+	if (eLocalCommit == 0) {
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate vscommit array";
+	}
+
+}
+
+// Method to compute theroy values Ac and Bc for matrix H
+void
+TestNonlocalElement3dDH::initCoefficientMatrixH()
+{
+	double L = crdTransf->getInitialLength();
+	double* secX = new double[numSections];
+	beamIntegr->getSectionLocations(numSections, L, secX);	// relative locations of sections (x/L)
+
+	double dx = L * (secX[1] - secX[0]);	// spaces between first and second integration points
+
+	Ac4MatrixHTheory = 1 + pow((lc / dx), 2);
+	Bc4MatrixHTheory = 0.5 * (1. - Ac4MatrixHTheory);
+
+	double ASection = sections[0]->getSectionArea();
+	WSofteningTol = numSections * ASection * 0.5 * 378. * 1e-6;
+
+	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
+	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;
+	//opserr << "This is WSofteningTol:" << WSofteningTol << endln;
+}
+
+// Method to compute updated values Ac using exponential smoothing function and Bc for matrix H
+void
+TestNonlocalElement3dDH::computeCoefficientMatrixH()
+{
+	Ac4MatrixH = Ac4MatrixHTheory;
+	Bc4MatrixH = 0.5 * (1. - Ac4MatrixH);
+
+	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
+	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;
 }
 
 //Method to compute matrix H
@@ -1973,17 +2064,9 @@ TestNonlocalElement3dDH::computeMatrixH()
 {
 	H.Zero(); // initialize matrix H
 
-	double L = crdTransf->getInitialLength();
-	double* secX = new double[numSections];
-	beamIntegr->getSectionLocations(numSections, L, secX);	// relative locations of sections (x/L)
 	int order = sections[0]->getOrder();   // use first section to get the order
 
-	Vector dx(numSections - 1);	// spaces between integration points
-
-	for (int j = 0; j < numSections - 1; j++)
-	{
-		dx(j) = L * (secX[j + 1] - secX[j]);
-	}
+	computeCoefficientMatrixH();
 
 	// 2nd Order PDE, Dirichlet BCs
 	for (int i = 0; i < order; i++) {
@@ -1993,11 +2076,12 @@ TestNonlocalElement3dDH::computeMatrixH()
 
 	for (int j = 1; j < numSections - 1; j++) {
 		for (int i = 0; i < order; i++) {
-			H(j * order + i, (j - 1) * order + i) = -pow(lc, 2) / (dx(j - 1) * (dx(j - 1) + dx(j)));
-			H(j * order + i, j * order + i) = 1 + pow(lc, 2) / (dx(j - 1) * dx(j));
-			H(j * order + i, (j + 1) * order + i) = -pow(lc, 2) / (dx(j) * (dx(j - 1) + dx(j)));
+			H(j * order + i, (j - 1) * order + i) = Bc4MatrixH;
+			H(j * order + i, j * order + i) = Ac4MatrixH;
+			H(j * order + i, (j + 1) * order + i) = Bc4MatrixH;
 		}
 	}
+	//opserr << "This is matrix H:" << H << endln;
 }
 
 //Method to compute H_inv

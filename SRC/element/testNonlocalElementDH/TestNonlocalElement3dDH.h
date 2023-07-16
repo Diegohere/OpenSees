@@ -102,6 +102,9 @@ private:
 	void computeEu_nonlocal(Matrix& eu_nonlocal, Matrix eu_local);
 	void computeFelement_nonlocal(Matrix& Felement_nonlocal);
 
+	void initCoefficientMatrixH();
+	void computeCoefficientMatrixH();
+
 
 	/* ----------------------------------------------------------------------------- */
 	/* Members                                                                       */
@@ -134,7 +137,10 @@ private:
 	Matrix* FSection;                    // array of section flexibility matrices
 	Vector* eNonlocal;                    // array of nonlocal section deformation vectors
 	Vector* sr;                   // array of section resisting force vectors
-	Vector* eNonlocalCommit;              // array of committed section deformation vectors
+	Vector* srCommit;                   // array of comitted section resisting force vectors
+	Vector* eNonlocalCommit;              // array of committed nonlocal section deformation vectors
+	Vector* eLocalCommit;              // array of committed local section deformation vectors
+	Vector* eLocal;              // array of local section deformation vectors
 
 	enum { maxNumEleLoads = 100 };   // maximum number of element loads
 	//enum { maxNumSections = 30 };  //maximum number of integration sections
@@ -161,8 +167,17 @@ private:
 	int    maxSubdivisions;       // maximum number of subdivisons of dv for local iterations
 
 	static Vector eNonLocalSubdivide[];
+	static Vector eLocalSubdivide[];
 	static Vector srSubdivide[];
 	static Matrix FSectionSubdivide[];
+
+	double WSofteningCommit;
+	double WSofteningTrial;
+	double WSofteningTol;
+	double Ac4MatrixHTheory;
+	double Bc4MatrixHTheory;
+	double Ac4MatrixH;
+	double Bc4MatrixH;
 
 	bool isTorsion;
 

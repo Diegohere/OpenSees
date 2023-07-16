@@ -521,23 +521,8 @@ const Vector& SectionForceDeformation::getThermalElong(void)
 }
 
 
-Matrix& SectionForceDeformation::getIncrementSectionDeformationsDecomposition() // added by Diego Heredia
+double SectionForceDeformation::getSectionArea() // added by Diego Heredia
 {
-    opserr << "SectionForceDeformation::getIncrementSectionDeformationsDecomposition: Only works with nonlocal element" << endln;
-    Matrix errMatrix(1, 1);
-    return errMatrix;
-}
-
-Matrix& SectionForceDeformation::getSectionDeformationsDecomposition() // added by Diego Heredia
-{
-    opserr << "SectionForceDeformation::getSectionDeformationsDecomposition: Only works with nonlocal element" << endln;
-    Matrix errMatrix(1, 1);
-    return errMatrix;
-}
-
-Vector& SectionForceDeformation::getTotalSectionDeformations() // added by Diego Heredia
-{
-    opserr << "SectionForceDeformation::getTotalSectionDeformations: Only works with nonlocal element" << endln;
-    Vector errVector(1);
-    return errVector;
+    opserr << "SectionForceDeformation::getSectionArea: Only works with nonlocal element" << endln;
+    return -1;
 }

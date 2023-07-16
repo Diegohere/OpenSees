@@ -88,7 +88,7 @@
 	
 	#set integration "NewtonCotes 1 5"
 	#element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
-	set lc [expr 0.0];
+	set lc [expr 2.0*$bPlate];
 	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 5  20 1e-6 $lc
 	#element gradientForceBeamColumn 12 1 2 $ColTransfTag Simpson 1 5  20 1e-6 $lc
 	

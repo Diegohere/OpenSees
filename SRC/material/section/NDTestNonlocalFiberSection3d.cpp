@@ -1350,6 +1350,13 @@ NDTestNonlocalFiberSection3d::getResponse(int responseID, Information &sectInfo)
 }
 
 
+double 
+NDTestNonlocalFiberSection3d::getSectionArea()
+{
+    return Abar;
+}
+
+
 
 // AddingSensitivity:BEGIN ////////////////////////////////////
 int

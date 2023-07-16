@@ -74,6 +74,9 @@ class NDTestNonlocalFiberSection3d : public SectionForceDeformation
     //// Get total section deformations
     //Vector& getTotalSectionDeformations();
 
+    //Get the total area of the cross section
+    double getSectionArea();
+
   protected:
     
     //  private:
