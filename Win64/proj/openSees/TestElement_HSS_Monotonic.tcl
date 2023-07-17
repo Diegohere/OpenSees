@@ -149,7 +149,7 @@
 	#set integration "NewtonCotes 1 5"
 	#element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
 	
-	set lc [expr 2.0*$DHSS];
+	set lc [expr 0.0*$DHSS];
 	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 9  20 1e-6 $lc
 	#element testNonlocalElementDH 12 1 2 $ColTransfTag NewtonCotes 1 5  20 1e-6 $lc
 	
@@ -163,40 +163,40 @@
 puts "Recorders ..."
 
 # Record displacements 
-	recorder Node -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_Disp.txt -node 2 -dof 1 2 disp;
+	recorder Node -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_Disp.txt -node 2 -dof 1 2 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_RBase.txt -node 1 -dof 1 2 6 reaction;
+	recorder Node -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_RBase.txt -node 1 -dof 1 2 6 reaction;
 	
 # Record stress and strains for the external fibers in the flanges
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY-93Z122.txt -ele 12 section 1 fiber -92.92 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY-93Z122.txt -ele 12 section 1 fiber -92.92 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY-72Z122.txt -ele 12 section 1 fiber -72.28 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY-72Z122.txt -ele 12 section 1 fiber -72.28 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY-52Z122.txt -ele 12 section 1 fiber -51.63 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY-52Z122.txt -ele 12 section 1 fiber -51.63 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY-31Z122.txt -ele 12 section 1 fiber -30.98 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY-31Z122.txt -ele 12 section 1 fiber -30.98 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY-10Z122.txt -ele 12 section 1 fiber -10.33 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY-10Z122.txt -ele 12 section 1 fiber -10.33 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY10Z122.txt -ele 12 section 1 fiber 10.33 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY10Z122.txt -ele 12 section 1 fiber 10.33 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY31Z122.txt -ele 12 section 1 fiber 30.97 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY31Z122.txt -ele 12 section 1 fiber 30.97 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY52Z122.txt -ele 12 section 1 fiber 51.62 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY52Z122.txt -ele 12 section 1 fiber 51.62 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY72Z122.txt -ele 12 section 1 fiber 72.27 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY72Z122.txt -ele 12 section 1 fiber 72.27 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 strain; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_stressFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 stress; 
-#recorder Element -file $dataDir/HSS254x9p5_lc20DIP9_Monotonic_strainFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY-93Z122.txt -ele 12 section 1 fiber -92.92 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY-93Z122.txt -ele 12 section 1 fiber -92.92 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY-72Z122.txt -ele 12 section 1 fiber -72.28 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY-72Z122.txt -ele 12 section 1 fiber -72.28 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY-52Z122.txt -ele 12 section 1 fiber -51.63 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY-52Z122.txt -ele 12 section 1 fiber -51.63 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY-31Z122.txt -ele 12 section 1 fiber -30.98 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY-31Z122.txt -ele 12 section 1 fiber -30.98 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY-10Z122.txt -ele 12 section 1 fiber -10.33 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY-10Z122.txt -ele 12 section 1 fiber -10.33 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY10Z122.txt -ele 12 section 1 fiber 10.33 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY10Z122.txt -ele 12 section 1 fiber 10.33 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY31Z122.txt -ele 12 section 1 fiber 30.97 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY31Z122.txt -ele 12 section 1 fiber 30.97 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY52Z122.txt -ele 12 section 1 fiber 51.62 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY52Z122.txt -ele 12 section 1 fiber 51.62 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY72Z122.txt -ele 12 section 1 fiber 72.27 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY72Z122.txt -ele 12 section 1 fiber 72.27 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 strain; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_stressFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 stress; 
+#recorder Element -file $dataDir/HSS254x9p5_lc0DIP9_Monotonic_strainFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 strain; 
 	
 	
 # Define display;	

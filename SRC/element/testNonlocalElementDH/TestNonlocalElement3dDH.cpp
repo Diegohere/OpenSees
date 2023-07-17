@@ -330,13 +330,13 @@ TestNonlocalElement3dDH::setDomain(Domain* theDomain)
 		// Initialize values of Ac and Bc for matrix H
 		initCoefficientMatrixH();
 
-		//Determination of matrix H
-		H.Zero();
-		this->computeMatrixH();
+		////Determination of matrix H
+		//H.Zero();
+		//this->computeMatrixH();
 
-		//Determination of matrix H_inv
-		H_inv.Zero();
-		this->computeMatrixH_inv();
+		////Determination of matrix H_inv
+		//H_inv.Zero();
+		//this->computeMatrixH_inv();
 	}
 }
 
@@ -638,7 +638,7 @@ TestNonlocalElement3dDH::update(void)
 	static Matrix deStar_local_Tot(NEBD, numSections);
 	static Matrix deStar_nonlocal_Tot(NEBD, numSections);
 	//static Matrix e_nonlocal_Tot(2, numSections);
-	static Matrix e_local_Tot(NEBD, numSections);
+	//static Matrix e_local_Tot(NEBD, numSections);
 	static Matrix eu_local_Tot(NEBD, numSections);
 	static Matrix eu_nonlocal_Tot(NEBD, numSections);
 	/*static Vector eLocalSubdivide[maxNumSections];
@@ -659,7 +659,7 @@ TestNonlocalElement3dDH::update(void)
 	deStar_local_Tot.Zero();
 	deStar_nonlocal_Tot.Zero();
 	//e_nonlocal_Tot.Zero();
-	e_local_Tot.Zero();
+	//e_local_Tot.Zero();
 	eu_local_Tot.Zero();
 	eu_nonlocal_Tot.Zero();
 
@@ -711,6 +711,8 @@ TestNonlocalElement3dDH::update(void)
 					Felement.Zero();
 					vu.Zero();
 
+					//Compute matrices H and Hinv for nonlocal
+					computeMatrixH();
 
 					//todo store this in matri and use and the end
 					//if (beamIntegr->addElasticFlexibility(L, Felement) < 0)
@@ -895,16 +897,21 @@ TestNonlocalElement3dDH::update(void)
 					}
 
 					//Compute the local section deformations for section state determination
-					this->computeE_local(e_local_Tot);
-
-					//opserr << "This is e_local_Tot:" << e_local_Tot << endln;
+					//this->computeE_local(e_local_Tot);
+					/*for (i = 0; i < numSections; i++)
+					{
+						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
+						{
+							e_local_Tot(iiLineComponent, i) = eLocalSubdivide[i](iiLineComponent) + deStar_local_Tot(iiLineComponent, i) + eu_local_Tot(iiLineComponent, i);
+						}
+					}*/
 
 					//Loop to fill the eLocalSubdivide vector from the matrix E_local
 					for (i = 0; i < numSections; i++)
 					{
 						for (int iiLineComponent = 0; iiLineComponent < NEBD; iiLineComponent++)
 						{
-							eLocalSubdivide[i](iiLineComponent) = e_local_Tot(iiLineComponent, i);
+							eLocalSubdivide[i](iiLineComponent) += deStar_local_Tot(iiLineComponent, i) + eu_local_Tot(iiLineComponent, i);
 						}
 					}
 
@@ -2040,7 +2047,8 @@ TestNonlocalElement3dDH::initCoefficientMatrixH()
 	Bc4MatrixHTheory = 0.5 * (1. - Ac4MatrixHTheory);
 
 	double ASection = sections[0]->getSectionArea();
-	WSofteningTol = numSections * ASection * 0.5 * 378. * 1e-6;
+	WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
+	//WSofteningTol = -0.0000000000001*ASection * 0.5 * 378. * 1e-6;
 
 	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
 	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;
@@ -2051,11 +2059,27 @@ TestNonlocalElement3dDH::initCoefficientMatrixH()
 void
 TestNonlocalElement3dDH::computeCoefficientMatrixH()
 {
-	Ac4MatrixH = Ac4MatrixHTheory;
+	//Ac4MatrixH = Ac4MatrixHTheory;
+
+	double xStar = 1. - WSofteningTrial / WSofteningTol;
+	double fXStar = 0.;
+	double f1MinusXStar = 0.;
+	if (xStar > 0.)
+	{
+		fXStar = exp(-1. / xStar);
+	}
+	if (1. - xStar > 0.)
+	{
+		f1MinusXStar = exp(-1. / (1. - xStar));
+	}
+	double gXStar = fXStar / (fXStar + f1MinusXStar);
+
+	Ac4MatrixH= gXStar * 1 + (1 - gXStar) * Ac4MatrixHTheory;
+
 	Bc4MatrixH = 0.5 * (1. - Ac4MatrixH);
 
-	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
-	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;
+	//opserr << "This is Ac4MatrixH:" << Ac4MatrixH << endln;
+	//opserr << "This is Bc4MatrixH:" << Bc4MatrixH << endln;
 }
 
 //Method to compute matrix H
@@ -2081,6 +2105,8 @@ TestNonlocalElement3dDH::computeMatrixH()
 			H(j * order + i, (j + 1) * order + i) = Bc4MatrixH;
 		}
 	}
+
+	computeMatrixH_inv();
 	//opserr << "This is matrix H:" << H << endln;
 }
 
