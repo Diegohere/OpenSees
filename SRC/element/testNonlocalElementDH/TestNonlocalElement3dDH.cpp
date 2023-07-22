@@ -123,7 +123,7 @@ TestNonlocalElement3dDH::TestNonlocalElement3dDH() : Element(0, ELE_TAG_TestNonl
 maxIters(0), Tol(0), lc(0), initialFlag(0),
 Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
 FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
-numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0), 
+numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
 WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
 isTorsion(false)
 // complete
@@ -142,7 +142,7 @@ TestNonlocalElement3dDH::TestNonlocalElement3dDH(int tag, int nodeI, int nodeJ, 
 	maxIters(maxNumIters), Tol(tolerance), lc(LC), initialFlag(0),
 	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(6 * numSec, 6 * numSec), H_inv(6 * numSec, 6 * numSec),
 	FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
-	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0), 
+	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
 	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
 	isTorsion(false)
 	// complete
@@ -1095,7 +1095,10 @@ TestNonlocalElement3dDH::update(void)
 
 					// Check if section experiences softening
 					double WDot_isec;
-					double WDot_isec_cumulative = 0.;;
+					double WDot_isec_cumulativeSoft = 0.;
+					double elasticUnload = 0.;
+					//double WDot_isec_cumulativeElastic = 0.;
+					double WDot_totElastic = 0.;
 					for (i = 0; i < numSections; i++)
 					{
 						WDot_isec = 0.;
@@ -1107,10 +1110,20 @@ TestNonlocalElement3dDH::update(void)
 						//if (WDot_isec < 0. && abs(WDot_isec)>1)
 						if (WDot_isec < 0.)
 						{
-							WDot_isec_cumulative += WDot_isec;
+							WDot_isec_cumulativeSoft += WDot_isec;
+						}
+						if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm()<0.)
+						{
+							elasticUnload += 1;
+							//WDot_isec_cumulativeElastic += WDot_isec;
 						}
 					}
-					WSofteningTrial = WSofteningCommit + WDot_isec_cumulative;
+					if (elasticUnload==numSections)
+					{
+						//WDot_totElastic = WDot_isec_cumulativeElastic;
+						WDot_totElastic = -WSofteningCommit;
+					}
+					WSofteningTrial = WSofteningCommit + WDot_isec_cumulativeSoft + WDot_totElastic;
 
 					//todo 
 					/*opserr << "This is the element flexibility matrix:" << Felement << endln;
@@ -2047,8 +2060,8 @@ TestNonlocalElement3dDH::initCoefficientMatrixH()
 	Bc4MatrixHTheory = 0.5 * (1. - Ac4MatrixHTheory);
 
 	double ASection = sections[0]->getSectionArea();
-	WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
-	//WSofteningTol = -0.0000000000001*ASection * 0.5 * 378. * 1e-6;
+	//WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
+	WSofteningTol = -1. * ASection * 0.5 * 378. * 1e-6;
 
 	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
 	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;
@@ -2074,7 +2087,7 @@ TestNonlocalElement3dDH::computeCoefficientMatrixH()
 	}
 	double gXStar = fXStar / (fXStar + f1MinusXStar);
 
-	Ac4MatrixH= gXStar * 1 + (1 - gXStar) * Ac4MatrixHTheory;
+	Ac4MatrixH = gXStar * 1 + (1 - gXStar) * Ac4MatrixHTheory;
 
 	Bc4MatrixH = 0.5 * (1. - Ac4MatrixH);
 

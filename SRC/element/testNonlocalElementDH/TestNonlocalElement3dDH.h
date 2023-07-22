@@ -174,6 +174,8 @@ private:
 	double WSofteningCommit;
 	double WSofteningTrial;
 	double WSofteningTol;
+	//double DeltaWSectionTol = 1e-4;
+	bool isSoftening;
 	double Ac4MatrixHTheory;
 	double Bc4MatrixHTheory;
 	double Ac4MatrixH;
