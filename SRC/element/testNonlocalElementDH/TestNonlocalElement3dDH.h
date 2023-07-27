@@ -97,13 +97,16 @@ private:
 	void computeMatrixH();
 	void computeMatrixH_inv();
 
-	void computeDeStar_nonlocal(Matrix& deStar_nonlocal, Matrix deStar_local);
+	void computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Vector deStar_local_Tot[]);
 	void computeE_local(Matrix& e_local_tot);
-	void computeEu_nonlocal(Matrix& eu_nonlocal, Matrix eu_local);
+	void computeEu_nonlocal(Vector eu_nonlocal_Tot[], Vector eu_local_Tot[]);
 	void computeFelement_nonlocal(Matrix& Felement_nonlocal);
 
 	void initCoefficientMatrixH();
 	void computeCoefficientMatrixH();
+
+
+	//void testFunction(Vector eNonLocalSubdivide[], Vector sTot[]);
 
 
 	/* ----------------------------------------------------------------------------- */
