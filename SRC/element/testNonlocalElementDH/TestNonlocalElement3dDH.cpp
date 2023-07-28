@@ -1103,10 +1103,11 @@ TestNonlocalElement3dDH::update(void)
 
 					// Check if section experiences softening
 					double WDot_isec;
-					double WDot_isec_cumulativeSoft = 0.;
-					double elasticUnload = 0.;
+					double WDot_cumulativeSoft = 0.;
+					double WDot_cumulativeNonSoft = 0.;
+					double nonSoftLoad = 0.;
 					//double WDot_isec_cumulativeElastic = 0.;
-					double WDot_totElastic = 0.;
+					//double WDot_totElastic = 0.;
 					for (i = 0; i < numSections; i++)
 					{
 						WDot_isec = 0.;
@@ -1118,20 +1119,22 @@ TestNonlocalElement3dDH::update(void)
 						//if (WDot_isec < 0. && abs(WDot_isec)>1)
 						if (WDot_isec < 0.)
 						{
-							WDot_isec_cumulativeSoft += WDot_isec;
+							WDot_cumulativeSoft += WDot_isec;
 						}
-						if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm()<0.)
+						else
 						{
-							elasticUnload += 1;
-							//WDot_isec_cumulativeElastic += WDot_isec;
+							nonSoftLoad += 1;
+							WDot_cumulativeNonSoft += WDot_isec;
 						}
 					}
-					if (elasticUnload==numSections)
+					if (nonSoftLoad == numSections)
 					{
-						//WDot_totElastic = WDot_isec_cumulativeElastic;
-						WDot_totElastic = -WSofteningCommit;
+						WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeNonSoft, 0.), WSofteningTol);
 					}
-					WSofteningTrial = WSofteningCommit + WDot_isec_cumulativeSoft + WDot_totElastic;
+					else
+					{
+						WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeSoft, 0.), WSofteningTol);
+					}
 
 					//todo 
 					/*opserr << "This is the element flexibility matrix:" << Felement << endln;
