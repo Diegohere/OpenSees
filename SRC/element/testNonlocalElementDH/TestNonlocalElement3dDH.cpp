@@ -1104,8 +1104,8 @@ TestNonlocalElement3dDH::update(void)
 					// Check if section experiences softening
 					double WDot_isec;
 					double WDot_cumulativeSoft = 0.;
-					double WDot_cumulativeNonSoft = 0.;
-					double nonSoftLoad = 0.;
+					double WDot_cumulativeElasticUnload = 0.;
+					double elasticUnload = 0.;
 					//double WDot_isec_cumulativeElastic = 0.;
 					//double WDot_totElastic = 0.;
 					for (i = 0; i < numSections; i++)
@@ -1121,15 +1121,15 @@ TestNonlocalElement3dDH::update(void)
 						{
 							WDot_cumulativeSoft += WDot_isec;
 						}
-						else
+						else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
 						{
-							nonSoftLoad += 1;
-							WDot_cumulativeNonSoft += WDot_isec;
+							elasticUnload += 1;
+							WDot_cumulativeElasticUnload += WDot_isec;
 						}
 					}
-					if (nonSoftLoad == numSections)
+					if (elasticUnload == numSections)
 					{
-						WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeNonSoft, 0.), WSofteningTol);
+						WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeElasticUnload, 0.), WSofteningTol);
 					}
 					else
 					{
