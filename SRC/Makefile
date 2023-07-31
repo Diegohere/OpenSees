@@ -663,7 +663,10 @@ ELE_LIBS   =  $(FE)/element/Element.o \
 	$(FE)/element/masonry/MasonPan12.o \
 	$(FE)/element/masonry/MasonPan3D.o \
 	$(FE)/element/masonry/BeamGT.o \
-	$(FE)/element/CEqElement/ASDEmbeddedNodeElement.o
+	$(FE)/element/CEqElement/ASDEmbeddedNodeElement.o \
+	$(FE)/element/testNonlocalElementDH/TclTestNonlocalElementDH.o \
+	$(FE)/element/testNonlocalElementDH/TestNonlocalElement3dDH.o \
+	$(FE)/element/testNonlocalElementDH/TestNonlocalElement2dDH.o 
 
 #	$(FE)/material/nD/Damage2p.o \
 #	$(FE)/material/nD/Damage2p3D.o \
@@ -990,7 +993,9 @@ MATERIAL_LIBS   =  $(FE)/material/Material.o \
 	$(FE)/material/nD/PlateFromPlaneStressMaterial.o \
 	$(FE)/material/nD/PlateRebarMaterial.o \
 	$(FE)/material/nD/stressDensityModel/stressDensity.o \
-	$(FE)/material/nD/stressDensityModel/SDM-UC.o
+	$(FE)/material/nD/stressDensityModel/SDM-UC.o \
+	$(Fe)/material/nD/LocalBucklingFlangePlate.o \
+	$(Fe)/material/nD/LocalBucklingWebPlate.o
 
 FEDEAS_LIBS = $(FE)/material/uniaxial/FedeasMaterial.o \
 	$(FE)/material/uniaxial/fedeas/FedeasHardeningMaterial.o \

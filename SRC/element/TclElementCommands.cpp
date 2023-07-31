@@ -205,6 +205,7 @@ extern void* OPS_GradientForceBeamColumn3d();
 
 // Added by Diego Heredia 19.06.2023
 extern void* OPS_TestNonlocalElement3dDH();
+extern void* OPS_TestNonlocalElement2dDH();
 
 
 extern int TclModelBuilder_addFeapTruss(ClientData clientData, Tcl_Interp *interp,  int argc,

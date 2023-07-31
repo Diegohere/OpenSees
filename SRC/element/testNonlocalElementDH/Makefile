@@ -2,6 +2,7 @@ include ../../../Makefile.def
 
 OBJS       = \
 	TestNonlocalElement3dDH.o \
+	TestNonlocalElement2dDH.o \
 	TclTestNonlocalElementDH.o
 
 # Compilation control

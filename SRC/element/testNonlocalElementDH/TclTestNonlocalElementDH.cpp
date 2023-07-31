@@ -12,6 +12,7 @@
 #include <TclModelBuilder.h>
 
 #include "TestNonlocalElement3dDH.h"
+#include "TestNonlocalElement2dDH.h"
 
 #include <LobattoBeamIntegration.h>
 #include <NewtonCotesBeamIntegration.h>
@@ -41,8 +42,17 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 	int ndm = theTclBuilder->getNDM();
 	int ndf = theTclBuilder->getNDF();
 
-	// Check the dimension of the simulation (3d)
-	if (ndm == 3) {
+	// Check the dimension of the simulation (2d or 3d)
+	if (ndm == 2) {
+		// 2d simulation --> check if 3 DOF per node
+		if (ndf != 3) {
+			opserr << "WARNING invalid number of DOF: " << ndf;
+			opserr << ", for 2d simulation nDOF must be 3 - testNonlocalElementDH\n";
+			return TCL_ERROR;
+		}
+
+	}
+	else if (ndm == 3) {
 		// 3d simulation --> check if 6 DOF per node
 		if (ndf != 6) {
 			opserr << "WARNING invalid number of DOF: " << ndf;
@@ -51,9 +61,9 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 		}
 
 	}
-	// Works only for 3d simulations
+	// Works for 2d and 3d simulations
 	else {
-		opserr << "WARNING invalid dimension, works only for 3d \n";
+		opserr << "WARNING invalid dimension, works only for 2d and 3d \n";
 		return TCL_ERROR;
 	}
 
@@ -111,7 +121,17 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 	// Check 2d or 3d transformation cases
 	CrdTransf* theCoordTransf2d = 0;
 	CrdTransf* theCoordTransf3d = 0;
-	if (ndm==3)
+	if (ndm == 2)
+	{ // Check 2d transformation case
+		theCoordTransf2d = OPS_getCrdTransf(coordTransfTag);
+		if (!theCoordTransf2d) {
+			opserr << "WARNING transformation not found\n";
+			opserr << " - transformation: " << coordTransfTag;
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+	}
+	else
 	{ // Check 3d transformation case
 		theCoordTransf3d = OPS_getCrdTransf(coordTransfTag);
 		if (!theCoordTransf3d) {
@@ -210,11 +230,13 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 		return TCL_ERROR;
 	}
 
-	// Create the 3d beam element
-	/*if (ndm == 3) {
+	// Create the 2d or 3d beam element
+	if(ndm == 2) {
+		theElement = new TestNonlocalElement2dDH(eleTag, iNode, jNode, *theCoordTransf2d, *beamIntegr, IntegrSections, numIntegrPts, maxNumIter, tolerance, lc);
+	}
+	else if (ndm == 3) {
 		theElement = new TestNonlocalElement3dDH(eleTag, iNode, jNode, *theCoordTransf3d, *beamIntegr, IntegrSections, numIntegrPts, maxNumIter, tolerance, lc);
-	}*/
-	theElement = new TestNonlocalElement3dDH(eleTag, iNode, jNode, *theCoordTransf3d, *beamIntegr, IntegrSections, numIntegrPts, maxNumIter, tolerance, lc);
+	}
 
 	if (beamIntegr != 0)
 		delete beamIntegr;

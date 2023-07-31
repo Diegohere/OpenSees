@@ -51,6 +51,7 @@ add_subdirectory(elasticBeamColumn)
 add_subdirectory(gradientInelasticBeamColumn)
 add_subdirectory(updatedLagrangianBeamColumn)
 add_subdirectory(nonlinearBeamColumn)
+add_subdirectory(testNonlocalElement3dDH)
 
 add_subdirectory(catenaryCable)
 add_subdirectory(LHMYS)

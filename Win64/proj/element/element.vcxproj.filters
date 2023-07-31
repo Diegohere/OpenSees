@@ -1010,6 +1010,9 @@
     <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement3dDH.cpp">
       <Filter>testNonlocalElementDH</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement2dDH.cpp">
+      <Filter>testNonlocalElementDH</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\element\Element.h">
@@ -1778,6 +1781,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement3dDH.h">
+      <Filter>testNonlocalElementDH</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement2dDH.h">
       <Filter>testNonlocalElementDH</Filter>
     </ClInclude>
   </ItemGroup>

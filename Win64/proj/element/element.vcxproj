@@ -278,6 +278,7 @@
     <ClCompile Include="..\..\..\SRC\element\surfaceLoad\TriSurfaceLoad.cpp" />
     <ClCompile Include="..\..\..\SRC\element\TclElementCommands.cpp" />
     <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TclTestNonlocalElementDH.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement2dDH.cpp" />
     <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement3dDH.cpp" />
     <ClCompile Include="..\..\..\SRC\element\tetrahedron\FourNodeTetrahedron.cpp" />
     <ClCompile Include="..\..\..\SRC\element\truss\InertiaTruss.cpp" />
@@ -563,6 +564,7 @@
     <ClInclude Include="..\..\..\SRC\element\shell\ShellNLDKGQThermal.h" />
     <ClInclude Include="..\..\..\SRC\element\shell\ShellNLDKGT.h" />
     <ClInclude Include="..\..\..\SRC\element\surfaceLoad\TriSurfaceLoad.h" />
+    <ClInclude Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement2dDH.h" />
     <ClInclude Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement3dDH.h" />
     <ClInclude Include="..\..\..\SRC\element\tetrahedron\FourNodeTetrahedron.h" />
     <ClInclude Include="..\..\..\SRC\element\truss\InertiaTruss.h" />
