@@ -1043,6 +1043,13 @@ FiberSection2d::getResponse(int responseID, Information &sectInfo)
 }
 
 
+double
+FiberSection2d::getSectionArea()
+{
+    return ABar;
+}
+
+
 
 // AddingSensitivity:BEGIN ////////////////////////////////////
 int

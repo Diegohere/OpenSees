@@ -92,6 +92,9 @@ class FiberSection2d : public SectionForceDeformation
 	//by SAJalali
 	double getEnergy() const;
 
+    //Get the total area of the cross section added by Diego Heredia
+    double getSectionArea();
+
   protected:
     
     //  private:

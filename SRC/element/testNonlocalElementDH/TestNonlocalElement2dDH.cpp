@@ -137,7 +137,7 @@ TestNonlocalElement2dDH::TestNonlocalElement2dDH(int tag, int nodeI, int nodeJ, 
 	SectionForceDeformation** sec, int numSec, int maxNumIters, double tolerance, double LC)
 	:Element(tag, ELE_TAG_TestNonlocalElement2dDH), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
 	maxIters(maxNumIters), Tol(tolerance), lc(LC), initialFlag(0),
-	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(6 * numSec, 6 * numSec), H_inv(6 * numSec, 6 * numSec),
+	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * numSec, 2 * numSec), H_inv(2 * numSec, 2 * numSec),
 	FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
 	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
 	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0)
@@ -559,7 +559,7 @@ TestNonlocalElement2dDH::update(void)
 
 	//Get element displacements and displacements increments in basic reference frame
 	const Vector& v = crdTransf->getBasicTrialDisp();
-	static Vector dv(3);
+	static Vector dv(NEBD);
 	dv = crdTransf->getBasicIncrDeltaDisp();
 
 	//todo
@@ -730,9 +730,9 @@ TestNonlocalElement2dDH::update(void)
 						const ID& code = sections[i]->getType();
 
 						//static Vector s_seci(NEBD);
-						Vector ds(NEBD);
+						Vector ds(2);
 						//static Vector deStar_local_seci(NEBD);
-						Matrix Fb(NEBD, NEBD);
+						Matrix Fb(2, 2);
 
 						/*s_seci.setData(workArea, order);
 						ds.setData(&workArea[order], order);
@@ -903,8 +903,8 @@ TestNonlocalElement2dDH::update(void)
 						FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 
 						// calculate section residual deformations de = FSection * (s - sr);
-						static Vector s_seci(NEBD); // initialize vector s_secii
-						static Vector ds(NEBD);
+						static Vector s_seci(2); // initialize vector s_secii
+						static Vector ds(2);
 
 						ds = s_Tot[i];  //take the corresponding section force from matrix with all section forces
 						ds.addVector(1.0, srSubdivide[i], -1.0);  // ds = s - sr[i];
@@ -1057,7 +1057,7 @@ TestNonlocalElement2dDH::update(void)
 					for (i = 0; i < numSections; i++)
 					{
 						WDot_isec = 0.;
-						for (int iComp = 0; iComp < NEBD; iComp++)
+						for (int iComp = 0; iComp < 2; iComp++)
 						{
 							WDot_isec += 0.5 * (srSubdivide[i](iComp) - srCommit[i](iComp)) * (eLocalSubdivide[i](iComp) - eLocalCommit[i](iComp));
 						}
@@ -1470,7 +1470,9 @@ TestNonlocalElement2dDH::getResistingForceIncInertia()
 	// Compute the current resisting force
 	theVector = this->getResistingForce();
 
-	// For now rho=0, if want to change this add rho to .h file and modifiy this method
+	// add the damping forces if rayleigh damping
+	if (betaK != 0.0 || betaK0 != 0.0 || betaKc != 0.0)
+		theVector += this->getRayleighDampingForces();
 
 	return theVector;
 }
@@ -1830,22 +1832,37 @@ TestNonlocalElement2dDH::setSectionPointers(int numSec, SectionForceDeformation*
 	// allocate section flexibility matrices and section deformation vectors
 	FSection = new Matrix[numSections];
 	if (FSection == 0) {
-		opserr << "TestNonlocalElement2dDH::setSectionPointers -- failed to allocate fs array";
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate fs array";
 	}
 
 	eNonlocal = new Vector[numSections];
 	if (eNonlocal == 0) {
-		opserr << "TestNonlocalElement2dDH::setSectionPointers -- failed to allocate vs array";
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate vs array";
 	}
 
 	sr = new Vector[numSections];
 	if (sr == 0) {
-		opserr << "TestNonlocalElement2dDH::setSectionPointers -- failed to allocate Ssr array";
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate Ssr array";
 	}
 
 	eNonlocalCommit = new Vector[numSections];
 	if (eNonlocalCommit == 0) {
-		opserr << "TestNonlocalElement2dDH::setSectionPointers -- failed to allocate vscommit array";
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate vscommit array";
+	}
+
+	eLocal = new Vector[numSections];
+	if (eLocal == 0) {
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate vs array";
+	}
+
+	srCommit = new Vector[numSections];
+	if (srCommit == 0) {
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate Ssr array";
+	}
+
+	eLocalCommit = new Vector[numSections];
+	if (eLocalCommit == 0) {
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate vscommit array";
 	}
 
 }
@@ -1899,7 +1916,7 @@ TestNonlocalElement2dDH::computeCoefficientMatrixH()
 	//opserr << "This is Bc4MatrixH:" << Bc4MatrixH << endln;
 }
 
-//Method to compute matrix H - NOT USED
+//Method to compute matrix H 
 void
 TestNonlocalElement2dDH::computeMatrixH()
 {
@@ -1923,7 +1940,7 @@ TestNonlocalElement2dDH::computeMatrixH()
 		}
 	}
 
-	computeMatrixH_inv();
+	//computeMatrixH_inv();
 	//opserr << "This is matrix H:" << H << endln;
 }
 
@@ -1999,7 +2016,7 @@ TestNonlocalElement2dDH::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Ve
 		deStar_nonlocal_Tot[numSections - 1] = deStar_local_Tot[numSections - 1];
 
 		Vector y4LU(numSections);
-		for (i = 0; i < NEBD; i++)
+		for (i = 0; i < 2; i++)
 		{
 			y4LU(0) = deStar_local_Tot[0](i);
 			for (j = 1; j < numSections; j++)
@@ -2012,7 +2029,8 @@ TestNonlocalElement2dDH::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Ve
 				deStar_nonlocal_Tot[j](i) = (y4LU(j) - Bc4MatrixH * deStar_nonlocal_Tot[j + 1](i)) / alpha4LU(j);
 			}
 		}
-
+		/*opserr << "This is deStar_local_Tot in function:" << deStar_local_Tot[2] << endln;
+		opserr << "This is deStar_nonlocal_Tot in funtion:" << deStar_nonlocal_Tot[2] << endln;*/
 	}
 
 	//todo
@@ -2020,9 +2038,9 @@ TestNonlocalElement2dDH::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Ve
 	opserr << "This is deStar_nonlocal_Tot in funtion:" << deStar_nonlocal << endln;*/
 }
 
-//Method to compute e_local[]
+//Method to compute e_local[] - NOT USED
 void
-TestNonlocalElement2dDH::computeE_local(Matrix& e_local_tot)
+TestNonlocalElement2dDH::computeE_local(Matrix& e_local_tot) 
 {
 	e_local_tot.Zero();
 	Vector eNonLocal_SectionI_temp = Vector(NEBD);
@@ -2126,7 +2144,7 @@ TestNonlocalElement2dDH::computeEu_nonlocal(Vector eu_nonlocal_Tot[], Vector eu_
 		eu_nonlocal_Tot[numSections - 1] = eu_local_Tot[numSections - 1];
 
 		Vector y4LU(numSections);
-		for (i = 0; i < NEBD; i++)
+		for (i = 0; i < 2; i++)
 		{
 			y4LU(0) = eu_local_Tot[0](i);
 			for (j = 1; j < numSections; j++)
@@ -2140,6 +2158,9 @@ TestNonlocalElement2dDH::computeEu_nonlocal(Vector eu_nonlocal_Tot[], Vector eu_
 			}
 		}
 
+		/*opserr << "This is deStar_local_Tot in function:" << eu_local_Tot[2] << endln;
+		opserr << "This is deStar_nonlocal_Tot in funtion:" << eu_nonlocal_Tot[2] << endln;*/
+
 	}
 }
 
@@ -2148,10 +2169,10 @@ void
 TestNonlocalElement2dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 {
 	Felement_nonlocal.Zero();
-	Matrix b(NEBD, NEBD);
-	Matrix B_Q(NEBD * numSections, NEBD);
-	Matrix B_q(NEBD, NEBD * numSections);
-	Matrix Fsection_Tot(NEBD * numSections, NEBD * numSections);
+	Matrix b(2, 3);
+	Matrix B_Q(2 * numSections, 3);
+	Matrix B_q(3, 2 * numSections);
+	Matrix Fsection_Tot(2 * numSections, 2 * numSections);
 	/*B_Q.Zero();
 	B_q.Zero();
 	Fsection_Tot.Zero();*/
@@ -2190,14 +2211,19 @@ TestNonlocalElement2dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 		//compute matrices B_Q and B_q
 		double wtL = wt[i] * L;
 
-		for (int j = 0; j < NEBD; j++) //loop to over the lines of b
-		{
-			for (int k = 0; k < NEBD; k++) //loop to over the columns of b
-			{
-				B_Q(i * NEBD + j, k) = b(j, k);
-				B_q(k, i * NEBD + j) = wtL * b(j, k);
-			}
-		}
+		B_Q(2 * i, 0) = b(0, 0);
+		B_Q(2 * i, 1) = b(0, 1);
+		B_Q(2 * i, 2) = b(0, 2);
+		B_Q(2 * i + 1, 0) = b(1, 0);
+		B_Q(2 * i + 1, 1) = b(1, 1);
+		B_Q(2 * i + 1, 2) = b(1, 2);
+
+		B_q(0, 2 * i) = b(0, 0) * wtL;
+		B_q(0, 2 * i + 1) = b(0, 1) * wtL;
+		B_q(1, 2 * i) = b(1, 0) * wtL;
+		B_q(1, 2 * i + 1) = b(1, 1) * wtL;
+		B_q(2, 2 * i) = b(0, 2) * wtL;
+		B_q(2, 2 * i + 1) = b(1, 2) * wtL;
 
 		//assemble matrix Fsection_Tot
 		//Matrix Fsection_interm(NEBD, NEBD); //intermediate matrix to fill Fsection_Tot
@@ -2205,17 +2231,13 @@ TestNonlocalElement2dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 
 		//opserr << "This matrix Fsection_interm:" << Fsection_interm << endln;
 
-		for (j = 0; j < NEBD; j++) //loop to over the lines of Fsection_interm
-		{
-			for (k = 0; k < NEBD; k++) //loop to over the columns of Fsection_interm
-			{
-				//Fsection_Tot(i * NEBD + j, i * NEBD + k) = Fsection_interm(j, k);
-				Fsection_Tot(i * NEBD + j, i * NEBD + k) = FSectionSubdivide[i](j, k);
-			}
-		}
+		Fsection_Tot(2 * i, 2 * i) = FSectionSubdivide[i](0, 0);
+		Fsection_Tot(2 * i, 2 * i + 1) = FSectionSubdivide[i](0, 1);
+		Fsection_Tot(2 * i + 1, 2 * i) = FSectionSubdivide[i](1, 0);
+		Fsection_Tot(2 * i + 1, 2 * i + 1) = FSectionSubdivide[i](1, 1);
 	}
 
-	Matrix Hinv_multFsection_Tot(NEBD * numSections, NEBD * numSections);
+	Matrix Hinv_multFsection_Tot(2 * numSections, 2 * numSections);
 
 	if (abs(WSofteningTrial) == 0.)
 	{
@@ -2239,30 +2261,30 @@ TestNonlocalElement2dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 		}
 
 		// Boundary conditions
-		for (i = 0; i < NEBD; i++)
+		for (i = 0; i < 2; i++)
 		{
-			for (j = 0; j < NEBD; j++)
+			for (j = 0; j < 2; j++)
 			{
 				Hinv_multFsection_Tot(i, j) = Fsection_Tot(i, j);
-				Hinv_multFsection_Tot(NEBD * numSections - 1 - i, NEBD * numSections - 1 - j) = Fsection_Tot(NEBD * numSections - 1 - i, NEBD * numSections - 1 - j);
+				Hinv_multFsection_Tot(2 * numSections - 1 - i, 2 * numSections - 1 - j) = Fsection_Tot(2 * numSections - 1 - i, 2 * numSections - 1 - j);
 			}
 		}
 
 		// Thomas algorithm
-		Vector y4LU(NEBD * numSections);
-		for (i = 0; i < NEBD * numSections; i++)
+		Vector y4LU(2 * numSections);
+		for (i = 0; i < 2 * numSections; i++)
 		{
-			for (k = 0; k < NEBD; k++)
+			for (k = 0; k < 2; k++)
 			{
 				y4LU(k) = Fsection_Tot(k, i);
 			}
-			for (j = NEBD; j < NEBD * numSections; j++)
+			for (j = 2; j < 2 * numSections; j++)
 			{
-				y4LU(j) = Fsection_Tot(j, i) - beta4LU(j / NEBD) * y4LU(j - NEBD);
+				y4LU(j) = Fsection_Tot(j, i) - beta4LU(j / 2) * y4LU(j - 2);
 			}
-			for (j = NEBD * numSections - NEBD - 1; j > NEBD - 1; j--)
+			for (j = 2 * numSections - 2 - 1; j > 2 - 1; j--)
 			{
-				Hinv_multFsection_Tot(j, i) = (y4LU(j) - Bc4MatrixH * Hinv_multFsection_Tot(j + NEBD, i)) / alpha4LU(j / NEBD);
+				Hinv_multFsection_Tot(j, i) = (y4LU(j) - Bc4MatrixH * Hinv_multFsection_Tot(j + 2, i)) / alpha4LU(j / 2);
 			}
 		}
 
@@ -2271,9 +2293,10 @@ TestNonlocalElement2dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 	Felement_nonlocal = B_q * Hinv_multFsection_Tot * B_Q;
 
 	//compute the matrix multiplication F_element_nonLocal=B_q*inv(H)*Fsection_Tot*B_Q;
-	/*computeMatrixH();
-	computeMatrixH_inv();
-	Matrix Felement_nonlocal_target = B_q * H_inv * Fsection_Tot * B_Q;*/
+	//computeMatrixH();
+	//computeMatrixH_inv();
+	////Matrix Felement_nonlocal_target = B_q * H_inv * Fsection_Tot * B_Q;
+	//Felement_nonlocal = B_q * H_inv * Fsection_Tot * B_Q;
 
 	/*opserr << "This matrix FHinv_multFsection_Target:" << H_inv * Fsection_Tot << endln;
 	opserr << "This Hinv_multFsection_Tot:" << Hinv_multFsection_Tot << endln;*/
