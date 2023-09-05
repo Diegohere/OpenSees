@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir resultsW634_Suzuki2021_1p2sigmaC0Web;			# name of output folder
+	set dataDir resultsW634_Suzuki2021_1p2sigmaC0Web_test;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 	#source DisplayModel2D.tcl;

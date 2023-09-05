@@ -187,6 +187,8 @@ extern void *OPS_Trilinwp2(void);
 extern void *OPS_Masonryt(void);
 extern void *OPS_DowelType(void);
 
+extern void* OPS_LocalBucklingWebPlateUniaxial(void);
+
 //extern int TclCommand_ConfinedConcrete02(ClientData clientData, Tcl_Interp *interp, int argc, 
 //					 TCL_Char **argv, TclModelBuilder *theTclBuilder);
 
@@ -1669,6 +1671,15 @@ TclModelBuilderUniaxialMaterialCommand (ClientData clientData, Tcl_Interp *inter
     
     else if (strcmp(argv[1], "UVCuniaxial") == 0) {
         void* theMat = OPS_UVCuniaxial();
+    if (theMat != 0)
+        theMaterial = (UniaxialMaterial*)theMat;
+    else
+        return TCL_ERROR;
+    }
+
+    //Added by Diego Heredia
+    else if (strcmp(argv[1], "LocalBucklingWebPlateUniaxial") == 0) {
+    void* theMat = OPS_LocalBucklingWebPlateUniaxial();
     if (theMat != 0)
         theMaterial = (UniaxialMaterial*)theMat;
     else

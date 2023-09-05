@@ -208,6 +208,8 @@ void *OPS_KarsanUnloadingRule();
 void* OPS_HystereticPoly(); // Salvatore Sessa 14-01-2021 Mail: salvatore.sessa2@unina.it
 void* OPS_DowelType();
 
+void* OPS_LocalBucklingWebPlateUniaxial(); //Diego Heredia
+
 namespace {
 
     static UniaxialMaterial *theTestingUniaxialMaterial = 0;
@@ -359,6 +361,7 @@ namespace {
 	uniaxialMaterialsMap.insert(std::make_pair("SMA", &OPS_SMAMaterial));	
 	uniaxialMaterialsMap.insert(std::make_pair("HystereticPoly", &OPS_HystereticPoly)); // Salvatore Sessa 14-Jan-2021 Mail: salvatore.sessa2@unina.it
 	uniaxialMaterialsMap.insert(std::make_pair("DowelType", &OPS_DowelType));
+	uniaxialMaterialsMap.insert(std::make_pair("OPS_LocalBucklingWebPlateUniaxial", &OPS_LocalBucklingWebPlateUniaxial)); // Diego Heredia
 
 	return 0;
     }

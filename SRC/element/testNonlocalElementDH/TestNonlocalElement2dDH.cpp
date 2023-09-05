@@ -1068,6 +1068,7 @@ TestNonlocalElement2dDH::update(void)
 							WDot_cumulativeSoft += WDot_isec;
 						}
 						else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
+						//else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0. && abs(eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm()) > 1.* eLocalCommit[i].Norm())
 						{
 							elasticUnload += 1;
 							WDot_cumulativeElasticUnload += WDot_isec;
@@ -1883,6 +1884,7 @@ TestNonlocalElement2dDH::initCoefficientMatrixH()
 	double ASection = sections[0]->getSectionArea();
 	//WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
 	WSofteningTol = -1. * ASection * 0.5 * 378. * 1e-6;
+	//WSofteningTol = -1e-6;
 
 	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
 	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;
@@ -2295,13 +2297,13 @@ TestNonlocalElement2dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 	//compute the matrix multiplication F_element_nonLocal=B_q*inv(H)*Fsection_Tot*B_Q;
 	//computeMatrixH();
 	//computeMatrixH_inv();
-	////Matrix Felement_nonlocal_target = B_q * H_inv * Fsection_Tot * B_Q;
+	//Matrix Felement_nonlocal_target = B_q * H_inv * Fsection_Tot * B_Q;
 	//Felement_nonlocal = B_q * H_inv * Fsection_Tot * B_Q;
 
 	/*opserr << "This matrix FHinv_multFsection_Target:" << H_inv * Fsection_Tot << endln;
 	opserr << "This Hinv_multFsection_Tot:" << Hinv_multFsection_Tot << endln;*/
-	/*opserr << "This matrix Felement_nonlocal_target:" << Felement_nonlocal_target << endln;
-	opserr << "This matrix Felement_nonlocal:" << Felement_nonlocal << endln;*/
+	//opserr << "This matrix Felement_nonlocal_target:" << Felement_nonlocal_target << endln;
+	//opserr << "This matrix Felement_nonlocal:" << Felement_nonlocal << endln;
 
 	//opserr << "This matrix B_q:" << B_q << endln;
 	//opserr << "This matrix H:" << H << endln;
