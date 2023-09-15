@@ -167,6 +167,9 @@ int Concrete01::setTrialStrain (double strain, double strainRate)
   if (Tstrain > 0.0) {
     Tstress = 0;
     Ttangent = 0;
+	  //Modified by DH
+	  /*Tstress = 0.001 * abs(Tstrain);
+	  Ttangent = 0.001;*/
     return 0;
   }
   
@@ -235,6 +238,11 @@ Concrete01::setTrial (double strain, double &stress, double &tangent, double str
     Ttangent = 0;
     stress = 0;
     tangent = 0;
+	//Modified by DH
+	  /*Tstress = 0.01 * abs(Tstrain);
+	  Ttangent = 0.01;
+	  stress = Tstress;
+	  tangent = Ttangent;*/
     return 0;
   }
   
@@ -347,6 +355,17 @@ void Concrete01::envelope ()
   else {
     Tstress = fpcu;
     Ttangent = 0.0;
+	  //Modified by DH
+	  /*if (Tstrain>0.)
+	  {
+		  Tstress = 0.01 * abs(Tstrain);
+		  Ttangent = 0.01;
+	  }
+	  else
+	  {
+		  Tstress = fpcu - 0.01 * abs(Tstrain - epscu);
+		  Ttangent = 0.01;
+	  }*/
   }
 }
 

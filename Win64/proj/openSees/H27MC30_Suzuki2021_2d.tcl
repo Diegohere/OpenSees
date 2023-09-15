@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 2 -ndf 3;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_H27MC30_Suzuki2021_2d;			# name of output folder
+	set dataDir results_H27MC30_Suzuki2021_2dSL;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 	#source DisplayModel2D.tcl;
@@ -21,6 +21,10 @@
 	set bPlate [expr $DHSS - 2 * $rExtHSS];
 	set bSurTPlate [expr $bPlate / $tPlate];				# b/t HSS plate	
 	set DSurTHSS [expr $DHSS /$tPlate];
+	set sigmaC0 378.0;									    # Initial capping stress sigmaC0
+	#set sigmaC0 3780.0;
+	#set alphaRegularization 0.32;							# Factor for regularization
+	set alphaRegularization 1.0;	
 	
 ###################################################################################################
 #          Define Subassembly Geometry									  
@@ -68,6 +72,7 @@
 	
 	#A500 Gr.B steel material parameters from Suzuki and Lignos 2020
 	uniaxialMaterial SLModel 1 $DSurTHSS 200000. 315. 2500. 19.	22.4 7.2 382.8466982 0.008812135 -2822.487499 -516.0389276 234.4971188 0.061026586 0.027610273 0.665413237	1.; # Updated model
+	#uniaxialMaterial LocalBucklingWebPlateUniaxial 1 200000.0 0.3 324.09 228.02 0.11 50.41 270.40 2 17707 207.18 1526.2 6.22 $bPlate $tPlate $sigmaC0 $alphaRegularization;
 	
 	set NWeb_LoadDir 10;
 	set NWeb_TranverseDir 1;
@@ -127,7 +132,7 @@
 	#element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
 	
 	set lc [expr 0.0*$DHSS];
-	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 9  5000 1e-6 $lc
+	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 9  1000 1e-8 $lc
 	#element gradientForceBeamColumn 12 1 2 $ColTransfTag Simpson 1 9  20 1e-6 $lc
 	
 	element elasticBeamColumn 34 3 4 11500 [expr $E*1000.0] 44500000 $BeamTransfTag 
@@ -170,10 +175,10 @@ puts "Recorders ..."
 #recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 strain; 
 #recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 stress; 
 #recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 strain; 
+recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 stress; 
+recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 strain; 
+recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 stress; 
+recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 strain; 
 	
 	
 # Define display;	

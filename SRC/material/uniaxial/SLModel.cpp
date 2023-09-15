@@ -1622,6 +1622,9 @@ void SLModel::StrainHardeningFunc(void)
 			//total true stress
 			tsgm = alf-sgm_0; //minus
 		}
+
+		//double Esh = (sigmaC - sgm_ini) / (epsiC - sgm_ini / E);
+		//tsgm = -sgm_ini - Esh * (abs(teps) - sgm_ini / E);
 		
 		//nominal stress
 		nsgm = tsgm/exp(teps);

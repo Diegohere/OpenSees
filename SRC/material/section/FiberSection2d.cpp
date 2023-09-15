@@ -380,6 +380,11 @@ FiberSection2d::setTrialSectionDeformation (const Vector &deforms)
       fiberArea[i] = matData[2*i+1];
     }
   }
+
+ //  opserr << "This is fibers:"<< endln;
+ //for (int i = 0; i < numFibers; i++) {
+ //    opserr << "yLocs" << fiberLocs[i] << " and area " << fiberArea[i] << endln;
+ //}
   
   for (int i = 0; i < numFibers; i++) {
     UniaxialMaterial *theMat = theMaterials[i];

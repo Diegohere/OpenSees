@@ -455,6 +455,19 @@ TestNonlocalElement2dDH::getTangentStiff(void)
 {
 	crdTransf->update();
 	return crdTransf->getGlobalStiffMatrix(Kelement, q);
+
+	// Try to fix issue with zero slope
+	//double alphaElastic = 0.01; 
+	//static Matrix f(NEBD, NEBD);   // element flexibility matrix  
+	//this->getInitialFlexibility(f);
+	//static Matrix KvInit(NEBD, NEBD);
+	//f.Invert(KvInit);
+	//Matrix K4Solver = alphaElastic * KvInit + (1. - alphaElastic) * Kelement;
+	/*opserr << "This is K4Solver:" << K4Solver << endln;
+	opserr << "This is Kelement:" << Kelement << endln;
+	opserr << "This is Kelement-K4Solver:" << Kelement- K4Solver << endln;*/
+
+	//return crdTransf->getGlobalStiffMatrix(K4Solver, q);
 }
 
 //Method to get reaction due to element loads
