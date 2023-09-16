@@ -77,6 +77,9 @@ class NDTestShear4RectangleFiberSection3d : public SectionForceDeformation
     //Get the total area of the cross section
     double getSectionArea();
 
+    // Compute shear normalization parameters beta12 and beta13
+    void computeShearBetas();
+
   protected:
     
     //  private:
@@ -93,7 +96,7 @@ class NDTestShear4RectangleFiberSection3d : public SectionForceDeformation
     double yBar;       // Section centroid
     double zBar;       // Section centroid
     bool computeCentroid;
-    double alpha;      // Shear shape factor
+    //double alpha;      // Shear shape factor
 
     SectionIntegration *sectionIntegr;
 
@@ -102,6 +105,11 @@ class NDTestShear4RectangleFiberSection3d : public SectionForceDeformation
     Vector e;          // trial section deformations 
     Vector *s;         // section resisting forces  (axial force, bending moment)
     Matrix *ks;        // section stiffness
+
+    double Iy;
+    double Iz;
+    double beta12;
+    double beta13;
 
 // AddingSensitivity:BEGIN //////////////////////////////////////////
     int parameterID;

@@ -56,8 +56,9 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
     bWidth(b), hHeight(h),
     numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
-    alpha(a), sectionIntegr(0), e(6), s(0), ks(0),
-    parameterID(0), dedh(6)
+    sectionIntegr(0), e(6), s(0), ks(0),
+    parameterID(0), dedh(6),
+    Iy(0.), Iz(0.), beta12(0.), beta13(0.)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -116,6 +117,9 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
   code(3) = SECTION_RESPONSE_VY;
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
+
+  //Initialize the shear normalization parameters beta12 and beta13
+  computeShearBetas();
 }
 
 NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag, double b, double h, int num, double a, bool compCentroid):
@@ -123,8 +127,9 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
     bWidth(b), hHeight(h),
     numFibers(0), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
-    alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-    parameterID(0), dedh(6)
+    sectionIntegr(0), e(6), s(0), ks(0), 
+    parameterID(0), dedh(6),
+    Iy(0.), Iz(0.), beta12(0.), beta13(0.)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
@@ -165,6 +170,9 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
     code(3) = SECTION_RESPONSE_VY;
     code(4) = SECTION_RESPONSE_VZ;
     code(5) = SECTION_RESPONSE_T;
+
+    //Initialize the shear normalization parameters beta12 and beta13
+    computeShearBetas();
 }
 
 NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag, double b, double h, int num, NDMaterial **mats,
@@ -173,8 +181,9 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
     bWidth(b), hHeight(h),
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
-  alpha(a), sectionIntegr(0), e(6), s(0), ks(0), 
-  parameterID(0), dedh(6)
+  sectionIntegr(0), e(6), s(0), ks(0), 
+  parameterID(0), dedh(6),
+  Iy(0.), Iz(0.), beta12(0.), beta13(0.)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -238,6 +247,9 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
   code(3) = SECTION_RESPONSE_VY;
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
+
+  //Initialize the shear normalization parameters beta12 and beta13
+  computeShearBetas();
 }
 
 // constructor for blank object that recvSelf needs to be invoked upon
@@ -246,8 +258,9 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d():
     bWidth(0.), hHeight(0.),
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
-  alpha(1.0), sectionIntegr(0), e(6), s(0), ks(0),
-  parameterID(0), dedh(6)
+  sectionIntegr(0), e(6), s(0), ks(0),
+  parameterID(0), dedh(6),
+  Iy(0.), Iz(0.), beta12(0.), beta13(0.)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -266,6 +279,8 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d():
   code(5) = SECTION_RESPONSE_T;
 
   //getIndexExtremeFibers();
+  //Initialize the shear normalization parameters beta12 and beta13
+  //computeShearBetas();
 }
 
 int
@@ -365,8 +380,8 @@ NDTestShear4RectangleFiberSection3d::~NDTestShear4RectangleFiberSection3d()
 }
 
 // a = [1 -y z       0       0  0
-//      0  0 0 sqrt(a)       0 -z
-//      0  0 0       0 sqrt(a)  y]
+//      0  0 0 Psi12       0 -z
+//      0  0 0       0 Psi13  y]
 int
 NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 {
@@ -409,9 +424,9 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
   
   static Vector eps(3);
 
-  double rootAlpha = 1.0;
-  if (alpha != 1.0)
-    rootAlpha = sqrt(alpha);
+  //double rootAlpha = 1.0;
+  //if (alpha != 1.0)
+  //  rootAlpha = sqrt(alpha);
 
   for (int i = 0; i < numFibers; i++) {
     NDMaterial *theMat = theMaterials[i];
@@ -424,10 +439,16 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     double yz = y*z;
     double tmp;
 
+    //Compute shear factors
+    double Psi12 = 1 / beta12 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi13 = 1 / beta13 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+
     // determine material strain and set it
     eps(0) = d0 - y*d1 + z*d2;
-    eps(1) = rootAlpha*d3 - z*d5;
-    eps(2) = rootAlpha*d4 + y*d5;
+    /*eps(1) = rootAlpha*d3 - z*d5;
+    eps(2) = rootAlpha*d4 + y*d5;*/
+    eps(1) = Psi12 * d3 - z * d5;
+    eps(2) = Psi13 * d4 + y * d5;
 
     res += theMat->setTrialStrain(eps);
     if (res==-1)
@@ -469,10 +490,14 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     ksi(2,1) += tmp;
     
     // Shear terms
-    ksi(3,3) += alpha*d11;
+    /*ksi(3,3) += alpha*d11;
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
-    ksi(4,4) += alpha*d22;
+    ksi(4,4) += alpha*d22;*/
+    ksi(3, 3) += pow(Psi12,2) * d11;
+    ksi(3, 4) += pow(Psi12, 2) * d12;
+    ksi(4, 3) += pow(Psi13, 2) * d21;
+    ksi(4, 4) += pow( Psi13, 2) * d22;
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -488,9 +513,11 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     ksi(5,2) += z*tmp;
     
     // Hit tangent terms with rootAlpha
-    d01 *= rootAlpha; d02 *= rootAlpha;
+    /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
-    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;
+    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
+    d11 *= Psi12;
+    d22 *= Psi13;
     
     // Bending-shear coupling terms
     ksi(0,3) += d01;
@@ -521,14 +548,16 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     si(0) += sig0;
     si(1) += -y*sig0;
     si(2) += z*sig0;
-    si(3) += rootAlpha*sig1;
-    si(4) += rootAlpha*sig2;
+    /*si(3) += rootAlpha*sig1;
+    si(4) += rootAlpha*sig2;*/
+    si(3) += Psi12 * sig1;
+    si(4) += Psi13 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
-  if (alpha != 1.0) {
+ /* if (alpha != 1.0) {
 
-  }
+  }*/
 
   return res;
 }
@@ -562,9 +591,9 @@ NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
     }
   }
 
-  double rootAlpha = 1.0;
+  /*double rootAlpha = 1.0;
   if (alpha != 1.0)
-    rootAlpha = sqrt(alpha);
+    rootAlpha = sqrt(alpha);*/
 
   for (int i = 0; i < numFibers; i++) {
     NDMaterial *theMat = theMaterials[i];
@@ -602,12 +631,20 @@ NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
     tmp = -yz*d00;
     ki(1,2) += tmp;
     ki(2,1) += tmp;
+
+    //Compute shear factors
+    double Psi12 = 1 / beta12 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi13 = 1 / beta13 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
     
     // Shear terms
-    ki(3,3) += alpha*d11;
+    /*ki(3,3) += alpha*d11;
     ki(3,4) += alpha*d12;
     ki(4,3) += alpha*d21;
-    ki(4,4) += alpha*d22;
+    ki(4,4) += alpha*d22;*/
+    ki(3, 3) += pow(Psi12, 2) * d11;
+    ki(3, 4) += pow(Psi12, 2) * d12;
+    ki(4, 3) += pow(Psi13, 2) * d21;
+    ki(4, 4) += pow(Psi13, 2) * d22;
     
     // Torsion term
     ki(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -623,9 +660,11 @@ NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
     ki(5,2) += z*tmp;
     
     // Hit tangent terms with rootAlpha
-    d01 *= rootAlpha; d02 *= rootAlpha;
+    /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
-    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;
+    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
+    d11 *= Psi12;
+    d22 *= Psi13;
     
     // Bending-shear coupling terms
     ki(0,3) += d01;
@@ -650,9 +689,9 @@ NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
     ki(4,5) += -z*d21 + y2;
   }
 
-  if (alpha != 1.0) {
+  /*if (alpha != 1.0) {
 
-  }
+  }*/
 
   return ki;
 }
@@ -713,7 +752,7 @@ NDTestShear4RectangleFiberSection3d::getCopy(void)
   theCopy->yBar = yBar;
   theCopy->zBar = zBar;
   theCopy->computeCentroid = computeCentroid;
-  theCopy->alpha = alpha;
+  //theCopy->alpha = alpha;
   theCopy->parameterID = parameterID;
 
   for (int i = 0; i < 6; i++)
@@ -728,6 +767,13 @@ NDTestShear4RectangleFiberSection3d::getCopy(void)
     theCopy->sectionIntegr = 0;
 
   //theCopy->e4Output = e4Output;
+
+  theCopy->Iy = Iy;
+  theCopy->Iz = Iz;
+  theCopy->bWidth = bWidth;
+  theCopy->hHeight = hHeight;
+  theCopy->beta12 = beta12;
+  theCopy->beta13 = beta13;
 
   return theCopy;
 }
@@ -779,9 +825,9 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
     }
   }
 
-  double rootAlpha = 1.0;
+  /*double rootAlpha = 1.0;
   if (alpha != 1.0)
-    rootAlpha = sqrt(alpha);
+    rootAlpha = sqrt(alpha);*/
 
   for (int i = 0; i < numFibers; i++) {
     NDMaterial *theMat = theMaterials[i];
@@ -827,12 +873,20 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
     tmp = -yz*d00;
     ksi(1,2) += tmp;
     ksi(2,1) += tmp;
+
+    //Compute shear factors
+    double Psi12 = 1 / beta12 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi13 = 1 / beta13 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
     
     // Shear terms
-    ksi(3,3) += alpha*d11;
+    /*ksi(3,3) += alpha*d11;
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
-    ksi(4,4) += alpha*d22;
+    ksi(4,4) += alpha*d22;*/
+    ksi(3, 3) += pow(Psi12, 2) * d11;
+    ksi(3, 4) += pow(Psi12, 2) * d12;
+    ksi(4, 3) += pow(Psi13, 2) * d21;
+    ksi(4, 4) += pow(Psi13, 2) * d22;
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -848,9 +902,11 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
     ksi(5,2) += z*tmp;
     
     // Hit tangent terms with rootAlpha
-    d01 *= rootAlpha; d02 *= rootAlpha;
+    /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
-    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;
+    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
+    d11 *= Psi12;
+    d22 *= Psi13;
     
     // Bending-shear coupling terms
     ksi(0,3) += d01;
@@ -881,14 +937,16 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
     si(0) += sig0;
     si(1) += -y*sig0;
     si(2) += z*sig0;
-    si(3) += rootAlpha*sig1;
-    si(4) += rootAlpha*sig2;
+    /*si(3) += rootAlpha*sig1;
+    si(4) += rootAlpha*sig2;*/
+    si(3) += Psi12 * sig1;
+    si(4) += Psi13 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
-  if (alpha != 1.0) {
+  /*if (alpha != 1.0) {
 
-  }
+  }*/
 
   return err;
 }
@@ -918,9 +976,9 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
     }
   }
 
-  double rootAlpha = 1.0;
+  /*double rootAlpha = 1.0;
   if (alpha != 1.0)
-    rootAlpha = sqrt(alpha);
+    rootAlpha = sqrt(alpha);*/
 
   for (int i = 0; i < numFibers; i++) {
     NDMaterial *theMat = theMaterials[i];
@@ -967,12 +1025,20 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
     tmp = -yz*d00;
     ksi(1,2) += tmp;
     ksi(2,1) += tmp;
+
+    //Compute shear factors
+    double Psi12 = 1 / beta12 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi13 = 1 / beta13 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
     
     // Shear terms
-    ksi(3,3) += alpha*d11;
+    /*ksi(3,3) += alpha*d11;
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
-    ksi(4,4) += alpha*d22;
+    ksi(4,4) += alpha*d22;*/
+    ksi(3, 3) += pow(Psi12, 2) * d11;
+    ksi(3, 4) += pow(Psi12, 2) * d12;
+    ksi(4, 3) += pow(Psi13, 2) * d21;
+    ksi(4, 4) += pow(Psi13, 2) * d22;
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -988,9 +1054,11 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
     ksi(5,2) += z*tmp;
     
     // Hit tangent terms with rootAlpha
-    d01 *= rootAlpha; d02 *= rootAlpha;
+    /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
-    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;
+    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
+    d11 *= Psi12;
+    d22 *= Psi13;
     
     // Bending-shear coupling terms
     ksi(0,3) += d01;
@@ -1021,14 +1089,16 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
     si(0) += sig0;
     si(1) += -y*sig0;
     si(2) += z*sig0;
-    si(3) += rootAlpha*sig1;
-    si(4) += rootAlpha*sig2;
+    /*si(3) += rootAlpha*sig1;
+    si(4) += rootAlpha*sig2;*/
+    si(3) += Psi12 * sig1;
+    si(4) += Psi13 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
-  if (alpha != 1.0) {
+  /*if (alpha != 1.0) {
 
-  }
+  }*/
 
   return err;
 }
@@ -1217,7 +1287,7 @@ NDTestShear4RectangleFiberSection3d::Print(OPS_Stream &s, int flag)
   s << "\tSection code: " << code;
   s << "\tNumber of Fibers: " << numFibers << endln;
   s << "\tCentroid (y,z): " << yBar << ' ' << zBar << endln;
-  s << "\tShape factor, alpha = " << alpha << endln;
+  /*s << "\tShape factor, alpha = " << alpha << endln;*/
 
   if (flag == 1) {
     for (int i = 0; i < numFibers; i++) {
@@ -1366,6 +1436,47 @@ NDTestShear4RectangleFiberSection3d::getSectionArea()
 }
 
 
+void
+NDTestShear4RectangleFiberSection3d::computeShearBetas()
+{
+    /*double IzTest = bWidth * pow(hHeight, 3.) / 12.;
+    double IyTest = pow(bWidth, 3.) * hHeight / 12;*/
+
+    Iz = 0.;
+    Iy = 0.;
+    double y = 0.;
+    double z = 0.;
+    double A = 0.;
+    for (int i = 0; i < numFibers; i++) {
+        y = matData[i * 3] - yBar;
+        z = matData[i * 3 + 1] - zBar;
+        A = matData[i * 3 + 2];
+
+        Iz += pow(y, 2.) * A;
+        Iy += pow(z, 2.) * A;
+    }
+
+    double phi12 = 0.;
+    double phi13 = 0.;
+    beta12 = 0.;
+    beta13 = 0.;
+    for (int i = 0; i < numFibers; i++) {
+        y = matData[i * 3] - yBar;
+        z = matData[i * 3 + 1] - zBar;
+        A = matData[i * 3 + 2];
+
+        //double Q12test = (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2)));
+        //phi=Q/(I*b)
+        phi12 = 1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2)));
+        phi13 = 1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2)));
+
+        //beta=\integral_A of phi^2
+        beta12 += pow(phi12, 2) * A;
+        beta13 += pow(phi13, 2) * A;
+    }
+}
+
+
 
 // AddingSensitivity:BEGIN ////////////////////////////////////
 int
@@ -1428,7 +1539,7 @@ NDTestShear4RectangleFiberSection3d::updateParameter(int paramID, Information &i
 {
   switch(paramID) {
   case 1:
-    alpha = info.theDouble;
+    //alpha = info.theDouble;
     return 0;
   default:
     return -1;
@@ -1494,6 +1605,8 @@ NDTestShear4RectangleFiberSection3d::getStressResultantSensitivity(int gradIndex
     }
   }
   
+  double alpha = 1.0; // Added by DH
+
   double rootAlpha = 1.0;
   if (alpha != 1.0)
     rootAlpha = sqrt(alpha);
@@ -1674,6 +1787,8 @@ NDTestShear4RectangleFiberSection3d::commitSensitivity(const Vector& defSens,
   double y, z;
 
   static Vector depsdh(3);
+
+  double alpha = 1.0; // Added by DH
 
   double rootAlpha = 1.0;
   if (alpha != 1.0)

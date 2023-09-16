@@ -68,11 +68,11 @@
 	#nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 37300000000.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $h $b 800000000000.0 1.0;
 	
 	set N_LoadingDir 10;
-	set N_TranverseDir 1;	
+	set N_TranverseDir 10;	
 	
 	#section NDFiberTestNonlocal 1 -GJ $GJ {;	
 	section NDFiberTestShear4Rectangle 1 -GJ $GJ -Geom $b $h {;	
-	patch rect 1 10 2 [expr -$h/2.0] [expr -$b/2.0] [expr $h/2.0] [expr $b/2.0];
+	patch rect 1 $N_LoadingDir $N_TranverseDir [expr -$h/2.0] [expr -$b/2.0] [expr $h/2.0] [expr $b/2.0];
 	}
 
 	
