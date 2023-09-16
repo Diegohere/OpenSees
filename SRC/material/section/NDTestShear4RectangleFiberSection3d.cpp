@@ -58,7 +58,7 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), beta12(0.), beta13(0.)
+    Iy(0.), Iz(0.), beta22(0.), beta33(0.)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -129,7 +129,7 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0), 
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), beta12(0.), beta13(0.)
+    Iy(0.), Iz(0.), beta22(0.), beta33(0.)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
@@ -183,7 +183,7 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   sectionIntegr(0), e(6), s(0), ks(0), 
   parameterID(0), dedh(6),
-  Iy(0.), Iz(0.), beta12(0.), beta13(0.)
+  Iy(0.), Iz(0.), beta22(0.), beta33(0.)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -260,7 +260,7 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d():
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   sectionIntegr(0), e(6), s(0), ks(0),
   parameterID(0), dedh(6),
-  Iy(0.), Iz(0.), beta12(0.), beta13(0.)
+  Iy(0.), Iz(0.), beta22(0.), beta33(0.)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -440,15 +440,15 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     double tmp;
 
     //Compute shear factors
-    double Psi12 = 1 / beta12 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi13 = 1 / beta13 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+    double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
 
     // determine material strain and set it
     eps(0) = d0 - y*d1 + z*d2;
     /*eps(1) = rootAlpha*d3 - z*d5;
     eps(2) = rootAlpha*d4 + y*d5;*/
-    eps(1) = Psi12 * d3 - z * d5;
-    eps(2) = Psi13 * d4 + y * d5;
+    eps(1) = Psi22 * d3 - z * d5;
+    eps(2) = Psi33 * d4 + y * d5;
 
     res += theMat->setTrialStrain(eps);
     if (res==-1)
@@ -494,10 +494,10 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
     ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi12,2) * d11;
-    ksi(3, 4) += pow(Psi12, 2) * d12;
-    ksi(4, 3) += pow(Psi13, 2) * d21;
-    ksi(4, 4) += pow( Psi13, 2) * d22;
+    ksi(3, 3) += pow(Psi22,2) * d11;
+    ksi(3, 4) += pow(Psi22, 2) * d12;
+    ksi(4, 3) += pow(Psi33, 2) * d21;
+    ksi(4, 4) += pow( Psi33, 2) * d22;
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -516,8 +516,8 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
     d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi12;
-    d22 *= Psi13;
+    d11 *= Psi22;
+    d22 *= Psi33;
     
     // Bending-shear coupling terms
     ksi(0,3) += d01;
@@ -550,8 +550,8 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     si(2) += z*sig0;
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
-    si(3) += Psi12 * sig1;
-    si(4) += Psi13 * sig2;
+    si(3) += Psi22 * sig1;
+    si(4) += Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -633,18 +633,18 @@ NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
     ki(2,1) += tmp;
 
     //Compute shear factors
-    double Psi12 = 1 / beta12 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi13 = 1 / beta13 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+    double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
     
     // Shear terms
     /*ki(3,3) += alpha*d11;
     ki(3,4) += alpha*d12;
     ki(4,3) += alpha*d21;
     ki(4,4) += alpha*d22;*/
-    ki(3, 3) += pow(Psi12, 2) * d11;
-    ki(3, 4) += pow(Psi12, 2) * d12;
-    ki(4, 3) += pow(Psi13, 2) * d21;
-    ki(4, 4) += pow(Psi13, 2) * d22;
+    ki(3, 3) += pow(Psi22, 2) * d11;
+    ki(3, 4) += pow(Psi22, 2) * d12;
+    ki(4, 3) += pow(Psi33, 2) * d21;
+    ki(4, 4) += pow(Psi33, 2) * d22;
     
     // Torsion term
     ki(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -663,8 +663,8 @@ NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
     /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
     d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi12;
-    d22 *= Psi13;
+    d11 *= Psi22;
+    d22 *= Psi33;
     
     // Bending-shear coupling terms
     ki(0,3) += d01;
@@ -772,8 +772,8 @@ NDTestShear4RectangleFiberSection3d::getCopy(void)
   theCopy->Iz = Iz;
   theCopy->bWidth = bWidth;
   theCopy->hHeight = hHeight;
-  theCopy->beta12 = beta12;
-  theCopy->beta13 = beta13;
+  theCopy->beta22 = beta22;
+  theCopy->beta33 = beta33;
 
   return theCopy;
 }
@@ -875,18 +875,18 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
     ksi(2,1) += tmp;
 
     //Compute shear factors
-    double Psi12 = 1 / beta12 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi13 = 1 / beta13 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+    double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
     
     // Shear terms
     /*ksi(3,3) += alpha*d11;
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
     ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi12, 2) * d11;
-    ksi(3, 4) += pow(Psi12, 2) * d12;
-    ksi(4, 3) += pow(Psi13, 2) * d21;
-    ksi(4, 4) += pow(Psi13, 2) * d22;
+    ksi(3, 3) += pow(Psi22, 2) * d11;
+    ksi(3, 4) += pow(Psi22, 2) * d12;
+    ksi(4, 3) += pow(Psi33, 2) * d21;
+    ksi(4, 4) += pow(Psi33, 2) * d22;
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -905,8 +905,8 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
     /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
     d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi12;
-    d22 *= Psi13;
+    d11 *= Psi22;
+    d22 *= Psi33;
     
     // Bending-shear coupling terms
     ksi(0,3) += d01;
@@ -939,8 +939,8 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
     si(2) += z*sig0;
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
-    si(3) += Psi12 * sig1;
-    si(4) += Psi13 * sig2;
+    si(3) += Psi22 * sig1;
+    si(4) += Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -1027,18 +1027,18 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
     ksi(2,1) += tmp;
 
     //Compute shear factors
-    double Psi12 = 1 / beta12 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi13 = 1 / beta13 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+    double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
     
     // Shear terms
     /*ksi(3,3) += alpha*d11;
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
     ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi12, 2) * d11;
-    ksi(3, 4) += pow(Psi12, 2) * d12;
-    ksi(4, 3) += pow(Psi13, 2) * d21;
-    ksi(4, 4) += pow(Psi13, 2) * d22;
+    ksi(3, 3) += pow(Psi22, 2) * d11;
+    ksi(3, 4) += pow(Psi22, 2) * d12;
+    ksi(4, 3) += pow(Psi33, 2) * d21;
+    ksi(4, 4) += pow(Psi33, 2) * d22;
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -1057,8 +1057,8 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
     /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
     d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi12;
-    d22 *= Psi13;
+    d11 *= Psi22;
+    d22 *= Psi33;
     
     // Bending-shear coupling terms
     ksi(0,3) += d01;
@@ -1091,8 +1091,8 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
     si(2) += z*sig0;
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
-    si(3) += Psi12 * sig1;
-    si(4) += Psi13 * sig2;
+    si(3) += Psi22 * sig1;
+    si(4) += Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -1456,10 +1456,10 @@ NDTestShear4RectangleFiberSection3d::computeShearBetas()
         Iy += pow(z, 2.) * A;
     }
 
-    double phi12 = 0.;
-    double phi13 = 0.;
-    beta12 = 0.;
-    beta13 = 0.;
+    double phi22 = 0.;
+    double phi33 = 0.;
+    beta22 = 0.;
+    beta33 = 0.;
     for (int i = 0; i < numFibers; i++) {
         y = matData[i * 3] - yBar;
         z = matData[i * 3 + 1] - zBar;
@@ -1467,12 +1467,12 @@ NDTestShear4RectangleFiberSection3d::computeShearBetas()
 
         //double Q12test = (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2)));
         //phi=Q/(I*b)
-        phi12 = 1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2)));
-        phi13 = 1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2)));
+        phi22 = 1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2)));
+        phi33 = 1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2)));
 
         //beta=\integral_A of phi^2
-        beta12 += pow(phi12, 2) * A;
-        beta13 += pow(phi13, 2) * A;
+        beta22 += pow(phi22, 2) * A;
+        beta33 += pow(phi33, 2) * A;
     }
 }
 

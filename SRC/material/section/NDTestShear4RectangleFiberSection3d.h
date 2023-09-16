@@ -108,8 +108,8 @@ class NDTestShear4RectangleFiberSection3d : public SectionForceDeformation
 
     double Iy;
     double Iz;
-    double beta12;
-    double beta13;
+    double beta22;
+    double beta33;
 
 // AddingSensitivity:BEGIN //////////////////////////////////////////
     int parameterID;
