@@ -1,4 +1,4 @@
-//Added by Diego Heredia 15.09.2023 for test shear stress distribution
+//Added by Diego Heredia 17.09.2023 for test shear stress distribution
 
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +10,7 @@
 #include <MatrixUtil.h>
 #include <Fiber.h>
 #include <classTags.h>
-#include <NDTestShear4RectangleFiberSection3d.h>
+#include <NDTestShear4WFFiberSection3d.h>
 #include <ID.h>
 #include <FEM_ObjectBroker.h>
 #include <Information.h>
@@ -20,13 +20,13 @@
 #include <Parameter.h>
 #include <elementAPI.h>
 
-ID NDTestShear4RectangleFiberSection3d::code(6);
+ID NDTestShear4WFFiberSection3d::code(6);
 
-void* OPS_NDTestShear4RectangleFiberSection3d()
+void* OPS_NDTestShear4WFFiberSection3d()
 {
     int numData = OPS_GetNumRemainingInputArgs();
     if(numData < 1) {
-	opserr<<"insufficient arguments for NDTestShear4RectangleFiberSection3d\n";
+	opserr<<"insufficient arguments for NDTestShear4WFFiberSection3d\n";
 	return 0;
     }
 
@@ -44,34 +44,36 @@ void* OPS_NDTestShear4RectangleFiberSection3d()
     int num = 30;
 
     //To be modified
-    double b = 2;
-    double h = 5;
+    double bf = 200.;
+    double tf = 15.;
+    double d = 200.;
+    double tw = 15.;
 
-    return new NDTestShear4RectangleFiberSection3d(tag, b, h, num, computeCentroid);
+    return new NDTestShear4WFFiberSection3d(tag, bf, tf, d, tw, num, computeCentroid);
 }
 
 // constructors:
-NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag, double b, double h, int num,  Fiber** fibers, double a, bool compCentroid) :
-    SectionForceDeformation(tag, SEC_TAG_NDTestShear4RectangleFiberSection3d),
-    bWidth(b), hHeight(h),
+NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflange, double tflange, double dweb, double tweb, int num,  Fiber** fibers, double a, bool compCentroid) :
+    SectionForceDeformation(tag, SEC_TAG_NDTestShear4WFFiberSection3d),
+    bf(bflange), tf(tflange), d(dweb), tw(tweb),
     numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), beta22(0.), beta33(0.)
+    Iy(0.), Iz(0.), beta22(0.), beta23(0.), beta33(0.)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
 
     if (theMaterials == 0) {
-      opserr << "NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d -- failed to allocate Material pointers";
+      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate Material pointers";
       exit(-1);
     }
 
     matData = new double [numFibers*3];
 
     if (matData == 0) {
-      opserr << "NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d -- failed to allocate double array for material data\n";
+      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate double array for material data\n";
       exit(-1);
     }
 
@@ -91,7 +93,7 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
       theMaterials[i] = theMat->getCopy("BeamFiber");
 
       if (theMaterials[i] == 0) {
-	opserr << "NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d -- failed to get copy of a Material\n";
+	opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to get copy of a Material\n";
 	exit(-1);
       }
     }    
@@ -118,31 +120,31 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
 
-  //Initialize the shear normalization parameters beta12 and beta13
+  //Initialize the shear normalization parameters betas
   computeShearBetas();
 }
 
-NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag, double b, double h, int num, double a, bool compCentroid):
-    SectionForceDeformation(tag, SEC_TAG_NDTestShear4RectangleFiberSection3d),
-    bWidth(b), hHeight(h),
+NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflange, double tflange, double dweb, double tweb, int num, double a, bool compCentroid):
+    SectionForceDeformation(tag, SEC_TAG_NDTestShear4WFFiberSection3d),
+    bf(bflange), tf(tflange), d(dweb), tw(tweb),
     numFibers(0), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0), 
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), beta22(0.), beta33(0.)
+    Iy(0.), Iz(0.), beta22(0.), beta23(0.), beta33(0.)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
 
 	if (theMaterials == 0) {
-	    opserr << "NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d -- failed to allocate Material pointers";
+	    opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate Material pointers";
 	    exit(-1);
 	}
 
 	matData = new double [sizeFibers*3];
 
 	if (matData == 0) {
-	    opserr << "NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d -- failed to allocate double array for material data\n";
+	    opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate double array for material data\n";
 	    exit(-1);
 	}
 
@@ -175,34 +177,34 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
     computeShearBetas();
 }
 
-NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag, double b, double h, int num, NDMaterial **mats,
+NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflange, double tflange, double dweb, double tweb, int num, NDMaterial **mats,
 				   SectionIntegration &si, double a, bool compCentroid):
-  SectionForceDeformation(tag, SEC_TAG_NDTestShear4RectangleFiberSection3d),
-    bWidth(b), hHeight(h),
+  SectionForceDeformation(tag, SEC_TAG_NDTestShear4WFFiberSection3d),
+    bf(bflange), tf(tflange), d(dweb), tw(tweb),
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   sectionIntegr(0), e(6), s(0), ks(0), 
   parameterID(0), dedh(6),
-  Iy(0.), Iz(0.), beta22(0.), beta33(0.)
+  Iy(0.), Iz(0.), beta22(0.), beta23(0.), beta33(0.)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
 
     if (theMaterials == 0) {
-      opserr << "NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d -- failed to allocate Material pointers";
+      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate Material pointers";
       exit(-1);
     }
     matData = new double [numFibers*3];
 
     if (matData == 0) {
-      opserr << "NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d -- failed to allocate double array for material data\n";
+      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate double array for material data\n";
       exit(-1);
     }
   }
 
   sectionIntegr = si.getCopy();
   if (sectionIntegr == 0) {
-    opserr << "Error: NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d: could not create copy of section integration object" << endln;
+    opserr << "Error: NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d: could not create copy of section integration object" << endln;
     exit(-1);
   }
 
@@ -222,7 +224,7 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
     theMaterials[i] = mats[i]->getCopy("BeamFiber");
     
     if (theMaterials[i] == 0) {
-      opserr << "NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d -- failed to get copy of a Material\n";
+      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to get copy of a Material\n";
       exit(-1);
     }
   }    
@@ -253,14 +255,14 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d(int tag
 }
 
 // constructor for blank object that recvSelf needs to be invoked upon
-NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d():
-  SectionForceDeformation(0, SEC_TAG_NDTestShear4RectangleFiberSection3d),
-    bWidth(0.), hHeight(0.),
+NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d():
+  SectionForceDeformation(0, SEC_TAG_NDTestShear4WFFiberSection3d),
+    bf(0.), tf(0.), d(0.), tw(0.),
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   sectionIntegr(0), e(6), s(0), ks(0),
   parameterID(0), dedh(6),
-  Iy(0.), Iz(0.), beta22(0.), beta33(0.)
+  Iy(0.), Iz(0.), beta22(0.), beta23(0.), beta33(0.)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -284,7 +286,7 @@ NDTestShear4RectangleFiberSection3d::NDTestShear4RectangleFiberSection3d():
 }
 
 int
-NDTestShear4RectangleFiberSection3d::addFiber(Fiber &newFiber)
+NDTestShear4WFFiberSection3d::addFiber(Fiber &newFiber)
 {
   // need to create larger arrays
   if(numFibers == sizeFibers) {
@@ -292,7 +294,7 @@ NDTestShear4RectangleFiberSection3d::addFiber(Fiber &newFiber)
       NDMaterial **newArray = new NDMaterial *[newSize]; 
       double *newMatData = new double [3 * newSize];
       if (newArray == 0 || newMatData == 0) {
-	  opserr <<"NDTestShear4RectangleFiberSection3d::addFiber -- failed to allocate Fiber pointers\n";
+	  opserr <<"NDTestShear4WFFiberSection3d::addFiber -- failed to allocate Fiber pointers\n";
 	  return -1;
       }
       
@@ -335,7 +337,7 @@ NDTestShear4RectangleFiberSection3d::addFiber(Fiber &newFiber)
   theMaterials[numFibers] = theMat->getCopy("BeamFiber");
 
   if (theMaterials[numFibers] == 0) {
-    opserr <<"NDTestShear4RectangleFiberSection3d::addFiber -- failed to get copy of a Material\n";
+    opserr <<"NDTestShear4WFFiberSection3d::addFiber -- failed to get copy of a Material\n";
     return -1;
   }
 
@@ -356,7 +358,7 @@ NDTestShear4RectangleFiberSection3d::addFiber(Fiber &newFiber)
 
 
 // destructor:
-NDTestShear4RectangleFiberSection3d::~NDTestShear4RectangleFiberSection3d()
+NDTestShear4WFFiberSection3d::~NDTestShear4WFFiberSection3d()
 {
   if (theMaterials != 0) {
     for (int i = 0; i < numFibers; i++)
@@ -380,10 +382,10 @@ NDTestShear4RectangleFiberSection3d::~NDTestShear4RectangleFiberSection3d()
 }
 
 // a = [1 -y z       0       0  0
-//      0  0 0 Psi22       0 -z
+//      0  0 0 Psi22       Psi23 -z
 //      0  0 0       0 Psi33  y]
 int
-NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
+NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 {
   int res = 0;
 
@@ -440,8 +442,10 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
     double tmp;
 
     //Compute shear factors
-    double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+    /*double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));*/
+    double Psi22 = 1.;
+    double Psi33 = 1.;
 
     // determine material strain and set it
     eps(0) = d0 - y*d1 + z*d2;
@@ -563,13 +567,13 @@ NDTestShear4RectangleFiberSection3d::setTrialSectionDeformation (const Vector &d
 }
 
 const Vector&
-NDTestShear4RectangleFiberSection3d::getSectionDeformation(void)
+NDTestShear4WFFiberSection3d::getSectionDeformation(void)
 {
   return e;
 }
 
 const Matrix&
-NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
+NDTestShear4WFFiberSection3d::getInitialTangent(void)
 {
   static double kInitial[36];
   static Matrix ki(kInitial, 6, 6);
@@ -633,8 +637,10 @@ NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
     ki(2,1) += tmp;
 
     //Compute shear factors
-    double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+    /*double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));*/
+    double Psi22 = 1.;
+    double Psi33 = 1.;
     
     // Shear terms
     /*ki(3,3) += alpha*d11;
@@ -697,21 +703,21 @@ NDTestShear4RectangleFiberSection3d::getInitialTangent(void)
 }
 
 const Matrix&
-NDTestShear4RectangleFiberSection3d::getSectionTangent(void)
+NDTestShear4WFFiberSection3d::getSectionTangent(void)
 {
   return *ks;
 }
 
 const Vector&
-NDTestShear4RectangleFiberSection3d::getStressResultant(void)
+NDTestShear4WFFiberSection3d::getStressResultant(void)
 {
   return *s;
 }
 
 SectionForceDeformation*
-NDTestShear4RectangleFiberSection3d::getCopy(void)
+NDTestShear4WFFiberSection3d::getCopy(void)
 {
-  NDTestShear4RectangleFiberSection3d *theCopy = new NDTestShear4RectangleFiberSection3d ();
+  NDTestShear4WFFiberSection3d *theCopy = new NDTestShear4WFFiberSection3d ();
   theCopy->setTag(this->getTag());
 
   theCopy->numFibers = numFibers;
@@ -721,14 +727,14 @@ NDTestShear4RectangleFiberSection3d::getCopy(void)
     theCopy->theMaterials = new NDMaterial *[numFibers];
 
     if (theCopy->theMaterials == 0) {
-      opserr <<"NDTestShear4RectangleFiberSection3d::getCopy -- failed to allocate Material pointers\n";
+      opserr <<"NDTestShear4WFFiberSection3d::getCopy -- failed to allocate Material pointers\n";
       exit(-1);
     }
   
     theCopy->matData = new double [numFibers*3];
 
     if (theCopy->matData == 0) {
-      opserr << "NDTestShear4RectangleFiberSection3d::getCopy -- failed to allocate double array for material data\n";
+      opserr << "NDTestShear4WFFiberSection3d::getCopy -- failed to allocate double array for material data\n";
       exit(-1);
     }
 			    
@@ -739,7 +745,7 @@ NDTestShear4RectangleFiberSection3d::getCopy(void)
       theCopy->theMaterials[i] = theMaterials[i]->getCopy("BeamFiber");
 
       if (theCopy->theMaterials[i] == 0) {
-	opserr <<"NDTestShear4RectangleFiberSection3d::getCopy -- failed to get copy of a Material";
+	opserr <<"NDTestShear4WFFiberSection3d::getCopy -- failed to get copy of a Material";
 	exit(-1);
       }
     }  
@@ -770,28 +776,31 @@ NDTestShear4RectangleFiberSection3d::getCopy(void)
 
   theCopy->Iy = Iy;
   theCopy->Iz = Iz;
-  theCopy->bWidth = bWidth;
-  theCopy->hHeight = hHeight;
+  theCopy->bf = bf;
+  theCopy->tf = tf;
+  theCopy->d = d;
+  theCopy->tw = tw;
   theCopy->beta22 = beta22;
+  theCopy->beta23 = beta23;
   theCopy->beta33 = beta33;
 
   return theCopy;
 }
 
 const ID&
-NDTestShear4RectangleFiberSection3d::getType ()
+NDTestShear4WFFiberSection3d::getType ()
 {
   return code;
 }
 
 int
-NDTestShear4RectangleFiberSection3d::getOrder () const
+NDTestShear4WFFiberSection3d::getOrder () const
 {
   return 6;
 }
 
 int
-NDTestShear4RectangleFiberSection3d::commitState(void)
+NDTestShear4WFFiberSection3d::commitState(void)
 {
   int err = 0;
 
@@ -802,7 +811,7 @@ NDTestShear4RectangleFiberSection3d::commitState(void)
 }
 
 int
-NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
+NDTestShear4WFFiberSection3d::revertToLastCommit(void)
 {
   int err = 0;
 
@@ -875,8 +884,10 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
     ksi(2,1) += tmp;
 
     //Compute shear factors
-    double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+    /*double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));*/
+    double Psi22 = 1.;
+    double Psi33 = 1.;
     
     // Shear terms
     /*ksi(3,3) += alpha*d11;
@@ -952,7 +963,7 @@ NDTestShear4RectangleFiberSection3d::revertToLastCommit(void)
 }
 
 int
-NDTestShear4RectangleFiberSection3d::revertToStart(void)
+NDTestShear4WFFiberSection3d::revertToStart(void)
 {
   // revert the fibers to start    
   int err = 0;
@@ -1027,8 +1038,10 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
     ksi(2,1) += tmp;
 
     //Compute shear factors
-    double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));
+    /*double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
+    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));*/
+    double Psi22 = 1.;
+    double Psi33 = 1.;
     
     // Shear terms
     /*ksi(3,3) += alpha*d11;
@@ -1104,7 +1117,7 @@ NDTestShear4RectangleFiberSection3d::revertToStart(void)
 }
 
 int
-NDTestShear4RectangleFiberSection3d::sendSelf(int commitTag, Channel &theChannel)
+NDTestShear4WFFiberSection3d::sendSelf(int commitTag, Channel &theChannel)
 {
   int res = 0;
 
@@ -1117,7 +1130,7 @@ NDTestShear4RectangleFiberSection3d::sendSelf(int commitTag, Channel &theChannel
   int dbTag = this->getDbTag();
   res += theChannel.sendID(dbTag, commitTag, data);
   if (res < 0) {
-    opserr <<  "NDTestShear4RectangleFiberSection3d::sendSelf - failed to send ID data\n";
+    opserr <<  "NDTestShear4WFFiberSection3d::sendSelf - failed to send ID data\n";
     return res;
   }    
 
@@ -1139,7 +1152,7 @@ NDTestShear4RectangleFiberSection3d::sendSelf(int commitTag, Channel &theChannel
     
     res += theChannel.sendID(dbTag, commitTag, materialData);
     if (res < 0) {
-      opserr <<  "NDTestShear4RectangleFiberSection3d::sendSelf - failed to send material data\n";
+      opserr <<  "NDTestShear4WFFiberSection3d::sendSelf - failed to send material data\n";
       return res;
     }    
 
@@ -1147,7 +1160,7 @@ NDTestShear4RectangleFiberSection3d::sendSelf(int commitTag, Channel &theChannel
     Vector fiberData(matData, 3*numFibers);
     res += theChannel.sendVector(dbTag, commitTag, fiberData);
     if (res < 0) {
-      opserr <<  "NDTestShear4RectangleFiberSection3d::sendSelf - failed to send material data\n";
+      opserr <<  "NDTestShear4WFFiberSection3d::sendSelf - failed to send material data\n";
       return res;
     }    
 
@@ -1161,7 +1174,7 @@ NDTestShear4RectangleFiberSection3d::sendSelf(int commitTag, Channel &theChannel
 }
 
 int
-NDTestShear4RectangleFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
+NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
 			 FEM_ObjectBroker &theBroker)
 {
   int res = 0;
@@ -1171,7 +1184,7 @@ NDTestShear4RectangleFiberSection3d::recvSelf(int commitTag, Channel &theChannel
   int dbTag = this->getDbTag();
   res += theChannel.recvID(dbTag, commitTag, data);
   if (res < 0) {
-    opserr <<  "NDTestShear4RectangleFiberSection3d::recvSelf - failed to recv ID data\n";
+    opserr <<  "NDTestShear4WFFiberSection3d::recvSelf - failed to recv ID data\n";
     return res;
   }    
   this->setTag(data(0));
@@ -1181,7 +1194,7 @@ NDTestShear4RectangleFiberSection3d::recvSelf(int commitTag, Channel &theChannel
     ID materialData(2*data(1));
     res += theChannel.recvID(dbTag, commitTag, materialData);
     if (res < 0) {
-      opserr <<  "NDTestShear4RectangleFiberSection3d::recvSelf - failed to recv material data\n";
+      opserr <<  "NDTestShear4WFFiberSection3d::recvSelf - failed to recv material data\n";
       return res;
     }    
 
@@ -1205,7 +1218,7 @@ NDTestShear4RectangleFiberSection3d::recvSelf(int commitTag, Channel &theChannel
 	theMaterials = new NDMaterial *[numFibers];
 	
 	if (theMaterials == 0) {
-	  opserr <<"NDTestShear4RectangleFiberSection3d::recvSelf -- failed to allocate Material pointers\n";
+	  opserr <<"NDTestShear4WFFiberSection3d::recvSelf -- failed to allocate Material pointers\n";
 	  exit(-1);
 	}
 	
@@ -1215,7 +1228,7 @@ NDTestShear4RectangleFiberSection3d::recvSelf(int commitTag, Channel &theChannel
 	matData = new double [numFibers*2];
 
 	if (matData == 0) {
-	  opserr <<"NDTestShear4RectangleFiberSection3d::recvSelf  -- failed to allocate double array for material data\n";
+	  opserr <<"NDTestShear4WFFiberSection3d::recvSelf  -- failed to allocate double array for material data\n";
 	  exit(-1);
 	}
       }
@@ -1224,7 +1237,7 @@ NDTestShear4RectangleFiberSection3d::recvSelf(int commitTag, Channel &theChannel
     Vector fiberData(matData, 3*numFibers);
     res += theChannel.recvVector(dbTag, commitTag, fiberData);
     if (res < 0) {
-      opserr <<  "NDTestShear4RectangleFiberSection3d::recvSelf - failed to recv material data\n";
+      opserr <<  "NDTestShear4WFFiberSection3d::recvSelf - failed to recv material data\n";
       return res;
     }    
 
@@ -1243,7 +1256,7 @@ NDTestShear4RectangleFiberSection3d::recvSelf(int commitTag, Channel &theChannel
       }
 
       if (theMaterials[i] == 0) {
-	opserr <<"NDTestShear4RectangleFiberSection3d::recvSelf -- failed to allocate double array for material data\n";
+	opserr <<"NDTestShear4WFFiberSection3d::recvSelf -- failed to allocate double array for material data\n";
 	exit(-1);
       }
 
@@ -1281,9 +1294,9 @@ NDTestShear4RectangleFiberSection3d::recvSelf(int commitTag, Channel &theChannel
 }
 
 void
-NDTestShear4RectangleFiberSection3d::Print(OPS_Stream &s, int flag)
+NDTestShear4WFFiberSection3d::Print(OPS_Stream &s, int flag)
 {
-  s << "\nNDTestShear4RectangleFiberSection3d, tag: " << this->getTag() << endln;
+  s << "\nNDTestShear4WFFiberSection3d, tag: " << this->getTag() << endln;
   s << "\tSection code: " << code;
   s << "\tNumber of Fibers: " << numFibers << endln;
   s << "\tCentroid (y,z): " << yBar << ' ' << zBar << endln;
@@ -1299,7 +1312,7 @@ NDTestShear4RectangleFiberSection3d::Print(OPS_Stream &s, int flag)
 }
 
 Response*
-NDTestShear4RectangleFiberSection3d::setResponse(const char **argv, int argc,
+NDTestShear4WFFiberSection3d::setResponse(const char **argv, int argc,
 			      OPS_Stream &output)
 {
   Response *theResponse =0;
@@ -1421,7 +1434,7 @@ NDTestShear4RectangleFiberSection3d::setResponse(const char **argv, int argc,
 
 
 int 
-NDTestShear4RectangleFiberSection3d::getResponse(int responseID, Information &sectInfo)
+NDTestShear4WFFiberSection3d::getResponse(int responseID, Information &sectInfo)
 {
   // Just call the base class method ... don't need to define
   // this function, but keeping it here just for clarity
@@ -1430,18 +1443,15 @@ NDTestShear4RectangleFiberSection3d::getResponse(int responseID, Information &se
 
 
 double 
-NDTestShear4RectangleFiberSection3d::getSectionArea()
+NDTestShear4WFFiberSection3d::getSectionArea()
 {
     return Abar;
 }
 
 
 void
-NDTestShear4RectangleFiberSection3d::computeShearBetas()
+NDTestShear4WFFiberSection3d::computeShearBetas()
 {
-    /*double IzTest = bWidth * pow(hHeight, 3.) / 12.;
-    double IyTest = pow(bWidth, 3.) * hHeight / 12;*/
-
     Iz = 0.;
     Iy = 0.;
     double y = 0.;
@@ -1459,6 +1469,7 @@ NDTestShear4RectangleFiberSection3d::computeShearBetas()
     double phi22 = 0.;
     double phi33 = 0.;
     beta22 = 0.;
+    beta23 = 0.;
     beta33 = 0.;
     for (int i = 0; i < numFibers; i++) {
         y = matData[i * 3] - yBar;
@@ -1467,8 +1478,10 @@ NDTestShear4RectangleFiberSection3d::computeShearBetas()
 
         //double Q12test = (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2)));
         //phi=Q/(I*b)
-        phi22 = 1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2)));
-        phi33 = 1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2)));
+        /*phi22 = 1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2)));
+        phi33 = 1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2)));*/
+        double Psi22 = 1.;
+        double Psi33 = 1.;
 
         //beta=\integral_A of phi^2
         beta22 += pow(phi22, 2) * A;
@@ -1480,7 +1493,7 @@ NDTestShear4RectangleFiberSection3d::computeShearBetas()
 
 // AddingSensitivity:BEGIN ////////////////////////////////////
 int
-NDTestShear4RectangleFiberSection3d::setParameter(const char **argv, int argc, Parameter &param)
+NDTestShear4WFFiberSection3d::setParameter(const char **argv, int argc, Parameter &param)
 {
   if (argc < 1)
     return -1;
@@ -1535,7 +1548,7 @@ NDTestShear4RectangleFiberSection3d::setParameter(const char **argv, int argc, P
 }
 
 int
-NDTestShear4RectangleFiberSection3d::updateParameter(int paramID, Information &info)
+NDTestShear4WFFiberSection3d::updateParameter(int paramID, Information &info)
 {
   switch(paramID) {
   case 1:
@@ -1547,7 +1560,7 @@ NDTestShear4RectangleFiberSection3d::updateParameter(int paramID, Information &i
 }
 
 int
-NDTestShear4RectangleFiberSection3d::activateParameter(int paramID)
+NDTestShear4WFFiberSection3d::activateParameter(int paramID)
 {
   parameterID = paramID;
 
@@ -1555,13 +1568,13 @@ NDTestShear4RectangleFiberSection3d::activateParameter(int paramID)
 }
 
 const Vector &
-NDTestShear4RectangleFiberSection3d::getSectionDeformationSensitivity(int gradIndex)
+NDTestShear4WFFiberSection3d::getSectionDeformationSensitivity(int gradIndex)
 {
   return dedh;
 }
 
 const Vector &
-NDTestShear4RectangleFiberSection3d::getStressResultantSensitivity(int gradIndex, bool conditional)
+NDTestShear4WFFiberSection3d::getStressResultantSensitivity(int gradIndex, bool conditional)
 {
   static Vector ds(6);
   
@@ -1690,7 +1703,7 @@ NDTestShear4RectangleFiberSection3d::getStressResultantSensitivity(int gradIndex
 }
 
 const Matrix &
-NDTestShear4RectangleFiberSection3d::getInitialTangentSensitivity(int gradIndex)
+NDTestShear4WFFiberSection3d::getInitialTangentSensitivity(int gradIndex)
 {
   static Matrix dksdh(6,6);
   
@@ -1748,7 +1761,7 @@ NDTestShear4RectangleFiberSection3d::getInitialTangentSensitivity(int gradIndex)
 }
 
 int
-NDTestShear4RectangleFiberSection3d::commitSensitivity(const Vector& defSens,
+NDTestShear4WFFiberSection3d::commitSensitivity(const Vector& defSens,
 				    int gradIndex, int numGrads)
 {
   double d0 = defSens(0);

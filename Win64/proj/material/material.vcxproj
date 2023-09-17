@@ -254,6 +254,7 @@
     <ClCompile Include="..\..\..\SRC\material\section\NDFiberSectionWarping2d.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\NDTestNonlocalFiberSection3d.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\NDTestShear4RectangleFiberSection3d.cpp" />
+    <ClCompile Include="..\..\..\SRC\material\section\NDTestShear4WFFiberSection3d.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\TimoshenkoSection3d.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\WFFiberSection2d.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\WSection2d.cpp" />
@@ -686,6 +687,7 @@
     <ClInclude Include="..\..\..\SRC\material\section\NDFiberSectionWarping2d.h" />
     <ClInclude Include="..\..\..\SRC\material\section\NDTestNonlocalFiberSection3d.h" />
     <ClInclude Include="..\..\..\SRC\material\section\NDTestShear4RectangleFiberSection3d.h" />
+    <ClInclude Include="..\..\..\SRC\material\section\NDTestShear4WFFiberSection3d.h" />
     <ClInclude Include="..\..\..\SRC\material\section\TimoshenkoSection3d.h" />
     <ClInclude Include="..\..\..\SRC\material\section\WFFiberSection2d.h" />
     <ClInclude Include="..\..\..\SRC\material\section\WSection2d.h" />

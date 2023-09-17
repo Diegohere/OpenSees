@@ -95,6 +95,7 @@ extern "C" int         OPS_ResetInputNoBuilder(ClientData clientData, Tcl_Interp
 
 #include <NDTestNonlocalFiberSection3d.h> // Added by Diego Heredia
 #include <NDTestShear4RectangleFiberSection3d.h> // Added by Diego Heredia
+#include <NDTestShear4WFFiberSection3d.h> // Added by Diego Heredia
 
 #include <string.h>
 #include <fstream>
@@ -528,7 +529,8 @@ TclModelBuilderSectionCommand (ClientData clientData, Tcl_Interp *interp, int ar
 	     strcmp(argv[1],"NDFiberWarping") == 0 ||
 	     strcmp(argv[1],"NDFiber") == 0 
 		 || strcmp(argv[1], "NDFiberTestNonlocal")==0
-		 || strcmp(argv[1], "NDFiberTestShear4Rectangle") == 0) //added by Diego Heredia
+		 || strcmp(argv[1], "NDFiberTestShear4Rectangle") == 0 
+		 || strcmp(argv[1], "NDFiberTestShear4WF") == 0) //updated by Diego Heredia
 
 	return TclCommand_addFiberSection (clientData, interp, argc, argv,
 					   theTclBuilder);
@@ -960,10 +962,17 @@ static int currentSectionTag = 0;
 static bool currentSectionIsND = false;
 static bool currentSectionIsWarping = false;
 static bool currentSectionComputeCentroid = true;
-static bool currentSectionIsNDFiberTestNonlocal = false; // added by Diego Heredia
-static bool currentSectionIsNDTestShear4RectangleFiberSection3d = false; // added by Diego Heredia
-double bWidth = 0.;// added by Diego Heredia
-double hHeight = 0.;// added by Diego Heredia
+static bool currentSectionIsNDFiberTestNonlocal = false;
+
+// Added by Diego Heredia
+static bool currentSectionIsNDTestShear4RectangleFiberSection3d = false; 
+static bool currentSectionIsNDTestShear4WFFiberSection3d = false; 
+double bWidth = 0.;
+double hHeight = 0.;
+double bf = 0.;
+double tf = 0.;
+double dDepth = 0.;
+double tw = 0.;
 
 int
 buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
@@ -1005,10 +1014,12 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
       currentSectionIsND = true;
       currentSectionIsWarping = true;
 	}
-	if (strcmp(argv[1], "NDFiberTestNonlocal")==0) // added by Diego Heredia
+
+	// added by Diego Heredia
+	if (strcmp(argv[1], "NDFiberTestNonlocal")==0) 
 	  currentSectionIsNDFiberTestNonlocal=true;
 	if (strcmp(argv[1], "NDFiberTestShear4Rectangle") == 0)
-	{// added by Diego Heredia
+	{
 		currentSectionIsNDTestShear4RectangleFiberSection3d = true;
 		if (Tcl_GetDouble(interp, argv[6], &bWidth) != TCL_OK) {
 			opserr << "WARNING invalid bWidth" << endln;
@@ -1016,6 +1027,26 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
 		}
 		if (Tcl_GetDouble(interp, argv[7], &hHeight) != TCL_OK) {
 			opserr << "WARNING invalid hHeight" << endln;
+			return TCL_ERROR;
+		}
+	}
+	if (strcmp(argv[1], "NDFiberTestShear4WF") == 0)
+	{
+		currentSectionIsNDTestShear4WFFiberSection3d = true;
+		if (Tcl_GetDouble(interp, argv[6], &bf) != TCL_OK) {
+			opserr << "WARNING invalid bf" << endln;
+			return TCL_ERROR;
+		}
+		if (Tcl_GetDouble(interp, argv[7], &tf) != TCL_OK) {
+			opserr << "WARNING invalid tf" << endln;
+			return TCL_ERROR;
+		}
+		if (Tcl_GetDouble(interp, argv[8], &dDepth) != TCL_OK) {
+			opserr << "WARNING invalid dDepth" << endln;
+			return TCL_ERROR;
+		}
+		if (Tcl_GetDouble(interp, argv[9], &tw) != TCL_OK) {
+			opserr << "WARNING invalid tw" << endln;
 			return TCL_ERROR;
 		}
 	}
@@ -1080,8 +1111,17 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
 	  //Added by Diego Heredia
 	  if (strcmp(argv[iarg], "-Geom") == 0)
 	  {
-		  iarg += 5;
-		  brace += 3;
+		  if (strcmp(argv[1], "NDFiberTestShear4Rectangle") == 0)
+		  {
+			  iarg += 5;
+			  brace += 3;
+		  }
+		  if (strcmp(argv[1], "NDFiberTestShear4WF") == 0)
+		  {
+			  iarg += 7;
+			  brace += 5;
+		  }
+		  
 	  }
 
 	  iarg += 1;
@@ -2305,7 +2345,8 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	 for (i = numSectionRepresFibers; i < numFibers; i++) {
 	   fiberPosition(0) = fibersPosition(0,k);
 	   fiberPosition(1) = fibersPosition(1,k);  
-	   if (currentSectionIsND || currentSectionIsNDFiberTestNonlocal || currentSectionIsNDTestShear4RectangleFiberSection3d) { // Modified by Diego Heredia
+	   if (currentSectionIsND || currentSectionIsNDFiberTestNonlocal || currentSectionIsNDTestShear4RectangleFiberSection3d 
+		   || currentSectionIsNDTestShear4WFFiberSection3d) { // Modified by Diego Heredia
 	     ndmaterial = OPS_getNDMaterial(fibersMaterial(k));
 	     if (ndmaterial == 0) {
                opserr <<  "WARNING invalid NDmaterial ID for patch\n";
@@ -2340,6 +2381,10 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	 else if (currentSectionIsNDTestShear4RectangleFiberSection3d) // Added by Diego Heredia
 	 {
 		 section = new NDTestShear4RectangleFiberSection3d(secTag, bWidth,  hHeight, numFibers, fiber, currentSectionComputeCentroid);
+	 }
+	 else if (currentSectionIsNDTestShear4WFFiberSection3d) // Added by Diego Heredia
+	 {
+		 section = new NDTestShear4WFFiberSection3d(secTag, bf, tf, dDepth, tw, numFibers, fiber, currentSectionComputeCentroid);
 	 }
 	 else
 	   section = new FiberSection3d(secTag, numFibers, fiber, theTorsion, currentSectionComputeCentroid);
