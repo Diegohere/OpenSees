@@ -87,7 +87,7 @@
 	#set lc [expr 0.0*$bf];
 	#element gradientForceBeamColumn 12 1 2 $ColTransfTag Simpson 1 9  20 1e-6 $lc
 	
-	set lc [expr 0.0*$h];
+	set lc [expr 0.0*$bf];
 	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 5  20 1e-6 $lc 
 	
 ############################################################################

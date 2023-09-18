@@ -93,6 +93,7 @@ class NDTestShear4WFFiberSection3d : public SectionForceDeformation
     double tf;
     double d;
     double tw;
+    double h;
 
     double Abar,QyBar, QzBar;
     double yBar;       // Section centroid
