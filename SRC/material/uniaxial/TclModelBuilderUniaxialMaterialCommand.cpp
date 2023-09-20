@@ -187,7 +187,8 @@ extern void *OPS_Trilinwp2(void);
 extern void *OPS_Masonryt(void);
 extern void *OPS_DowelType(void);
 
-extern void* OPS_LocalBucklingWebPlateUniaxial(void);
+extern void* OPS_LocalBucklingWebPlateUniaxial(void); // Added by Diego Heredia
+extern void* OPS_CFSTsteel(void); // Added by Diego Heredia
 
 //extern int TclCommand_ConfinedConcrete02(ClientData clientData, Tcl_Interp *interp, int argc, 
 //					 TCL_Char **argv, TclModelBuilder *theTclBuilder);
@@ -1641,13 +1642,13 @@ TclModelBuilderUniaxialMaterialCommand (ClientData clientData, Tcl_Interp *inter
 	return TCL_ERROR;
     }
 
-    else if ((strcmp(argv[1],"TendonL01Material") == 0) || (strcmp(argv[1],"TendonL01") == 0)) {
+    /*else if ((strcmp(argv[1],"TendonL01Material") == 0) || (strcmp(argv[1],"TendonL01") == 0)) {
       void *theMat = OPS_TendonL01Material();
       if (theMat != 0) 
 	theMaterial = (UniaxialMaterial *)theMat;
       else 
 	return TCL_ERROR;
-    }
+    }*/
 
 
     else if ((strcmp(argv[1],"ConfinedConcrete01") == 0) || (strcmp(argv[1],"ConfinedConcrete") == 0)) {
@@ -1680,6 +1681,13 @@ TclModelBuilderUniaxialMaterialCommand (ClientData clientData, Tcl_Interp *inter
     //Added by Diego Heredia
     else if (strcmp(argv[1], "LocalBucklingWebPlateUniaxial") == 0) {
     void* theMat = OPS_LocalBucklingWebPlateUniaxial();
+    if (theMat != 0)
+        theMaterial = (UniaxialMaterial*)theMat;
+    else
+        return TCL_ERROR;
+    }
+    else if (strcmp(argv[1], "CFSTsteel") == 0) {
+    void* theMat = OPS_CFSTsteel();
     if (theMat != 0)
         theMaterial = (UniaxialMaterial*)theMat;
     else

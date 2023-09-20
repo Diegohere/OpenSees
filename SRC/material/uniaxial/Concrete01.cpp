@@ -243,6 +243,9 @@ Concrete01::setTrial (double strain, double &stress, double &tangent, double str
 	  Ttangent = 0.01;
 	  stress = Tstress;
 	  tangent = Ttangent;*/
+	double Tinit = getInitialTangent();
+	double alphaEl = 0.01;
+	tangent = alphaEl * Tinit + (1. - alphaEl) * Ttangent;
     return 0;
   }
   
@@ -282,6 +285,14 @@ Concrete01::setTrial (double strain, double &stress, double &tangent, double str
   
   stress = Tstress;
   tangent =  Ttangent;
+
+  //Modified by DH
+  if (abs(Ttangent) < 0.001)
+  {
+	  double Tinit = getInitialTangent();
+	  double alphaEl = 0.01;
+	  tangent= alphaEl * Tinit + (1. - alphaEl) * Ttangent;
+  }
   
   return 0;
 }
@@ -416,7 +427,18 @@ double Concrete01::getStrain ()
 
 double Concrete01::getTangent ()
 {
-   return Ttangent;
+	//return Ttangent;
+
+	if (abs(Ttangent)<0.001)
+	{
+		double Tinit = getInitialTangent();
+		double alphaEl = 0.01;
+		return alphaEl * Tinit + (1. - alphaEl) * Ttangent;
+	}
+	else {
+		return Ttangent;
+	}
+	
 }
 
 int Concrete01::commitState ()

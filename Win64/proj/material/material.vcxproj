@@ -274,6 +274,7 @@
     <ClCompile Include="..\..\..\SRC\material\uniaxial\Bond_SP01.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\BoucWenMaterial.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\CFSSSWP.cpp" />
+    <ClCompile Include="..\..\..\SRC\material\uniaxial\CFSTsteel.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\CFSWSWP.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\CableMaterial.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\Cast.cpp" />
@@ -706,6 +707,7 @@
     <ClInclude Include="..\..\..\SRC\material\uniaxial\Bond_SP01.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\BoucWenMaterial.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\CFSSSWP.h" />
+    <ClInclude Include="..\..\..\SRC\material\uniaxial\CFSTsteel.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\CFSWSWP.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\CableMaterial.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\Cast.h" />

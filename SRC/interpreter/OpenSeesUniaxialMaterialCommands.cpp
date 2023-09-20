@@ -209,6 +209,7 @@ void* OPS_HystereticPoly(); // Salvatore Sessa 14-01-2021 Mail: salvatore.sessa2
 void* OPS_DowelType();
 
 void* OPS_LocalBucklingWebPlateUniaxial(); //Diego Heredia
+void* OPS_CFSTsteel(); // Diego Heredia
 
 namespace {
 
@@ -361,7 +362,9 @@ namespace {
 	uniaxialMaterialsMap.insert(std::make_pair("SMA", &OPS_SMAMaterial));	
 	uniaxialMaterialsMap.insert(std::make_pair("HystereticPoly", &OPS_HystereticPoly)); // Salvatore Sessa 14-Jan-2021 Mail: salvatore.sessa2@unina.it
 	uniaxialMaterialsMap.insert(std::make_pair("DowelType", &OPS_DowelType));
+
 	uniaxialMaterialsMap.insert(std::make_pair("OPS_LocalBucklingWebPlateUniaxial", &OPS_LocalBucklingWebPlateUniaxial)); // Diego Heredia
+	uniaxialMaterialsMap.insert(std::make_pair("OPS_CFSTsteel", &OPS_CFSTsteel)); // Diego Heredia
 
 	return 0;
     }
