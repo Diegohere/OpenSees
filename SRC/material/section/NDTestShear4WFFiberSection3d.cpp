@@ -436,6 +436,13 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
+    double signZ = 1.;
+    if (z<0)
+    {
+        signZ = -1.;
+    }
+
+
     double y2 = y*y;
     double z2 = z*z;
     double yz = y*z;
@@ -448,12 +455,17 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     if (abs(y) > h / 2.) //flange plate
     {
         Psi22 = 0.;
-        Psi23 = 1. / beta23 * (1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
-        Psi33 = 1. / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
+        /*if (abs(z) < tw / 2.)
+        {
+            Psi22 = 1/beta22*(1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y)));
+        }*/
+        Psi23 = 1 / beta23 * (signZ * 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
+        Psi33 = 1 / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
     }
     else // web plate
     {
-        Psi22 = 1. / beta22 * (1. / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y) * (y + 0.5 * (h / 2. - y))));
+        //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
+        Psi22 = 1 / beta22 * (1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y)));
         Psi23 = 0.;
         Psi33 = 0.;
     }
@@ -509,12 +521,12 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
     ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi22,2) * d11;
+    ksi(3, 3) += (pow(Psi22,2)+ pow(Psi23, 2)) * d11;
     //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
-    ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ksi(4, 3) += pow(Psi33, 2) * d21;
+    //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
+    ksi(4, 4) += pow(Psi33, 2) * d22;
     /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
-    ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
+    //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -576,6 +588,8 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 
   }*/
 
+  //opserr << "This is ks" << *ks << endln;
+
   return res;
 }
 
@@ -618,6 +632,12 @@ NDTestShear4WFFiberSection3d::getInitialTangent(void)
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
+    double signZ = 1.;
+    if (z < 0)
+    {
+        signZ = -1.;
+    }
+
     double y2 = y*y;
     double z2 = z*z;
     double yz = y*z;
@@ -656,12 +676,17 @@ NDTestShear4WFFiberSection3d::getInitialTangent(void)
     if (abs(y) > h / 2.) //flange plate
     {
         Psi22 = 0.;
-        Psi23 = 1. / beta23 * (1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
-        Psi33 = 1. / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
+        /*if (abs(z) < tw / 2.)
+        {
+            Psi22 = 1 / beta22 * (1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y)));
+        }*/
+        Psi23 = 1 / beta23 * (signZ * 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
+        Psi33 = 1 / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
     }
     else // web plate
     {
-        Psi22 = 1. / beta22 * (1. / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y) * (y + 0.5 * (h / 2. - y))));
+        //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
+        Psi22 = 1 / beta22 * (1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y)));
         Psi23 = 0.;
         Psi33 = 0.;
     }
@@ -671,10 +696,12 @@ NDTestShear4WFFiberSection3d::getInitialTangent(void)
     ki(3,4) += alpha*d12;
     ki(4,3) += alpha*d21;
     ki(4,4) += alpha*d22;*/
-    ki(3, 3) += pow(Psi22, 2) * d11;
-    ki(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
-    ki(4, 3) += pow(Psi33, 2) * d21;
-    ki(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;
+    ki(3, 3) += (pow(Psi22, 2) + pow(Psi23, 2)) * d11;
+    //ki(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
+    //ki(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
+    ki(4, 4) += pow(Psi33, 2) * d22;
+    /*ki(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
+    //ki(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
     
     // Torsion term
     ki(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -869,6 +896,12 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
+    double signZ = 1.;
+    if (z < 0)
+    {
+        signZ = -1.;
+    }
+
     double y2 = y*y;
     double z2 = z*z;
     double yz = y*z;
@@ -915,12 +948,17 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
     if (abs(y) > h / 2.) //flange plate
     {
         Psi22 = 0.;
-        Psi23 = 1. / beta23 * (1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
-        Psi33 = 1. / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
+        /*if (abs(z) < tw / 2.)
+        {
+            Psi22 = 1 / beta22 * (1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y)));
+        }*/
+        Psi23 = 1 / beta23 * (signZ * 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
+        Psi33 = 1 / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
     }
     else // web plate
     {
-        Psi22 = 1. / beta22 * (1. / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y) * (y + 0.5 * (h / 2. - y))));
+        //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
+        Psi22 = 1 / beta22 * (1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y)));
         Psi23 = 0.;
         Psi33 = 0.;
     }
@@ -930,10 +968,12 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
     ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi22, 2) * d11;
-    ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
-    ksi(4, 3) += pow(Psi33, 2) * d21;
-    ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;
+    ksi(3, 3) += (pow(Psi22, 2) + pow(Psi23, 2)) * d11;
+    //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
+    //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
+    ksi(4, 4) += pow(Psi33, 2) * d22;
+    /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
+    //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -1034,6 +1074,12 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
+    double signZ = 1.;
+    if (z < 0)
+    {
+        signZ = -1.;
+    }
+
     double y2 = y*y;
     double z2 = z*z;
     double yz = y*z;
@@ -1082,12 +1128,17 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
     if (abs(y) > h / 2.) //flange plate
     {
         Psi22 = 0.;
-        Psi23 = 1. / beta23 * (1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
-        Psi33 = 1. / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
+        /*if (abs(z) < tw / 2.)
+        {
+            Psi22 = 1 / beta22 * (1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y)));
+        }*/
+        Psi23 = 1 / beta23 * (signZ * 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
+        Psi33 = 1 / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
     }
     else // web plate
     {
-        Psi22 = 1. / beta22 * (1. / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y) * (y + 0.5 * (h / 2. - y))));
+        //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
+        Psi22 = 1 / beta22 * (1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y)));
         Psi23 = 0.;
         Psi33 = 0.;
     }
@@ -1097,10 +1148,12 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
     ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi22, 2) * d11;
-    ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
-    ksi(4, 3) += pow(Psi33, 2) * d21;
-    ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;
+    ksi(3, 3) += (pow(Psi22, 2) + pow(Psi23, 2)) * d11;
+    //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
+    //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
+    ksi(4, 4) += pow(Psi33, 2) * d22;
+    /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
+    //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
     
     // Torsion term
     ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
@@ -1527,16 +1580,27 @@ NDTestShear4WFFiberSection3d::computeShearBetas()
         z = matData[i * 3 + 1] - zBar;
         A = matData[i * 3 + 2];
 
+        double signZ = 1.;
+        if (z < 0)
+        {
+            signZ = -1.;
+        }
+
         //phi=Q/(I*b)
         if (abs(y)>h/2.) //flange plate
         {
             phi22 = 0.;
-            phi23 = 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.);
+            /*if (abs(z)<tw/2.)
+            {
+                phi22 = 1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y));
+            }*/
+            phi23 = signZ* 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.);
             phi33 = 1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z)));
         }
         else // web plate
         {
-            phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
+            //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
+            phi22 = 1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y));
             phi23 = 0.;
             phi33 = 0.;
         }
