@@ -173,8 +173,7 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	eps = trialStrain;
 	double deps = eps - eps_1;
 	double strainIncrement = eps - strainConverged;
-	returnMapping(strainIncrement);
-	calculateStiffness();
+
 
 	// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	// %%%%%%%% INITIALIZE CURRENT BACKBONE VALUES AS PREVIOUS %%%%%%%%%%%%
@@ -260,28 +259,20 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 
 
 	/////////////////////////////////////////  Modify code  /////////////////////////////////////////////
-	if (kon == 0 || kon == 10) {
-		if (fabs(deps) < 10.0 * DBL_EPSILON)
-		{
-			e = E0;
-			kon = 10;
-			return 0;
+	if (kon == 0) {
+		if (deps < 0.0) {
+			kon = 2; //kon = 2表示第一次往负向加载
 		}
-		else
-		{
-			if (deps < 0.0)
-			{
-				kon = 2; //kon = 2表示第一次往负向加载
-			}
-			else {
-				kon = 1; //kon = 1表示第一次往正向加载
-			}
+		else {
+			kon = 1; //kon = 1表示第一次往正向加载
 		}
 	}
 
 	//工况1：第一次往正向加载（+）
 	if ((kon == 1) && (deps > 0.0)) {     //第一次往正向加载
 		kon = 1;
+		returnMapping(strainIncrement);
+		calculateStiffness();
 		sig = stressTrial;
 		e = stiffnessTrial;
 	}
@@ -289,6 +280,8 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	//弹性段 从负往正走
 	if (((kon == 2) && (deps > 0.0) && (Yield_Flag == 0)) || ((kon == 4) && (deps > 0.0) && (Yield_Flag == 0))) {
 		kon = 1;
+		returnMapping(strainIncrement);
+		calculateStiffness();
 		sig = stressTrial;
 		e = stiffnessTrial;
 	}
@@ -296,6 +289,8 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	//第一次往负向加载，或第一次正向加载后负向加载
 	if ((kon == 2 || kon == 1) && (deps < 0.0)) {
 		kon = 2;
+		returnMapping(strainIncrement);
+		calculateStiffness();
 		epsy_neg = sigy_project_neg_j / (E0 - Eb_neg_j);
 		double sig_eps_y = sigr_j + siglb_project_j * exp(a_j * (epsy_neg));
 
@@ -353,6 +348,8 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	//工况3（-）：屈曲未恢复，往负向走
 	if ((kon == 3 || kon == 5 || kon == 6) && (deps < 0.0) && (Buckling_flag == 1)) {
 		kon = 3;
+		returnMapping(strainIncrement);
+		calculateStiffness();
 		if ((eps <= epsreversal) && ((epsreversal - (1.7 * fabs(sigreversal) / E_r_j)) < eps)) {
 			sig = sig_1 + E_r_j * deps;
 			e = E_r_j;
@@ -367,6 +364,9 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	//工况6（+）：屈曲未恢复，往负向走后，往正向走
 	if ((kon == 3 || kon == 6) && (deps > 0.0)) {
 		kon = 6;
+		returnMapping(strainIncrement);
+		calculateStiffness();
+
 		if ((epsreversal <= eps) && (eps < (epsreversal + (1.7 * fabs(sigreversal) / E_r_j)))) {
 			sig = sig_1 + E_r_j * deps;
 			e = E_r_j * E0;
@@ -390,6 +390,8 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	//工况4（-）：屈曲恢复后，往负向加载
 	if ((kon == 4 || kon == 5 || kon == 6) && (deps < 0.0) && (Buckling_flag == 0)) {
 		kon = 4;
+		returnMapping(strainIncrement);
+		calculateStiffness();
 		epsy_neg = sigy_project_neg_j / (E0 - Eb_neg_j);
 		double sig_eps_y = sigr_j + siglb_project_j * exp(a_j * (epsy_neg));
 
@@ -441,7 +443,6 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	//工况5(+)：屈曲恢复后，往负向加载，后往正向加载
 	if ((kon == 4 || kon == 5 || kon == 2) && (deps > 0.0) && (Yield_Flag == 1)) {     //往正向走
 		kon = 5;
-
 		returnMapping(strainIncrement);
 		calculateStiffness();
 		double Elb = (siglb_j_1 - sigreversal) / (epslb_j_1 - epsreversal);
@@ -450,12 +451,17 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 		sig_inflection = E_r_j * (1.7 * fabs(sigreversal) / E_r_j) + sigreversal;
 
 		if ((epsreversal <= eps) && (lbstage == 3)) {
-			stressConverged = sig_1;
-			returnMapping(strainIncrement);
-			calculateStiffness();
-			sig = stressTrial;
-			e = stiffnessTrial;
+			sig = E_r_j * (eps - epsreversal) + sigreversal;
+			if (sig <= stressTrial) {
+				sig = sig;
+				e = E_r_j;
+			}
+			else {
+				sig = stressTrial;
+				e = stiffnessTrial;
+			}
 		}
+
 		if ((Minus_Flag == 0) && (lbstage == 1)) {
 			if ((epsreversal <= eps) && (eps < (epsreversal + 1.7 * fabs(sigreversal) / E_r_j))) {
 				sig = E_r_j * (eps - epsreversal) + sigreversal;
@@ -555,20 +561,11 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 		sig = 5;
 	}
 
-	if (((fabs(sig) > Fy) || (fabs(eps) > epsy_neg)) && (Yield_Flag == 0.0)) {
+	//if (((fabs(sig) > Fy) || (fabs(eps) > epsy_neg)) && (Yield_Flag == 0.0)) {
+	if (((fabs(sig) > Fy) || (fabs(eps) > fabs(epsy_neg))) && (Yield_Flag == 0.0)) {
 		Yield_Flag = 1.0;
 	}
 
-	//防止计算的振荡
-	if (((Di / Di_1) < 0) && ((Di_1 / Di_2) < 0)) {
-		sig = sig_2;
-		sig_1 = sig_2;
-		e = e_2;
-		kon = kon_2;
-		epsreversal = epsreversal_2;
-		sigreversal = sigreversal_2;
-		Minus_Flag = Minus_Flag_2;
-	}
 
 	// %%%%%%%%%% PREPARE RETURN VALUES %%%%%%%%%%%%%
 	Eb_pos_j_1 = Eb_pos_j;
@@ -764,8 +761,6 @@ void CFSTsteel::calculateStiffness() {
 		stiffnessTrial = (E0 * plasticModulus) /
 			(E0 + plasticModulus);
 	}
-	/*double alphaElastic = 0.01;
-	stiffnessTrial = alphaElastic * E0 + (1.-alphaElastic) * stiffnessTrial;*/
 	return;
 }
 
@@ -856,6 +851,7 @@ int CFSTsteel::commitState(void)
 	cMinus_Flag_2 = Minus_Flag_2;
 
 	strainConverged = eps;
+	//strainConverged = strainTrial;
 	strainPEqConverged = strainPEqTrial;
 	stressConverged = stressTrial;
 	alphaKConverged = alphaKTrial;
@@ -936,6 +932,7 @@ int CFSTsteel::revertToLastCommit(void)
 	e_2 = ce_2;
 
 	eps = strainConverged;
+	//strainTrial = strainConverged;
 	strainPEqTrial = strainPEqConverged;
 	stressTrial = stressConverged;
 	alphaKTrial = alphaKConverged;
