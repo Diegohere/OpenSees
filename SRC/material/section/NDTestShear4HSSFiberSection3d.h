@@ -16,9 +16,9 @@ class NDTestShear4HSSFiberSection3d : public SectionForceDeformation
 {
   public:
     NDTestShear4HSSFiberSection3d(); 
-    NDTestShear4HSSFiberSection3d(int tag, double D, double t, int numFibers, Fiber **fibers, double a = 1.0, bool compCentroid=true);
-    NDTestShear4HSSFiberSection3d(int tag, double D, double t, int numFibers, double a = 1.0, bool compCentroid=true);
-    NDTestShear4HSSFiberSection3d(int tag, double D, double t, int numFibers, NDMaterial **mats,
+    NDTestShear4HSSFiberSection3d(int tag, double D, double t, double rInt, int numFibers, Fiber **fibers, double a = 1.0, bool compCentroid=true);
+    NDTestShear4HSSFiberSection3d(int tag, double D, double t, double rInt, int numFibers, double a = 1.0, bool compCentroid=true);
+    NDTestShear4HSSFiberSection3d(int tag, double D, double t, double rInt, int numFibers, NDMaterial **mats,
 		     SectionIntegration &si, double a = 1.0, bool compCentroid=true);
     ~NDTestShear4HSSFiberSection3d();
 
@@ -91,6 +91,7 @@ class NDTestShear4HSSFiberSection3d : public SectionForceDeformation
 
     double D;
     double t;
+    double rInt;
     double h;
 
     double Abar,QyBar, QzBar;

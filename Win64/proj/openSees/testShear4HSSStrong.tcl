@@ -107,8 +107,8 @@
 	set yJF2 [expr -($DHSS/2 - $tHSS)];
 	set zJF2 [expr ($DHSS/2 - $rExtHSS)];
 	
-	#section NDFiberTestNonlocal 1 -GJ $GJ {;	
-	section NDFiberTestShear4HSS 1 -GJ $GJ -Geom $DHSS $tHSS {;	
+	#section NDFiberTestNonlocal 1 -GJ $GJ {;
+	section NDFiberTestShear4HSS 1 -GJ $GJ -Geom $DHSS $tHSS $rIntHSS {;		
 		patch circ 1 1 1 $yC1 $zC1 $rIntHSS $rExtHSS 0 90;
 	patch circ 1 1 1 $yC2 $zC2 $rIntHSS $rExtHSS 270 360;
 	patch circ 1 1 1 $yC3 $zC3 $rIntHSS $rExtHSS 180 270;
@@ -146,6 +146,8 @@ puts "Recorders ..."
 	
 # Record stress and strains for fibers
 # Top flange;
+recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_stressFiberY117Z-117.txt -ele 12 section 1 fiber 116.69 -116.69 stress; 
+recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_strainFiberY117Z-117.txt -ele 12 section 1 fiber 116.69 -116.69 strain; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_stressFiberY122Z-93.txt -ele 12 section 1 fiber 122.25 -92.92 stress; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_strainFiberY122Z-93.txt -ele 12 section 1 fiber 122.25 -92.92 strain; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_stressFiberY122Z-72.txt -ele 12 section 1 fiber 122.25 -72.28 stress; 
@@ -166,7 +168,11 @@ recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_stress
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_strainFiberY122Z72.txt -ele 12 section 1 fiber 122.25 72.27 strain; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_stressFiberY122Z93.txt -ele 12 section 1 fiber 122.25 92.92 stress; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_strainFiberY122Z93.txt -ele 12 section 1 fiber 122.25 92.92 strain; 
+recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_stressFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 stress; 
+recorder Element -file $dataDir/testShearDistribution_HSSStrong_topFlange_strainFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 strain; 
 # Bottom flange;
+recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_stressFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 stress; 
+recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_strainFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 strain; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_stressFiberY-122Z93.txt -ele 12 section 1 fiber -122.25 92.92 stress; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_strainFiberY-122Z93.txt -ele 12 section 1 fiber -122.25 92.92 strain; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_stressFiberY-122Z72.txt -ele 12 section 1 fiber -122.25 72.28 stress; 
@@ -187,6 +193,8 @@ recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_stress
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_strainFiberY-122Z-72.txt -ele 12 section 1 fiber -122.25 -72.27 strain; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_stressFiberY-122Z-93.txt -ele 12 section 1 fiber -122.25 -92.92 stress; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_strainFiberY-122Z-93.txt -ele 12 section 1 fiber -122.25 -92.92 strain; 
+recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_stressFiberY-117Z-117.txt -ele 12 section 1 fiber -116.69 -116.69 stress; 
+recorder Element -file $dataDir/testShearDistribution_HSSStrong_botFlange_strainFiberY-117Z-117.txt -ele 12 section 1 fiber -116.69 -116.69 strain; 
 # Left web;
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_leftWeb_stressFiberY117Z-117.txt -ele 12 section 1 fiber 116.69 -116.69 stress; 
 recorder Element -file $dataDir/testShearDistribution_HSSStrong_leftWeb_strainFiberY117Z-117.txt -ele 12 section 1 fiber 116.69 -116.69 strain; 

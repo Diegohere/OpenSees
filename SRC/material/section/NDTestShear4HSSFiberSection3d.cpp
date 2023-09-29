@@ -46,14 +46,15 @@ void* OPS_NDTestShear4HSSFiberSection3d()
     //To be modified
     double D = 200.;
     double t = 15.;
+    double rInt = 1.5 * t;
 
-    return new NDTestShear4HSSFiberSection3d(tag, D, t, num, computeCentroid);
+    return new NDTestShear4HSSFiberSection3d(tag, D, t, rInt, num, computeCentroid);
 }
 
 // constructors:
-NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHSS, double tHSS, int num,  Fiber** fibers, double a, bool compCentroid) :
+NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHSS, double tHSS, double rIntHSS, int num,  Fiber** fibers, double a, bool compCentroid) :
     SectionForceDeformation(tag, SEC_TAG_NDTestShear4HSSFiberSection3d),
-    D(DHSS), t(tHSS),
+    D(DHSS), t(tHSS), rInt(rIntHSS),
     numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
@@ -122,9 +123,9 @@ NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHS
   computeShearBetas();
 }
 
-NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHSS, double tHSS, int num, double a, bool compCentroid) :
+NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHSS, double tHSS, double rIntHSS, int num, double a, bool compCentroid) :
     SectionForceDeformation(tag, SEC_TAG_NDTestShear4HSSFiberSection3d),
-    D(DHSS), t(tHSS),
+    D(DHSS), t(tHSS), rInt(rIntHSS),
     numFibers(0), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
@@ -175,10 +176,10 @@ NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHS
     computeShearBetas();
 }
 
-NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHSS, double tHSS, int num, NDMaterial **mats,
+NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHSS, double tHSS, double rIntHSS, int num, NDMaterial **mats,
 				   SectionIntegration &si, double a, bool compCentroid):
   SectionForceDeformation(tag, SEC_TAG_NDTestShear4HSSFiberSection3d),
-    D(DHSS), t(tHSS),
+    D(DHSS), t(tHSS), rInt(rIntHSS),
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   sectionIntegr(0), e(6), s(0), ks(0), 
@@ -255,7 +256,7 @@ NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d(int tag, double DHS
 // constructor for blank object that recvSelf needs to be invoked upon
 NDTestShear4HSSFiberSection3d::NDTestShear4HSSFiberSection3d():
   SectionForceDeformation(0, SEC_TAG_NDTestShear4HSSFiberSection3d),
-    D(0.), t(0.),
+    D(0.), t(0.), rInt(0.),
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   sectionIntegr(0), e(6), s(0), ks(0),
@@ -445,14 +446,21 @@ NDTestShear4HSSFiberSection3d::setTrialSectionDeformation (const Vector &deforms
     double Psi23 = 0.;
     double Psi32 = 0.;
     double Psi33 = 0.;
-    if (abs(y) > h / 2.) //flange plates
+    if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
+    {
+        Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+        Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+        Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+        Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    }
+    else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
     {
         Psi22 = 0.;
         Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
         Psi32 = 0.;
         Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
     }
-    else // web plates
+    else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
     {
         Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
         Psi23 = 0.;
@@ -659,14 +667,21 @@ NDTestShear4HSSFiberSection3d::getInitialTangent(void)
     double Psi23 = 0.;
     double Psi32 = 0.;
     double Psi33 = 0.;
-    if (abs(y) > h / 2.) //flange plates
+    if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
+    {
+        Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+        Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+        Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+        Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    }
+    else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
     {
         Psi22 = 0.;
         Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
         Psi32 = 0.;
         Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
     }
-    else // web plates
+    else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
     {
         Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
         Psi23 = 0.;
@@ -812,6 +827,7 @@ NDTestShear4HSSFiberSection3d::getCopy(void)
   theCopy->Iz = Iz;
   theCopy->D = D;
   theCopy->t = t;
+  theCopy->rInt = rInt;
   theCopy->h = h;
   theCopy->beta22 = beta22;
   theCopy->beta23 = beta23;
@@ -922,14 +938,21 @@ NDTestShear4HSSFiberSection3d::revertToLastCommit(void)
     double Psi23 = 0.;
     double Psi32 = 0.;
     double Psi33 = 0.;
-    if (abs(y) > h / 2.) //flange plates
+    if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
+    {
+        Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+        Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+        Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+        Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    }
+    else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
     {
         Psi22 = 0.;
         Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
         Psi32 = 0.;
         Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
     }
-    else // web plates
+    else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
     {
         Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
         Psi23 = 0.;
@@ -1094,14 +1117,21 @@ NDTestShear4HSSFiberSection3d::revertToStart(void)
     double Psi23 = 0.;
     double Psi32 = 0.;
     double Psi33 = 0.;
-    if (abs(y) > h / 2.) //flange plates
+    if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
+    {
+        Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+        Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+        Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+        Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    }
+    else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
     {
         Psi22 = 0.;
         Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
         Psi32 = 0.;
         Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
     }
-    else // web plates
+    else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
     {
         Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
         Psi23 = 0.;
@@ -1532,8 +1562,10 @@ NDTestShear4HSSFiberSection3d::computeShearBetas()
 
         Iz += pow(y, 2.) * A;
         Iy += pow(z, 2.) * A;
+
+        //opserr << "This is coordY: " << y << "      This is coordZ: " << z << endln;
     }
-    h = D - 2. * t;
+    h = D - 2. * t - 2. * rInt;
 
     double phi22 = 0.;
     double phi23 = 0.;
@@ -1549,14 +1581,21 @@ NDTestShear4HSSFiberSection3d::computeShearBetas()
         A = matData[i * 3 + 2];
 
         //phi=Q/(I*b)
-        if (abs(y)>h/2.) //flange plates
+        if (abs(y)>h/2. && abs(z) > h / 2.) //corners
+        {
+            phi22 = 1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y)));
+            phi23 = 1. / (Iz * t) * (0.5 * t * z * (D - t));
+            phi32 = 1. / (Iy * t) * (0.5 * t * y * (D - t));
+            phi33 = 1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z)));
+        }
+        else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
         {
             phi22 = 0.;
             phi23 = 1. / (Iz * t) * (0.5 * t * z * (D - t));
             phi32 = 0.;
             phi33 = 1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z)));
         }
-        else // web plates
+        else if (abs(y) < h / 2. &&  abs(z) > h / 2.) //web plates
         {
             phi22 = 1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y)));
             phi23 = 0.;

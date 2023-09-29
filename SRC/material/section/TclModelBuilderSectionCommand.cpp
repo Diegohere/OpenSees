@@ -978,6 +978,7 @@ double dDepth = 0.;
 double tw = 0.;
 double DHSS = 0.;
 double tHSS = 0.;
+double rIntHSS = 0.;
 
 int
 buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
@@ -1066,6 +1067,10 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
 			opserr << "WARNING invalid t" << endln;
 			return TCL_ERROR;
 		}
+		if (Tcl_GetDouble(interp, argv[8], &rIntHSS) != TCL_OK) {
+			opserr << "WARNING invalid rInt" << endln;
+			return TCL_ERROR;
+		}
 	}
 
     // create the fiber section representation (with the geometric information) 
@@ -1128,8 +1133,7 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
 	  //Added by Diego Heredia
 	  if (strcmp(argv[iarg], "-Geom") == 0)
 	  {
-		  if (strcmp(argv[1], "NDFiberTestShear4Rectangle") == 0
-			  || strcmp(argv[1], "NDFiberTestShear4HSS") == 0)
+		  if (strcmp(argv[1], "NDFiberTestShear4Rectangle") == 0)
 		  {
 			  iarg += 5;
 			  brace += 3;
@@ -1138,6 +1142,11 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
 		  {
 			  iarg += 7;
 			  brace += 5;
+		  }
+		  if (strcmp(argv[1], "NDFiberTestShear4HSS") == 0)
+		  {
+			  iarg += 6;
+			  brace += 4;
 		  }
 		  
 	  }
@@ -2406,7 +2415,7 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	 }
 	 else if (currentSectionIsNDTestShear4HSSFiberSection3d) // Added by Diego Heredia
 	 {
-		 section = new NDTestShear4HSSFiberSection3d(secTag, DHSS, tHSS, numFibers, fiber, currentSectionComputeCentroid);
+		 section = new NDTestShear4HSSFiberSection3d(secTag, DHSS, tHSS, rIntHSS, numFibers, fiber, currentSectionComputeCentroid);
 	 }
 	 else
 	   section = new FiberSection3d(secTag, numFibers, fiber, theTorsion, currentSectionComputeCentroid);
