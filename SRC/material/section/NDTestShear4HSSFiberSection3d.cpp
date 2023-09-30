@@ -578,8 +578,8 @@ NDTestShear4HSSFiberSection3d::setTrialSectionDeformation (const Vector &deforms
     si(2) += z*sig0;
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
-    si(3) += Psi22 * sig1 + Psi32 * sig2;
-    si(4) += Psi23 * sig1 + Psi33 * sig2;
+    si(3) += Psi22 * sig1 + Psi23 * sig2;
+    si(4) += Psi32 * sig1 + Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -1023,8 +1023,8 @@ NDTestShear4HSSFiberSection3d::revertToLastCommit(void)
     si(2) += z*sig0;
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
-    si(3) += Psi22 * sig1 + Psi32 * sig2;
-    si(4) += Psi23 * sig1 + Psi33 * sig2;
+    si(3) += Psi22 * sig1 + Psi23 * sig2;
+    si(4) += Psi32 * sig1 + Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -1202,8 +1202,8 @@ NDTestShear4HSSFiberSection3d::revertToStart(void)
     si(2) += z*sig0;
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
-    si(3) += Psi22 * sig1 + Psi32 * sig2;
-    si(4) += Psi23 * sig1 + Psi33 * sig2;
+    si(3) += Psi22 * sig1 + Psi23 * sig2;
+    si(4) += Psi32 * sig1 + Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
