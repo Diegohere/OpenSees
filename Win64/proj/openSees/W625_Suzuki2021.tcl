@@ -129,36 +129,39 @@ puts "Recorders ..."
 # Record reactions
 	recorder Node -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_RBase.txt -node 1 -dof 1 2 6 reaction;
 	
+	# Record local section deformations
+   recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_curvatureLoc.txt -ele 12 LocalSectionCurvature;
+	
 # Record stress and strains for fibers
 #recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberExtremePos.txt -ele 12 section 1 fiber 170.7 32.13 strain; 
 #recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberExtremePos.txt -ele 12 section 1 fiber 170.7 32.13 stress; 
 #recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberExtremeNeg.txt -ele 12 section 1 fiber -170.7 32.13 strain;
 #recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberExtremeNeg.txt -ele 12 section 1 fiber -170.7 32.13 stress;
 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY172Z0.txt -ele 12 section 1 fiber 172.17 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY172Z0.txt -ele 12 section 1 fiber 172.17 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY134Z0.txt -ele 12 section 1 fiber 133.91 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY134Z0.txt -ele 12 section 1 fiber 133.91 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY96Z0.txt -ele 12 section 1 fiber 95.65 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY96Z0.txt -ele 12 section 1 fiber 95.65 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY57Z0.txt -ele 12 section 1 fiber 57.39 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY57Z0.txt -ele 12 section 1 fiber 57.39 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY19Z0.txt -ele 12 section 1 fiber 19.13 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY19Z0.txt -ele 12 section 1 fiber 19.13 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-19Z0.txt -ele 12 section 1 fiber -19.13 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-19Z0.txt -ele 12 section 1 fiber -19.13 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-57Z0.txt -ele 12 section 1 fiber -57.39 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-57Z0.txt -ele 12 section 1 fiber -57.39 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-96Z0.txt -ele 12 section 1 fiber -95.65 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-96Z0.txt -ele 12 section 1 fiber -95.65 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-134Z0.txt -ele 12 section 1 fiber -133.91 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-134Z0.txt -ele 12 section 1 fiber -133.91 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-172Z0.txt -ele 12 section 1 fiber -172.17 0.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-172Z0.txt -ele 12 section 1 fiber -172.17 0.00 strain; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-202Z33.txt -ele 12 section 1 fiber -202.40 33.00 stress; 
-recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-202Z33.txt -ele 12 section 1 fiber -202.40 33.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY172Z0.txt -ele 12 section 1 fiber 172.17 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY172Z0.txt -ele 12 section 1 fiber 172.17 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY134Z0.txt -ele 12 section 1 fiber 133.91 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY134Z0.txt -ele 12 section 1 fiber 133.91 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY96Z0.txt -ele 12 section 1 fiber 95.65 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY96Z0.txt -ele 12 section 1 fiber 95.65 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY57Z0.txt -ele 12 section 1 fiber 57.39 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY57Z0.txt -ele 12 section 1 fiber 57.39 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY19Z0.txt -ele 12 section 1 fiber 19.13 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY19Z0.txt -ele 12 section 1 fiber 19.13 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-19Z0.txt -ele 12 section 1 fiber -19.13 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-19Z0.txt -ele 12 section 1 fiber -19.13 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-57Z0.txt -ele 12 section 1 fiber -57.39 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-57Z0.txt -ele 12 section 1 fiber -57.39 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-96Z0.txt -ele 12 section 1 fiber -95.65 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-96Z0.txt -ele 12 section 1 fiber -95.65 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-134Z0.txt -ele 12 section 1 fiber -133.91 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-134Z0.txt -ele 12 section 1 fiber -133.91 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-172Z0.txt -ele 12 section 1 fiber -172.17 0.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-172Z0.txt -ele 12 section 1 fiber -172.17 0.00 strain; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_stressFiberY-202Z33.txt -ele 12 section 1 fiber -202.40 33.00 stress; 
+# recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberY-202Z33.txt -ele 12 section 1 fiber -202.40 33.00 strain; 
 
 
 # Define display;	

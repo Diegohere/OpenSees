@@ -68,8 +68,11 @@ public:
     double function2(double x);
     double function3(double x);
     double function4(double x);
+    double function5(double x);
+    double function6(double x);
     double Newtoniteration1(double x);
     double Newtoniteration2(double x);
+    double Newtoniteration3(double x);
 
 private:
     void returnMapping(double strain_inc);
@@ -164,6 +167,7 @@ private:
     double Yield_Flag, cYield_Flag;
     double Bucklingdegree, cBucklingdegree;
     double Buckling_flag, cBuckling_flag;
+    double Stiffness_neg_Flag, cStiffness_neg_Flag;
     double eps_inflection, ceps_inflection;
     double sig_inflection, csig_inflection;
     double e_inflection, ce_inflection;
@@ -174,6 +178,25 @@ private:
     double Minus_Flag_2, cMinus_Flag_2;
     double epsdiatance, cepsdiatance;
     double E_r_j_1, cE_r_j_1;
+    double Stiffness_neg, cStiffness_neg;
+    double sig_iso, csig_iso;
+    double exp_point, cexp_point;
+    double sig_lb_re, csig_lb_re;
+
+    double kon_re, ckon_re;
+    double eps_re, ceps_re;
+    double sig_re, csig_re;
+    double e_re, ce_re;
+    double deps_re, cdeps_re;
+    double epsreversal_re, cepsreversal_re;
+    double sigreversal_re, csigreversal_re;
+    double reloading_Flag, creloading_Flag;
+
+    double sig_Trial, csig_Trial;
+    double eps_max, ceps_max;
+    double eps_max_Flag, ceps_max_Flag;
+    double lbstage_re, clbstage_re;
+    double Minus_Flag_re, cMinus_Flag_re;
 
     ////////////////////Voce-Chaboche Parameters//////////////////
     // Parameters

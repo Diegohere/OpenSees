@@ -1869,6 +1869,13 @@ TestNonlocalElement3dDH::setResponse(const char** argv, int argc, OPS_Stream& ou
 		theResponse = new ElementResponse(this, 5, Matrix(6, numSections));
 	}
 
+	//Local section curvatures
+	else if (strcmp(argv[0], "LocalSectionCurvature") == 0)
+	{
+		//int order = sections[0]->getOrder();  //use section 0 to get order
+		theResponse = new ElementResponse(this, 6, Matrix(2,numSections));
+	}
+
 	//Section response
 	else if (strstr(argv[0], "section") != 0)
 	{
@@ -1979,8 +1986,21 @@ TestNonlocalElement3dDH::getResponse(int responseID, Information& eleInfo)
 		return eleInfo.setMatrix(eLocalOutput);
 	}
 
-	case 6:
-		return eleInfo.setVector(this->getRayleighDampingForces());
+	/*case 6:
+		return eleInfo.setVector(this->getRayleighDampingForces());*/
+
+	case 6: //local section curvatures
+	{
+		Matrix localCurvatureOutput(2,numSections);
+		for (int i = 0; i < numSections; i++)
+		{
+			localCurvatureOutput(0,i) = eLocal[i](1); //y axis
+			localCurvatureOutput(1, i) = eLocal[i](2); //z axis
+		}
+		//todo
+		//opserr << "This is localCurvatureOutput" << localCurvatureOutput << endln;
+		return eleInfo.setMatrix(localCurvatureOutput);
+	}
 
 	default:
 		return -1;

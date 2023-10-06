@@ -1719,6 +1719,13 @@ TestNonlocalElement2dDH::setResponse(const char** argv, int argc, OPS_Stream& ou
 		theResponse = new ElementResponse(this, 5, Matrix(2, numSections));
 	}
 
+	//Local section curvatures
+	else if (strcmp(argv[0], "LocalSectionCurvature") == 0)
+	{
+		//int order = sections[0]->getOrder();  //use section 0 to get order
+		theResponse = new ElementResponse(this, 6, Vector(numSections));
+	}
+
 	//Section response
 	else if (strstr(argv[0], "section") != 0)
 	{
@@ -1804,6 +1811,18 @@ TestNonlocalElement2dDH::getResponse(int responseID, Information& eleInfo)
 		//todo
 		/*opserr << "This is eLocalOutput" << eLocalOutput << endln;*/
 		return eleInfo.setMatrix(eLocalOutput);
+	}
+
+	case 6: //local section curvatures
+	{
+		Vector localCurvatureOutput(numSections);
+		for (int i = 0; i < numSections; i++)
+		{
+			localCurvatureOutput(i) = eLocal[i](1);
+		}
+		//todo
+		//opserr << "This is localCurvatureOutput" << localCurvatureOutput << endln;
+		return eleInfo.setVector(localCurvatureOutput);
 	}
 
 	default:

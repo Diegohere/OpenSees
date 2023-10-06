@@ -32,7 +32,7 @@ void* OPS_CFSTsteel(void)
 	const int BACKSTRESS_SPACE = MAX_BACKSTRESSES * N_PARAM_PER_BACK;
 
 	std::string inputInstructions = "Invalid args, want:\n"
-		"uniaxialMaterial UVCuniaxial "
+		"uniaxialMaterial CFSTuniaxial "
 		"tag? E? fy? QInf? b? DInf? a? "
 		"N? C1? gamma1? <C2? gamma2? C3? gamma3? ... C8? gamma8?>\n";
 
@@ -174,7 +174,6 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	double deps = eps - eps_1;
 	double strainIncrement = eps - strainConverged;
 
-
 	// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	// %%%%%%%% INITIALIZE CURRENT BACKBONE VALUES AS PREVIOUS %%%%%%%%%%%%
 	// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -208,13 +207,6 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 		epsreversal = eps_1;
 		sigreversal = sig_1;
 	}
-
-	/*if ((kon == 4 || kon == 2) && (deps > 0.0) && (Yield_Flag == 1)) {
-		//Update E_r_j
-		Energy_Excrsn = Energy_total - Energy_Excrsni_1;
-		Energy_Excrsni_1 = Energy_total;
-		Excursion_Flag = 1;
-	}*/
 
 	//  Calculate Backbone parameters at current excursion based on Energy Dissipated in the previous Excursion
 	if (Excursion_Flag == 1.0) {
@@ -255,20 +247,36 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 		}
 	}
 
+	if (((fabs(sig) >= Fy) || (fabs(eps) > fabs(epsy_neg))) && (Yield_Flag == 0.0)) {
+		Yield_Flag = 1.0;
+	}
 
+	if (((eps_max_Flag == 1.0) && (deps < 0.0) && (Yield_Flag == 1.0)) || ((Buckling_flag == 0.0) && (Di_1 / Di < 0.0) && (deps < 0.0) && (lbstage == 2.0))) {
+		epsdiatance = epsreversal - sigreversal / E0;
+	}
 
 
 	/////////////////////////////////////////  Modify code  /////////////////////////////////////////////
-	if (kon == 0) {
-		if (deps < 0.0) {
-			kon = 2; //kon = 2表示第一次往负向加载
+
+	if (kon == 0 || kon == 10) {
+		if (fabs(deps) < 10.0 * DBL_EPSILON)
+		{
+			e = E0;
+			kon = 10;
+			return 0;
 		}
-		else {
-			kon = 1; //kon = 1表示第一次往正向加载
+		else
+		{
+			if (deps < 0.0)
+			{
+				kon = 2; //kon = 2表示第一次往负向加载
+			}
+			else {
+				kon = 1; //kon = 1表示第一次往正向加载
+			}
 		}
 	}
 
-	//工况1：第一次往正向加载（+）
 	if ((kon == 1) && (deps > 0.0)) {     //第一次往正向加载
 		kon = 1;
 		returnMapping(strainIncrement);
@@ -277,46 +285,65 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 		e = stiffnessTrial;
 	}
 
-	//弹性段 从负往正走
-	if (((kon == 2) && (deps > 0.0) && (Yield_Flag == 0)) || ((kon == 4) && (deps > 0.0) && (Yield_Flag == 0))) {
-		kon = 1;
+	if ((kon == 2) && (deps > 0.0) && (Yield_Flag == 0.0)) {
 		returnMapping(strainIncrement);
 		calculateStiffness();
-		sig = stressTrial;
-		e = stiffnessTrial;
+		if (eps < 0.0) {
+			kon = 2;
+			sig = sig_1 + deps * E0;
+			e = E0;
+		}
+		else {
+			kon = 1;
+			sig = stressTrial;
+			e = stiffnessTrial;
+		}
 	}
 
-	//第一次往负向加载，或第一次正向加载后负向加载
-	if ((kon == 2 || kon == 1) && (deps < 0.0)) {
+	if ((kon == 1 || kon == 2) && (deps < 0.0) && (Yield_Flag == 0.0)) {
+		returnMapping(strainIncrement);
+		calculateStiffness();
+		if (eps > 0.0) {
+			kon = 1;
+			sig = stressTrial;
+			e = stiffnessTrial;
+		}
+		else {
+			kon = 2;
+			sig = sig_1 + deps * E0;
+			e = E0;
+		}
+	}
+
+	//负向加载(-)
+	if ((kon == 2 || kon == 1 || kon == 5) && (deps < 0.0) && (Yield_Flag == 1.0)) {
 		kon = 2;
 		returnMapping(strainIncrement);
 		calculateStiffness();
+		sig_Trial = sig_1 + deps * E0;
 		epsy_neg = sigy_project_neg_j / (E0 - Eb_neg_j);
 		double sig_eps_y = sigr_j + siglb_project_j * exp(a_j * (epsy_neg));
-
 		if (sig_eps_y <= (E0 * epsy_neg)) {
 			double JD_1 = sigy_project_neg_j / (E0 - Eb_neg_j);
-			double JD_2 = Newtoniteration1(0);
-
-			double epsdiatance = epsreversal - sigreversal / E0;
-
+			double JD_2 = Newtoniteration1(0.0);
+			//double epsdiatance = epsreversal - sigreversal / E0;
 			if (((JD_1 + epsdiatance) < eps) && (eps <= epsreversal)) {
-				lbstage = 3;
+				lbstage = 1.0;
 				sig = E0 * (eps - epsreversal) + sigreversal;
 				e = E0;
 			}
 			if (((JD_2 + epsdiatance) < eps) && (eps <= (JD_1 + epsdiatance))) {
-				lbstage = 3;
+				lbstage = 1.0;
 				sig = Eb_neg_j * (eps - epsdiatance) + sigy_project_neg_j;
 				e = Eb_neg_j;
 			}
 			if (((JD_2 + epsdiatance + 0.6 * (JD_2 - JD_1)) < eps) && (eps <= (JD_2 + epsdiatance))) {
-				lbstage = 3;
+				lbstage = 1.0;
 				sig = sigr_j + siglb_project_j * exp(a_j * (eps - epsdiatance));
 				e = (a_j)*siglb_project_j * exp(a_j * (eps - epsdiatance));
 			}
 			if (eps <= (JD_2 + epsdiatance + 0.6 * (JD_2 - JD_1))) {
-				lbstage = 1;
+				lbstage = 2.0;
 				sig = sigr_j + siglb_project_j * exp(a_j * (eps - epsdiatance));
 				e = (a_j)*siglb_project_j * exp(a_j * (eps - epsdiatance));
 			}
@@ -325,16 +352,20 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 			epslb_j = JD_2 + epsdiatance;
 		}
 		else {
-			double JD_1 = Newtoniteration2(0);
-			double epsdiatance = epsreversal - sigreversal / E0;
-
+			double JD_1 = Newtoniteration2(0.0);
+			//double epsdiatance = epsreversal - sigreversal / E0;
 			if (((JD_1 + epsdiatance) < eps) && (eps <= epsreversal)) {
-				lbstage = 3;
+				lbstage = 1.0;
 				sig = E0 * (eps - epsreversal) + sigreversal;
 				e = E0;
 			}
-			if (eps <= (JD_1 + epsdiatance)) {
-				lbstage = 1;
+			if ((1.6 * JD_1 + epsdiatance) < eps <= (JD_1 + epsdiatance)) {
+				lbstage = 1.0;
+				sig = sigr_j + siglb_project_j * exp(a_j * (eps - epsdiatance));
+				e = (a_j)*siglb_project_j * exp(a_j * (eps - epsdiatance));
+			}
+			if (eps <= (1.6 * JD_1 + epsdiatance)) {
+				lbstage = 2.0;
 				sig = sigr_j + siglb_project_j * exp(a_j * (eps - epsdiatance));
 				e = (a_j)*siglb_project_j * exp(a_j * (eps - epsdiatance));
 			}
@@ -342,142 +373,51 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 			siglb_j = sigr_j + siglb_project_j * exp(a_j * JD_1);
 			epslb_j = JD_1 + epsdiatance;
 		}
-	}
-
-
-	//工况3（-）：屈曲未恢复，往负向走
-	if ((kon == 3 || kon == 5 || kon == 6) && (deps < 0.0) && (Buckling_flag == 1)) {
-		kon = 3;
-		returnMapping(strainIncrement);
-		calculateStiffness();
-		if ((eps <= epsreversal) && ((epsreversal - (1.7 * fabs(sigreversal) / E_r_j)) < eps)) {
-			sig = sig_1 + E_r_j * deps;
-			e = E_r_j;
+		if (sig >= sig_Trial) {
+			sig = sig;
+			e = e;
 		}
 		else {
-			sig = sig_1 + 0.01 * E0 * deps;
-			e = 0.01 * E0;
-		}
-	}
-
-
-	//工况6（+）：屈曲未恢复，往负向走后，往正向走
-	if ((kon == 3 || kon == 6) && (deps > 0.0)) {
-		kon = 6;
-		returnMapping(strainIncrement);
-		calculateStiffness();
-
-		if ((epsreversal <= eps) && (eps < (epsreversal + (1.7 * fabs(sigreversal) / E_r_j)))) {
-			sig = sig_1 + E_r_j * deps;
-			e = E_r_j * E0;
-		}
-		if ((epsreversal + (1.7 * fabs(sigreversal) / E_r_j)) <= eps) {
-			double e_point = (sigreversal_1 - (E0 * (1.7 * fabs(sigreversal) / E_r_j) + sigreversal)) / (epsreversal_1 - (epsreversal + (1.7 * fabs(sigreversal) / E_r_j)));
-			double sig_boundary = e_inflection * (eps - eps_inflection) + sig_inflection;
-			sig = sig_1 + e_point * deps;
-			if (sig <= sigreversal_1) {
-				sig = sig;
-				e = e_point;
-			}
-			else {
-				sig = sigreversal_1 + deps * (-b3 * a_j * siglb_project_j * exp(a_j * (eps - epsdiatance)));//这个地方有问题 回头检查
-				e = -b3 * a_j * siglb_project_j * exp(a_j * (eps - epsdiatance));
-				kon = 5;
-			}
-		}
-	}
-
-	//工况4（-）：屈曲恢复后，往负向加载
-	if ((kon == 4 || kon == 5 || kon == 6) && (deps < 0.0) && (Buckling_flag == 0)) {
-		kon = 4;
-		returnMapping(strainIncrement);
-		calculateStiffness();
-		epsy_neg = sigy_project_neg_j / (E0 - Eb_neg_j);
-		double sig_eps_y = sigr_j + siglb_project_j * exp(a_j * (epsy_neg));
-
-		if (sig_eps_y <= (E0 * epsy_neg)) {
-			double JD_1 = sigy_project_neg_j / (E0 - Eb_neg_j);
-			double JD_2 = Newtoniteration1(0);
-
-			epsdiatance = epsreversal - sigreversal / E0;
-
-			if (((JD_1 + epsdiatance) < eps) && (eps <= epsreversal)) {
-				lbstage = 3;
-				sig = E0 * (eps - epsreversal) + sigreversal;
-				e = E0;
-			}
-			if (((JD_2 + epsdiatance) < eps) && (eps <= (JD_1 + epsdiatance))) {
-				lbstage = 3;
-				sig = Eb_neg_j * (eps - epsdiatance) + sigy_project_neg_j;
-				e = Eb_neg_j;
-			}
-			if (eps <= (JD_2 + epsdiatance)) {
-				lbstage = 1;
-				sig = sigr_j + siglb_project_j * exp(a_j * (eps - epsdiatance));
-				e = (a_j)*siglb_project_j * exp(a_j * (eps - epsdiatance));
-			}
-			curve_epslb = JD_2 + epsdiatance;
-			siglb_j = Eb_neg_j * JD_2 + sigy_project_neg_j;
-			epslb_j = JD_2 + epsdiatance;
-		}
-		else {
-			double JD_1 = Newtoniteration2(0);
-			epsdiatance = epsreversal - sigreversal / E0;
-
-			if (((JD_1 + epsdiatance) < eps) && (eps <= epsreversal)) {
-				lbstage = 3;
-				sig = E0 * (eps - epsreversal) + sigreversal;
-				e = E0;
-			}
-			if (eps <= (JD_1 + epsdiatance)) {
-				lbstage = 1;
-				sig = sigr_j + siglb_project_j * exp(a_j * (eps - epsdiatance));
-				e = (a_j)*siglb_project_j * exp(a_j * (eps - epsdiatance));
-			}
-			curve_epslb = JD_1 + epsdiatance;
-			siglb_j = sigr_j + siglb_project_j * exp(a_j * JD_1);
-			epslb_j = JD_1 + epsdiatance;
+			sig = sig_Trial;
+			e = E0;
 		}
 	}
 
 	//工况5(+)：屈曲恢复后，往负向加载，后往正向加载
-	if ((kon == 4 || kon == 5 || kon == 2) && (deps > 0.0) && (Yield_Flag == 1)) {     //往正向走
+	if ((kon == 5 || kon == 2) && (deps > 0.0) && (Yield_Flag == 1.0)) {
 		kon = 5;
 		returnMapping(strainIncrement);
 		calculateStiffness();
-		double Elb = (siglb_j_1 - sigreversal) / (epslb_j_1 - epsreversal);
-		e_inflection = -b3 * Elb;
-		eps_inflection = epsreversal + 1.7 * fabs(sigreversal) / E_r_j;
-		sig_inflection = E_r_j * (1.7 * fabs(sigreversal) / E_r_j) + sigreversal;
+		sig_Trial = E_r_j * (eps - epsreversal) + sigreversal;
+		double JD_3_eps = Newtoniteration3(0.0);
+		//double JD_3_sig = E_r_j * (JD_3_eps - epsreversal) + sigreversal;
 
-		if ((epsreversal <= eps) && (lbstage == 3)) {
-			sig = E_r_j * (eps - epsreversal) + sigreversal;
-			if (sig <= stressTrial) {
-				sig = sig;
-				e = E_r_j;
-			}
-			else {
-				sig = stressTrial;
-				e = stiffnessTrial;
-			}
-		}
-
-		if ((Minus_Flag == 0) && (lbstage == 1)) {
-			if ((epsreversal <= eps) && (eps < (epsreversal + 1.7 * fabs(sigreversal) / E_r_j))) {
+		if ((epsreversal <= eps) && (lbstage == 1.0)) {
+			if (sig < sig_iso) {
 				sig = E_r_j * (eps - epsreversal) + sigreversal;
 				e = E_r_j;
 			}
-			if (((epsreversal + 1.7 * fabs(sigreversal) / E_r_j) <= eps) && (lbstage == 1)) {
+			else {
+				sig = sig_1 + Eb_neg_j * deps;
+				e = Eb_neg_j;
+			}
+		}
+		if ((Minus_Flag == 0.0) && (lbstage == 2.0)) {
+			if ((epsreversal <= eps) && (eps < JD_3_eps)) {
+				sig = E_r_j * (eps - epsreversal) + sigreversal;
+				e = E_r_j;
+			}
+			if (JD_3_eps <= eps) {
 				sig = sig_1 + deps * (-b3 * a_j * siglb_project_j * exp(a_j * (eps - epsdiatance)));
 				e = -b3 * a_j * siglb_project_j * exp(a_j * (eps - epsdiatance));
 			}
 		}
-		if (Minus_Flag == 1 && (lbstage == 1)) {
-			if ((epsreversal <= eps) && (eps < (epsreversal + 1.7 * fabs(sigreversal) / E_r_j))) {
+		if ((Minus_Flag == 1.0) && (lbstage == 2.0)) {
+			if ((epsreversal <= eps) && (eps < JD_3_eps)) {
 				sig = E_r_j * (eps - epsreversal) + sigreversal;
 				e = E_r_j;
 			}
-			if (((epsreversal + 1.7 * fabs(sigreversal) / E_r_j) <= eps) && (lbstage == 1)) {
+			if (JD_3_eps <= eps) {
 				sig = sig_1 + deps * (-b3 * a_j * siglb_project_j * exp(a_j * (eps - epsdiatance)));
 				if (sig <= stressTrial) {
 					sig = sig;
@@ -488,6 +428,14 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 					e = stiffnessTrial;
 				}
 			}
+		}
+		if (fabs(sig) <= fabs(sig_Trial)) {
+			sig = sig;
+			e = e;
+		}
+		else {
+			sig = sig_Trial;
+			e = E0;
 		}
 	}
 
@@ -504,8 +452,6 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 		Excursion_Flag = 0.0;
 	}
 
-
-
 	// Check if the Component inheret Reference Energy is Consumed
 	if (Excursion_Flag == 1) {
 		if ((Energy_total >= Ref_Energy_y) || (Energy_total >= Ref_Energy_lb) || (Energy_total >= Ref_Energy_a) || (Energy_total >= Ref_Energy_yneg) || (Energy_total >= Ref_Energy_re)) {
@@ -517,10 +463,10 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	}
 
 	//判断局部屈曲的程度
-	if ((deps < 0) && lbstage == 1) {
+	if ((deps < 0) && lbstage == 2.0) {
 		Bucklingdegree = eps - curve_epslb;
 	}
-	if ((deps > 0) && lbstage == 1) {
+	if ((deps > 0) && lbstage == 2.0) {
 		Bucklingdegree = Bucklingdegree + deps;
 	}
 	if (Bucklingdegree > 0) {
@@ -536,18 +482,14 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 	}
 
 	//判断受拉段该用唯象还是chaboche
-	if (kon == 5 && deps > 0) {
-		Minus = sig - stressTrial;
-		if (Minus / Minus_1 < 0) {
-			Minus_Flag = 1;
+	if ((kon == 5) && (deps > 0)) {
+		if (stiffnessTrial != E0) {
+			Minus_Flag = 1.0;
+		}
+		else {
+			Minus_Flag = 0.0;
 		}
 	}
-	else {
-		Minus_Flag = 0;
-		Minus = 1;
-	}
-
-
 
 	//防止横穿X轴,设置boundary
 	if (kon == 5) {
@@ -561,9 +503,46 @@ int CFSTsteel::setTrialStrain(double trialStrain, double strainRate)
 		sig = 5;
 	}
 
-	//if (((fabs(sig) > Fy) || (fabs(eps) > epsy_neg)) && (Yield_Flag == 0.0)) {
-	if (((fabs(sig) > Fy) || (fabs(eps) > fabs(epsy_neg))) && (Yield_Flag == 0.0)) {
-		Yield_Flag = 1.0;
+	//%%%%%%%%%% Find New Tensile State %%%%%%%%%%%%%
+	if (eps_max > eps) {
+		eps_max = eps_max;
+		eps_max_Flag = 0.0;
+	}
+	else {
+		eps_max = eps;
+		eps_max_Flag = 1.0;
+	}
+
+	// %%%%%%%%%% Memory Point %%%%%%%%%%%%%
+	if (Yield_Flag != 0.0) {
+		if ((e != E0) && (e != E_r_j)) {
+			kon_re = kon;
+			eps_re = eps;
+			sig_re = sig;
+			e_re = e;
+			deps_re = eps - eps_1;
+			epsreversal_re = epsreversal;
+			sigreversal_re = sigreversal;
+			lbstage_re = lbstage;
+			Minus_Flag_re = Minus_Flag;
+		}
+		if ((e == E0) || (e == E_r_j)) {//危机出现
+			reloading_Flag = 1.0;
+		}
+		if (fabs(e / e_1) <= 0.9) {//危机解除，曲线已经脱离弹性段
+			reloading_Flag = 0.0;
+		}
+		if ((reloading_Flag == 1.0) && (deps / deps_re > 0.0) && (kon == 5)) {//返回记忆点
+			if (sig > sig_re) {
+				kon = kon_re;
+				sig = sig_re;
+				e = e_re;
+				epsreversal = epsreversal_re;
+				sigreversal = sigreversal_re;
+				lbstage = lbstage_re;
+				Minus_Flag = Minus_Flag_re;
+			}
+		}
 	}
 
 
@@ -618,6 +597,15 @@ double CFSTsteel::function4(double x4)
 {
 	return (a_j_1 * siglb_project_j_1 * exp(a_j_1 * x4) - E0);
 }
+double CFSTsteel::function5(double x5)
+{
+	return (-0.7 * (sigr_j_1 + siglb_project_j_1 * exp(a_j_1 * (x5 - epsdiatance))) - (E_r_j_1 * (x5 - epsreversal) + sigreversal));
+}
+double CFSTsteel::function6(double x6)
+{
+	return (-0.7 * (a_j_1)*siglb_project_j_1 * exp(a_j_1 * (x6 - epsdiatance)) - E_r_j_1);
+}
+
 double CFSTsteel::Newtoniteration1(double x0)
 {
 	double fx = function1(x0);
@@ -647,6 +635,24 @@ double CFSTsteel::Newtoniteration2(double x0)
 		x0 = h;
 		i++;
 		h = x0 - (function3(x0) / function4(x0));
+		if (i > 1000)
+		{
+			break;
+		}
+	}
+	return h;
+}
+double CFSTsteel::Newtoniteration3(double x0)
+{
+	double fx = function5(x0);
+	double fdx = function6(x0);
+	double h = x0 - (fx / fdx);
+	int i = 0;
+	while (abs(h - x0) > 10.0e-6)
+	{
+		x0 = h;
+		i++;
+		h = x0 - (function5(x0) / function6(x0));
 		if (i > 1000)
 		{
 			break;
@@ -688,8 +694,7 @@ void CFSTsteel::returnMapping(double strainIncrement) {
 
 		aux = E0;
 		for (int i = 0; i < nBackstresses; ++i) {
-			aux = aux + sgn<double>(stressRadius) * cK[i] -
-				gammaK[i] * alphaKTrial[i];
+			aux = aux + sgn<double>(stressRadius) * cK[i] - gammaK[i] * alphaKTrial[i];
 		}
 
 		// Calculate the plastic strain from the strain increment
@@ -699,8 +704,7 @@ void CFSTsteel::returnMapping(double strainIncrement) {
 
 		// Prevent Newton step from overshooting
 		if (abs(plasticStrainIncrement) > abs(stressTrial / E0)) {
-			plasticStrainIncrement = sgn<double>(plasticStrainIncrement) * 0.95 *
-				abs(stressTrial / E0);
+			plasticStrainIncrement = sgn<double>(plasticStrainIncrement) * 0.95 * abs(stressTrial / E0);
 		}
 
 		// Update the variables
@@ -708,12 +712,12 @@ void CFSTsteel::returnMapping(double strainIncrement) {
 		stressTrial = stressTrial - E0 * plasticStrainIncrement;
 		sigmaY1 = qInf * (1. - exp(-b * ePEq));
 		sy = Fy + sigmaY1;
+		sig_iso = sy;
 
 		alpha = 0.;
 		for (int i = 0; i < nBackstresses; ++i) {
 			alphaKTrial[i] = sgn<double>(stressRadius) * cK[i] / gammaK[i] -
-				(sgn<double>(stressRadius) * cK[i] / gammaK[i] - alphaKConverged[i]) *
-				exp(-gammaK[i] * (ePEq - strainPEqConverged));
+				(sgn<double>(stressRadius) * cK[i] / gammaK[i] - alphaKConverged[i]) * exp(-gammaK[i] * (ePEq - strainPEqConverged));
 			alpha += alphaKTrial[i];
 		}
 
@@ -727,7 +731,7 @@ void CFSTsteel::returnMapping(double strainIncrement) {
 
 	// Warn the user if the algorithm did not converge
 	if (iterationNumber == MAXIMUM_ITERATIONS - 1) {
-		opserr << "WARNING: return mapping in UVCuniaxial does not converge!" << endln;
+		opserr << "WARNING: return mapping in VCuniaxial does not converge!" << endln;
 		opserr << "\tStrain increment = " << strainIncrement << endln;
 		opserr << "\tExiting with phi = " << phi << " > " << RETURN_MAP_TOL << endln;
 	}
@@ -776,7 +780,10 @@ double CFSTsteel::getStress(void)
 
 double CFSTsteel::getTangent(void)
 {
-	return e;
+	//return e;
+
+	double alphaElastic = 0.05;
+	return alphaElastic * E0 + (1. - alphaElastic) * e;
 }
 
 int CFSTsteel::commitState(void)
@@ -833,6 +840,7 @@ int CFSTsteel::commitState(void)
 	cYield_Flag = Yield_Flag;
 	cBucklingdegree = Bucklingdegree;
 	cBuckling_flag = Buckling_flag;
+	cStiffness_neg_Flag = Stiffness_neg_Flag;
 	cEnergy_Excrsn = Energy_Excrsn;
 	cEnergy_total = Energy_total;
 	ce = e;
@@ -849,13 +857,31 @@ int CFSTsteel::commitState(void)
 	cMinus_Flag = Minus_Flag;
 	cMinus_Flag_1 = Minus_Flag_1;
 	cMinus_Flag_2 = Minus_Flag_2;
+	cStiffness_neg = Stiffness_neg;
+	csig_iso = sig_iso;
+	csig_lb_re = sig_lb_re;
+
+	ckon_re = kon_re;
+	ceps_re = eps_re;
+	csig_re = sig_re;
+	ce_re = e_re;
+	cdeps_re = deps_re;
+	cepsreversal_re = epsreversal_re;
+	csigreversal_re = sigreversal_re;
+	creloading_Flag = reloading_Flag;
+
+	csig_Trial = sig_Trial;
+	ceps_max = eps_max;
+	ceps_max_Flag = eps_max_Flag;
+	clbstage_re = lbstage_re;
+	cMinus_Flag_re = Minus_Flag_re;
 
 	strainConverged = eps;
-	//strainConverged = strainTrial;
 	strainPEqConverged = strainPEqTrial;
 	stressConverged = stressTrial;
 	alphaKConverged = alphaKTrial;
 	stiffnessConverged = stiffnessTrial;
+
 	return 0;
 }
 
@@ -904,6 +930,8 @@ int CFSTsteel::revertToLastCommit(void)
 	beta_yneg_j = cbeta_yneg_j;
 	beta_re_j = cbeta_re_j;
 	curve_epslb = ccurve_epslb;
+	sig_iso = csig_iso;
+	sig_lb_re = csig_lb_re;
 
 	Excursion_Flag = cExcursion_Flag;
 	Reversal_Flag = cReversal_Flag;
@@ -911,6 +939,7 @@ int CFSTsteel::revertToLastCommit(void)
 	Energy_Flag = cEnergy_Flag;
 	Yield_Flag = cYield_Flag;
 	Buckling_flag = cBuckling_flag;
+	Stiffness_neg_Flag = cStiffness_neg_Flag;
 	Bucklingdegree = cBucklingdegree;
 
 	eps_inflection = ceps_inflection;
@@ -923,6 +952,22 @@ int CFSTsteel::revertToLastCommit(void)
 	Minus_Flag = cMinus_Flag;
 	Minus_Flag_1 = cMinus_Flag_1;
 	Minus_Flag_2 = cMinus_Flag_2;
+	Stiffness_neg = cStiffness_neg;
+
+	kon_re = ckon_re;
+	eps_re = ceps_re;
+	sig_re = csig_re;
+	e_re = ce_re;
+	deps_re = cdeps_re;
+	epsreversal_re = cepsreversal_re;
+	sigreversal_re = csigreversal_re;
+	reloading_Flag = creloading_Flag;
+
+	sig_Trial = csig_Trial;
+	eps_max = ceps_max;
+	eps_max_Flag = ceps_max_Flag;
+	Minus_Flag_re = cMinus_Flag_re;
+	lbstage_re = clbstage_re;
 
 	Energy_Excrsn = cEnergy_Excrsn;
 	Energy_total = cEnergy_total;
@@ -932,7 +977,6 @@ int CFSTsteel::revertToLastCommit(void)
 	e_2 = ce_2;
 
 	eps = strainConverged;
-	//strainTrial = strainConverged;
 	strainPEqTrial = strainPEqConverged;
 	stressTrial = stressConverged;
 	alphaKTrial = alphaKConverged;
@@ -1046,6 +1090,7 @@ int CFSTsteel::revertToStart(void)
 	Yield_Flag = cYield_Flag = 0;
 	Bucklingdegree = cBucklingdegree = 0;
 	Buckling_flag = cBuckling_flag = 0;
+	Stiffness_neg_Flag = cStiffness_neg_Flag = 0;
 
 	eps_inflection = ceps_inflection = 0;
 	sig_inflection = csig_inflection = 0;
@@ -1057,6 +1102,28 @@ int CFSTsteel::revertToStart(void)
 	Minus_Flag = cMinus_Flag = 0;
 	Minus_Flag_1 = cMinus_Flag_1 = 0;
 	Minus_Flag_2 = cMinus_Flag_2 = 0;
+	Stiffness_neg = cStiffness_neg = 0;
+	sig_iso = csig_iso = 0;
+	sig_lb_re = csig_lb_re = 0;
+
+	kon_re = ckon_re = 0;
+	eps_re = ceps_re = 0;
+	sig_re = csig_re = 0;
+	e_re = ce_re = 0;
+	deps_re = cdeps_re = 0;
+	epsreversal_re = cepsreversal_re = 0;
+	sigreversal_re = csigreversal_re = 0;
+	reloading_Flag = creloading_Flag = 0;
+	sig_Trial = csig_Trial = 0;
+	eps_max = ceps_max = 0;
+	eps_max_Flag = ceps_max_Flag = 0;
+
+	sig_Trial = csig_Trial = 0;
+	eps_max = ceps_max = 0;
+	eps_max_Flag = ceps_max_Flag = 0;
+	lbstage_re = clbstage_re = 0;
+	Minus_Flag_re = cMinus_Flag_re;
+
 
 	Energy_Excrsn = cEnergy_Excrsn = 0;
 	Energy_total = cEnergy_total = 0;
@@ -1226,6 +1293,8 @@ CFSTsteel::getCopy(void) {
 	theCopy->cBucklingdegree = cBucklingdegree;
 	theCopy->Buckling_flag = Buckling_flag;
 	theCopy->cBuckling_flag = cBuckling_flag;
+	theCopy->Stiffness_neg_Flag = Stiffness_neg_Flag;
+	theCopy->cStiffness_neg_Flag = cStiffness_neg_Flag;
 	theCopy->strainConverged = strainConverged;
 	theCopy->strainTrial = strainTrial;
 	theCopy->strainPEqConverged = strainPEqConverged;
@@ -1256,6 +1325,36 @@ CFSTsteel::getCopy(void) {
 	theCopy->cMinus_Flag_1 = cMinus_Flag_1;
 	theCopy->Minus_Flag_2 = Minus_Flag_2;
 	theCopy->cMinus_Flag_2 = cMinus_Flag_2;
+	theCopy->cStiffness_neg = Stiffness_neg;
+	theCopy->csig_iso = sig_iso;
+	theCopy->csig_lb_re = sig_lb_re;
+	theCopy->kon_re = kon_re;
+	theCopy->ckon_re = ckon_re;
+	theCopy->eps_re = eps_re;
+	theCopy->ceps_re = ceps_re;
+	theCopy->sig_re = sig_re;
+	theCopy->csig_re = csig_re;
+	theCopy->e_re = e_re;
+	theCopy->ce_re = ce_re;
+	theCopy->deps_re = deps_re;
+	theCopy->cdeps_re = cdeps_re;
+	theCopy->epsreversal_re = epsreversal_re;
+	theCopy->cepsreversal_re = cepsreversal_re;
+	theCopy->sigreversal_re = sigreversal_re;
+	theCopy->csigreversal_re = csigreversal_re;
+	theCopy->reloading_Flag = reloading_Flag;
+	theCopy->creloading_Flag = creloading_Flag;
+	theCopy->sig_Trial = sig_Trial;
+	theCopy->csig_Trial = csig_Trial;
+	theCopy->eps_max = eps_max;
+	theCopy->ceps_max = ceps_max;
+	theCopy->eps_max_Flag = eps_max_Flag;
+	theCopy->ceps_max_Flag = ceps_max_Flag;
+	theCopy->Minus_Flag_re = Minus_Flag_re;
+	theCopy->cMinus_Flag_re = cMinus_Flag_re;
+	theCopy->clbstage_re = clbstage_re;
+	theCopy->lbstage_re = lbstage_re;
+
 
 	return theCopy;
 }
@@ -1263,7 +1362,7 @@ CFSTsteel::getCopy(void) {
 
 int CFSTsteel::sendSelf(int commitTag, Channel& theChannel)
 {
-	static Vector data(196);
+	static Vector data(228);
 	data(0) = this->getTag();
 	data(1) = E0;
 	data(2) = Fy;
@@ -1457,6 +1556,40 @@ int CFSTsteel::sendSelf(int commitTag, Channel& theChannel)
 	data(181) = cMinus_Flag_1;
 	data(182) = Minus_Flag_2;
 	data(183) = cMinus_Flag_2;
+	data(184) = Stiffness_neg;
+	data(185) = cStiffness_neg;
+	data(186) = Stiffness_neg_Flag;
+	data(187) = cStiffness_neg_Flag;
+	data(188) = sig_iso;
+	data(189) = csig_iso;
+	data(190) = sig_lb_re;
+	data(191) = csig_lb_re;
+	data(192) = kon_re;
+	data(193) = ckon_re;
+	data(194) = eps_re;
+	data(195) = ceps_re;
+	data(196) = sig_re;
+	data(197) = csig_re;
+	data(198) = e_re;
+	data(199) = ce_re;
+	data(200) = deps_re;
+	data(201) = cdeps_re;
+	data(202) = epsreversal_re;
+	data(203) = cepsreversal_re;
+	data(204) = sigreversal_re;
+	data(205) = csigreversal_re;
+	data(206) = reloading_Flag;
+	data(207) = creloading_Flag;
+	data(208) = sig_Trial;
+	data(209) = csig_Trial;
+	data(210) = eps_max;
+	data(211) = ceps_max;
+	data(212) = eps_max_Flag;
+	data(213) = ceps_max_Flag;
+	data(214) = lbstage_re;
+	data(215) = clbstage_re;
+	data(216) = Minus_Flag_re;
+	data(217) = cMinus_Flag_re;
 
 
 	// Kinematic hardening related, 12 total spaces required
@@ -1478,7 +1611,7 @@ int CFSTsteel::sendSelf(int commitTag, Channel& theChannel)
 
 int CFSTsteel::recvSelf(int commitTag, Channel& theChannel, FEM_ObjectBroker& theBroker)
 {
-	static Vector data(196);
+	static Vector data(228);
 
 	if (theChannel.recvVector(this->getDbTag(), commitTag, data) < 0) {
 		opserr << "CFSTsteel::recvSelf() - failed to recvSelf\n";
@@ -1677,7 +1810,40 @@ int CFSTsteel::recvSelf(int commitTag, Channel& theChannel, FEM_ObjectBroker& th
 	cMinus_Flag_1 = data(181);
 	Minus_Flag_2 = data(182);
 	cMinus_Flag_2 = data(183);
-
+	Stiffness_neg = data(184);
+	cStiffness_neg = data(185);
+	Stiffness_neg_Flag = data(186);
+	cStiffness_neg_Flag = data(187);
+	sig_iso = data(188);
+	csig_iso = data(189);
+	sig_lb_re = data(190);
+	csig_lb_re = data(191);
+	kon_re = data(192);
+	ckon_re = data(193);
+	eps_re = data(194);
+	ceps_re = data(195);
+	sig_re = data(196);
+	csig_re = data(197);
+	e_re = data(198);
+	ce_re = data(199);
+	deps_re = data(200);
+	cdeps_re = data(201);
+	epsreversal_re = data(202);
+	cepsreversal_re = data(203);
+	sigreversal_re = data(204);
+	csigreversal_re = data(205);
+	reloading_Flag = data(206);
+	creloading_Flag = data(207);
+	sig_Trial = data(208);
+	csig_Trial = data(209);
+	eps_max = data(210);
+	ceps_max = data(211);
+	eps_max_Flag = data(212);
+	ceps_max_Flag = data(213);
+	lbstage_re = data(214);
+	clbstage_re = data(215);
+	Minus_Flag_re = data(216);
+	cMinus_Flag_re = data(217);
 
 	// Kinematic hardening related, 12 total spaces required
 	int cKStart = 13;  // starts at the 13th space
