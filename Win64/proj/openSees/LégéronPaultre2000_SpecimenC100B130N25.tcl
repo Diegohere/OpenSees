@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 2 -ndf 3;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_LegeronPaultre2000_SpecimenC100B130N25;			# name of output folder
+	set dataDir results4Paper_LegeronPaultre2000_SpecimenC100B130N25;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 ###################################################################################################
@@ -56,7 +56,7 @@
 # define fiber beam-column elements
 	# Core concrete (confined)
 	#uniaxialMaterial Concrete01 1  -105.6184   -0.0038  -21.1237   -0.0352
-	uniaxialMaterial Concrete01 1  -105.6184   -0.0038  -21.1237   [expr -0.0352*0.5]
+	uniaxialMaterial Concrete01 1  -105.6184   -0.0038  -21.1237   [expr -0.0352*1.0]
 	# Cover concrete (unconfined)
 	uniaxialMaterial Concrete01 2 -97.7000   -0.0035  -19.5400   -0.0051
 	#Steel reinforcement
@@ -64,8 +64,10 @@
 	#uniaxialMaterial ReinforcingSteel 4 494.0 729.0 200000.0 5000.0 0.01265 0.132 -DMBuck 8.67 1.0; #LegeronPaultre2000_SpecimenC100B130N25 phi15
 	#uniaxialMaterial Steel02 3 430.9 200000.0 0.020
 	#uniaxialMaterial Steel02 4 494.0 200000.0 0.020
-	uniaxialMaterial UVCuniaxial 3 200000.0 430.9 43.789 21.717 0.0 1.0 2 12743.1 82.268 1343.199 3.55 
-	uniaxialMaterial UVCuniaxial 4 200000.0 494.0 43.789 21.717 0.0 1.0 2 12743.1 82.268 1343.199 3.55
+	#uniaxialMaterial UVCuniaxial 3 200000.0 430.9 43.789 21.717 0.0 1.0 2 12743.1 82.268 1343.199 3.55 
+	#uniaxialMaterial UVCuniaxial 4 200000.0 494.0 43.789 21.717 0.0 1.0 2 12743.1 82.268 1343.199 3.55
+	uniaxialMaterial UVCuniaxial 3 200000.0 430.9 123.62 42.87 173.02 146.40 2 24454.62 142.18 1492.05 2.36 
+	uniaxialMaterial UVCuniaxial 4 200000.0 494.0 123.62 42.87 173.02 146.40 2 24454.62 142.18 1492.05 2.36 
 
 	
 # some variables derived from the parameters
@@ -96,8 +98,8 @@ section Fiber 1 {
 	#set integration "NewtonCotes 1 9"
 	#element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
 	
-	set lc [expr 1.0*$depth];
-	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 15  1000 1e-8 $lc
+	set lc [expr 0.5*$depth];
+	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 33 1000 1e-8 $lc
 	
 ############################################################################
 #              Recorders					                			   
@@ -106,25 +108,28 @@ section Fiber 1 {
 puts "Recorders ..."
 
 # Record displacements 
-	recorder Node -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_Disp.txt -node 2 -dof 1 2 disp;
+	recorder Node -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_Disp.txt -node 2 -dof 1 2 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_RBase.txt -node 1 -dof 1 2 3 reaction;
+	recorder Node -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_RBase.txt -node 1 -dof 1 2 3 reaction;
+	
+# Record local section deformations
+   recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_curvatureLoc.txt -ele 12 LocalSectionCurvature;
 	
 # Record stress and strains for fibers
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_RSTop_stress.txt -ele 12 section 1 fiber $y1 $z1 3 stress;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_RSTop_strain.txt -ele 12 section 1 fiber $y1 $z1 3 strain;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_CCTop_stress.txt -ele 12 section 1 fiber $y1 $z1 1 stress;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_CCTop_strain.txt -ele 12 section 1 fiber $y1 $z1 1 strain;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_UCTop_stress.txt -ele 12 section 1 fiber $y1 $z1 2 stress;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_UCTop_strain.txt -ele 12 section 1 fiber $y1 $z1 2 strain;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_RSTop_stress.txt -ele 12 section 1 fiber $y1 $z1 3 stress;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_RSTop_strain.txt -ele 12 section 1 fiber $y1 $z1 3 strain;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_CCTop_stress.txt -ele 12 section 1 fiber $y1 $z1 1 stress;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_CCTop_strain.txt -ele 12 section 1 fiber $y1 $z1 1 strain;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_UCTop_stress.txt -ele 12 section 1 fiber $y1 $z1 2 stress;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_UCTop_strain.txt -ele 12 section 1 fiber $y1 $z1 2 strain;
 	
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_RSBottom_stress.txt -ele 12 section 1 fiber -$y1 $z1 3 stress;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_RSBottom_strain.txt -ele 12 section 1 fiber -$y1 $z1 3 strain;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_CCBottom_stress.txt -ele 12 section 1 fiber -$y1 $z1 1 stress;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_CCBottom_strain.txt -ele 12 section 1 fiber -$y1 $z1 1 strain;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_UCBottom_stress.txt -ele 12 section 1 fiber -$y1 $z1 2 stress;
-	recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc10DLcSurDx2_UCBottom_strain.txt -ele 12 section 1 fiber -$y1 $z1 2 strain;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_RSBottom_stress.txt -ele 12 section 1 fiber -$y1 $z1 3 stress;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_RSBottom_strain.txt -ele 12 section 1 fiber -$y1 $z1 3 strain;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_CCBottom_stress.txt -ele 12 section 1 fiber -$y1 $z1 1 stress;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_CCBottom_strain.txt -ele 12 section 1 fiber -$y1 $z1 1 strain;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_UCBottom_stress.txt -ele 12 section 1 fiber -$y1 $z1 2 stress;
+	# recorder Element -file $dataDir/LegeronPaultre2000_SpecimenC100B130N25_lc05DIP33_UCBottom_strain.txt -ele 12 section 1 fiber -$y1 $z1 2 strain;
 	
 #######################################################################################
 #                                                                                     #
@@ -176,7 +181,7 @@ puts "Running Analysis..."
 	constraints Plain;					# how it handles boundary conditions
 	numberer RCM;						# renumber dof's to minimize band-width (optimization)
 	system BandGeneral;					# how to store and solve the system of equations in the analysis (large model: try UmfPack)
-	set currentTolerance 1.0e-12
+	set currentTolerance 1.0e-8
 	test EnergyIncr $currentTolerance 100;		# type of convergence criteria with tolerance, max iterations
 	algorithm KrylovNewton;					# use Newton's solution algorithm: updates tangent stiffness at every iteration
 	#algorithm NewtonLineSearch;

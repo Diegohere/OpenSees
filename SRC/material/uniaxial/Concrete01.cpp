@@ -290,7 +290,7 @@ Concrete01::setTrial (double strain, double &stress, double &tangent, double str
   if (abs(Ttangent) < 0.001)
   {
 	  double Tinit = getInitialTangent();
-	  double alphaEl = 0.01;
+	  double alphaEl = 0.005;
 	  tangent= alphaEl * Tinit + (1. - alphaEl) * Ttangent;
   }
   
