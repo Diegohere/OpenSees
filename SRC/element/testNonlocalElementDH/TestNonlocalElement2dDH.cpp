@@ -111,7 +111,7 @@ void* OPS_TestNonlocalElement2dDH()
 
 	// Initialize the element
 	Element* theEle = new TestNonlocalElement2dDH(eleTag, nodeTagI, nodeTagJ, *theCoordTransf, *theBeamIntegration,
-		sections, numIntegrPoints, maxNumIters, tolerance,lc);
+		sections, numIntegrPoints, maxNumIters, tolerance, lc);
 	delete[] sections;
 	return 0;
 }
@@ -589,8 +589,8 @@ TestNonlocalElement2dDH::update(void)
 	double L = crdTransf->getInitialLength();
 	double oneOverL = 1.0 / L;
 
-	double *xi;
-	xi=new double[numSections];
+	double* xi;
+	xi = new double[numSections];
 	beamIntegr->getSectionLocations(numSections, L, xi);
 
 	//double wt[maxNumSections];
@@ -1081,7 +1081,7 @@ TestNonlocalElement2dDH::update(void)
 							WDot_cumulativeSoft += WDot_isec;
 						}
 						else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
-						//else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0. && abs(eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm()) > 1.* eLocalCommit[i].Norm())
+							//else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0. && abs(eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm()) > 1.* eLocalCommit[i].Norm())
 						{
 							elasticUnload += 1;
 							WDot_cumulativeElasticUnload += WDot_isec;
@@ -1988,7 +1988,7 @@ TestNonlocalElement2dDH::computeMatrixH_inv()
 }
 
 //Method to compute deStar_nonlocal[]
-void 
+void
 TestNonlocalElement2dDH::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Vector deStar_local_Tot[])
 {
 	//deStar_nonlocal.Zero();
@@ -2074,7 +2074,7 @@ TestNonlocalElement2dDH::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Ve
 
 //Method to compute e_local[] - NOT USED
 void
-TestNonlocalElement2dDH::computeE_local(Matrix& e_local_tot) 
+TestNonlocalElement2dDH::computeE_local(Matrix& e_local_tot)
 {
 	e_local_tot.Zero();
 	Vector eNonLocal_SectionI_temp = Vector(NEBD);

@@ -106,12 +106,12 @@ private:
 	void computeCoefficientMatrixH();
 
 
-/* ----------------------------------------------------------------------------- */
-/* Members                                                                       */
-/* ----------------------------------------------------------------------------- */
+	/* ----------------------------------------------------------------------------- */
+	/* Members                                                                       */
+	/* ----------------------------------------------------------------------------- */
 private:
 
-		// Private attributes
+	// Private attributes
 	ID connectedExternalNodes;              // contains tags of end nodes
 	Node* theNodes[2];                      // pointer to nodes
 	SectionForceDeformation** sections;     // pointers to sections
@@ -141,7 +141,7 @@ private:
 	Vector* eNonlocalCommit;              // array of committed nonlocal section deformation vectors
 	Vector* eLocalCommit;              // array of committed local section deformation vectors
 	Vector* eLocal;              // array of local section deformation vectors
-	
+
 	enum { maxNumEleLoads = 100 };   // maximum number of element loads
 	//enum { maxNumSections = 30 };  //maximum number of integration sections
 	enum { maxNumSections = 60 };  //maximum number of integration sections

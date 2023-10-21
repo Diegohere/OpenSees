@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 2 -ndf 3;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_H27MC30_Suzuki2021_2dCFST;			# name of output folder
+	set dataDir results4Paper_H27C_Suzuki2021_2dCFSTSteel;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 	#source DisplayModel2D.tcl;
@@ -40,8 +40,8 @@
 # set up geometric transformation of elements
 	set ColTransfTag 1; 			# associate a tag to column transformation
 	set BeamTransfTag 2; 			# associate a tag to beam transformation
-	#geomTransf Corotational $ColTransfTag;		# Corotational transformation
-	geomTransf PDelta $ColTransfTag;		# PDelta transformation
+	geomTransf Corotational $ColTransfTag;		# Corotational transformation
+	#geomTransf PDelta $ColTransfTag;		# PDelta transformation
 	geomTransf Linear $BeamTransfTag;		# Linear transformation
 	
 ###################################################################################################
@@ -74,8 +74,9 @@
 	#A500 Gr.B steel material parameters from Suzuki and Lignos 2020
 	#uniaxialMaterial SLModel 1 $DSurTHSS 200000. 315. 2500. 19.	22.4 7.2 382.8466982 0.008812135 -2822.487499 -516.0389276 234.4971188 0.061026586 0.027610273 0.665413237	1.; # Updated model
 	#uniaxialMaterial LocalBucklingWebPlateUniaxial 1 200000.0 0.3 324.09 228.02 0.11 50.41 270.40 2 17707 207.18 1526.2 6.22 $bPlate $tPlate $sigmaC0 $alphaRegularization;
-	#uniaxialMaterial CFSTsteel 1 200000.00  286.87  24.08   0.84    0.0223 -358.314    13.110 -105.461 3.36923 11 2.00749  4   3.86987 2.45962 1   1   1   1   1   2   11934.29 160.01 1585.62 7.71 ;
-	uniaxialMaterial CFSTsteel 1 200000.00  321.68  36.64   0.94    0.00989 -337.969    14.99491 -109.061 2.46999 11 1.77624  4   2.167914 2.25468 1   1   1   1   1   1   3995.53 24.59  ;
+	uniaxialMaterial CFSTsteel 1 200000.00  286.87  24.08   0.84    0.0223 -382.8466982    13.110 -105.461 3.36923 11 2.00749  4   3.86987 2.45962 1   1   1   1   1   2   11934.29 160.01 1585.62 7.71 ;
+	#uniaxialMaterial CFSTsteel 1 200000.00  321.68  36.64   0.94    0.00989 -337.969    14.99491 -109.061 2.46999 11 1.77624  4   2.167914 2.25468 1   1   1   1   1   1   3995.53 24.59  ;
+	#uniaxialMaterial CFSTsteel 1 200000.00  321.68  36.64   0.94    0.00989 -382.8466982    14.99491 -109.061 2.46999 11 1.77624  4   2.167914 2.25468 1   1   1   1   1   1   3995.53 24.59  ;
 
 	
 	set NWeb_LoadDir 10;
@@ -135,12 +136,12 @@
 	#set integration "NewtonCotes 1 8"
 	#element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
 	
-	set lc [expr 0.0*$DHSS];
-	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 9  5000 1e-8 $lc
+	set lc [expr 1.0*$DHSS];
+	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 15  5000 1e-8 $lc
 	#element gradientForceBeamColumn 12 1 2 $ColTransfTag Simpson 1 9  20 1e-6 $lc
 	
 	element elasticBeamColumn 34 3 4 11500 [expr $E*1000.0] 44500000 $BeamTransfTag 
-	element elasticBeamColumn 35 3 5 11500 [expr $E*1000.0] 44500000 $ColTransfTag 
+	element elasticBeamColumn 35 3 5 11500 [expr $E*1000.0] 44500000 $BeamTransfTag 
 	
 ############################################################################
 #              Recorders					                			   
@@ -149,40 +150,43 @@
 puts "Recorders ..."
 
 # Record displacements 
-	recorder Node -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_Disp.txt -node 2 -dof 1 2 disp;
+	recorder Node -file $dataDir/H27MC30_Suzuki2021_lc10DIP27_Disp.txt -node 2 -dof 1 2 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_RBase.txt -node 1 -dof 1 2 3 reaction;
+	recorder Node -file $dataDir/H27MC30_Suzuki2021_lc10DIP27_RBase.txt -node 1 -dof 1 2 3 reaction;
+	
+# Record local section deformations
+   #recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_curvatureLoc.txt -ele 12 LocalSectionCurvature;
 	
 # Record stress and strains for the external fibers in the flanges
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-93Z122.txt -ele 12 section 1 fiber -92.92 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-93Z122.txt -ele 12 section 1 fiber -92.92 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-72Z122.txt -ele 12 section 1 fiber -72.28 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-72Z122.txt -ele 12 section 1 fiber -72.28 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-52Z122.txt -ele 12 section 1 fiber -51.63 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-52Z122.txt -ele 12 section 1 fiber -51.63 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-31Z122.txt -ele 12 section 1 fiber -30.98 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-31Z122.txt -ele 12 section 1 fiber -30.98 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-10Z122.txt -ele 12 section 1 fiber -10.33 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-10Z122.txt -ele 12 section 1 fiber -10.33 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY10Z122.txt -ele 12 section 1 fiber 10.33 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY10Z122.txt -ele 12 section 1 fiber 10.33 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY31Z122.txt -ele 12 section 1 fiber 30.97 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY31Z122.txt -ele 12 section 1 fiber 30.97 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY52Z122.txt -ele 12 section 1 fiber 51.62 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY52Z122.txt -ele 12 section 1 fiber 51.62 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY72Z122.txt -ele 12 section 1 fiber 72.27 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY72Z122.txt -ele 12 section 1 fiber 72.27 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 strain; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 stress; 
-#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 strain; 
-recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 stress; 
-recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 strain; 
-recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_stressFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 stress; 
-recorder Element -file $dataDir/H27MC30_Suzuki2021_lc0DIP9_2d_strainFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY-117Z117.txt -ele 12 section 1 fiber -116.69 116.69 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY-93Z122.txt -ele 12 section 1 fiber -92.92 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY-93Z122.txt -ele 12 section 1 fiber -92.92 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY-72Z122.txt -ele 12 section 1 fiber -72.28 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY-72Z122.txt -ele 12 section 1 fiber -72.28 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY-52Z122.txt -ele 12 section 1 fiber -51.63 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY-52Z122.txt -ele 12 section 1 fiber -51.63 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY-31Z122.txt -ele 12 section 1 fiber -30.98 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY-31Z122.txt -ele 12 section 1 fiber -30.98 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY-10Z122.txt -ele 12 section 1 fiber -10.33 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY-10Z122.txt -ele 12 section 1 fiber -10.33 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY10Z122.txt -ele 12 section 1 fiber 10.33 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY10Z122.txt -ele 12 section 1 fiber 10.33 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY31Z122.txt -ele 12 section 1 fiber 30.97 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY31Z122.txt -ele 12 section 1 fiber 30.97 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY52Z122.txt -ele 12 section 1 fiber 51.62 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY52Z122.txt -ele 12 section 1 fiber 51.62 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY72Z122.txt -ele 12 section 1 fiber 72.27 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY72Z122.txt -ele 12 section 1 fiber 72.27 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY93Z122.txt -ele 12 section 1 fiber 92.92 122.25 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY117Z117.txt -ele 12 section 1 fiber 116.69 116.69 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY122Z77.txt -ele 12 section 1 fiber 122.25 77.44 strain; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_stressFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 stress; 
+#recorder Element -file $dataDir/H27MC30_Suzuki2021_lc10DIP19_strainFiberY-122Z77.txt -ele 12 section 1 fiber -122.25 77.44 strain; 
 	
 	
 # Define display;	
@@ -239,7 +243,7 @@ puts "Running Analysis..."
 	constraints Plain;					# how it handles boundary conditions
 	numberer RCM;						# renumber dof's to minimize band-width (optimization)
 	system BandGeneral;					# how to store and solve the system of equations in the analysis (large model: try UmfPack)
-	set currentTolerance 1.0e-10
+	set currentTolerance 1.0e-12
 	test EnergyIncr $currentTolerance 100;		# type of convergence criteria with tolerance, max iterations
 	algorithm KrylovNewton;					# use Newton's solution algorithm: updates tangent stiffness at every iteration
 	#algorithm NewtonLineSearch;

@@ -143,7 +143,7 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 	}
 
 	// Check integration type - for now only works for Gauss-Lobatto and Newton-Cotes
-	if (strcmp(argv[6], "Lobatto") == 0 || strcmp(argv[6], "NewtonCotes") == 0 
+	if (strcmp(argv[6], "Lobatto") == 0 || strcmp(argv[6], "NewtonCotes") == 0
 		|| strcmp(argv[6], "NewtonCotesUpdated") == 0 || strcmp(argv[6], "Trapezoidal") == 0
 		|| strcmp(argv[6], "Simpson") == 0 || strcmp(argv[6], "Legendre") == 0
 		|| strcmp(argv[6], "Radau") == 0 || strcmp(argv[6], "CompositeSimpson") == 0) {
@@ -231,7 +231,7 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 	}
 
 	// Create the 2d or 3d beam element
-	if(ndm == 2) {
+	if (ndm == 2) {
 		theElement = new TestNonlocalElement2dDH(eleTag, iNode, jNode, *theCoordTransf2d, *beamIntegr, IntegrSections, numIntegrPts, maxNumIter, tolerance, lc);
 	}
 	else if (ndm == 3) {

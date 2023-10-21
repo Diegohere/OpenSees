@@ -1876,6 +1876,13 @@ TestNonlocalElement3dDH::setResponse(const char** argv, int argc, OPS_Stream& ou
 		theResponse = new ElementResponse(this, 6, Matrix(2,numSections));
 	}
 
+	// Moment distribution along length
+	else if (strcmp(argv[0], "momentDistribution") == 0)
+	{
+		//int order = sections[0]->getOrder();  //use section 0 to get order
+		theResponse = new ElementResponse(this, 7, Matrix(2, numSections));
+	}
+
 	//Section response
 	else if (strstr(argv[0], "section") != 0)
 	{
@@ -2000,6 +2007,19 @@ TestNonlocalElement3dDH::getResponse(int responseID, Information& eleInfo)
 		//todo
 		//opserr << "This is localCurvatureOutput" << localCurvatureOutput << endln;
 		return eleInfo.setMatrix(localCurvatureOutput);
+	}
+
+	case 7: //moment distribution
+	{
+		Matrix momentDistributionOutput(2, numSections);
+		for (int i = 0; i < numSections; i++)
+		{
+			momentDistributionOutput(0, i) = sr[i](1); //y axis
+			momentDistributionOutput(1, i) = sr[i](2); //z axis
+		}
+		//todo
+		//opserr << "This is localCurvatureOutput" << localCurvatureOutput << endln;
+		return eleInfo.setMatrix(momentDistributionOutput);
 	}
 
 	default:

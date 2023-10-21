@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_C6_Elkady2018_1p15SigmaC0Web;			# name of output folder
+	set dataDir results4Paper_C6_Elkady2018;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -28,7 +28,7 @@
 	set bSurTFlange [expr $bf/(2*$tf)];
 	set bSurTWeb [expr $h/$tw];
 	
-	set sigmaC0_Web [expr 1.15*370.5703];
+	set sigmaC0_Web [expr 1.2*370.5703];
 	set sigmaC0_Flange [expr 1.0* 511.1520];
 	
 	set alphaRegularization_Web 1.0;							# Factor for regularization web 
@@ -109,7 +109,7 @@
 	
 	#set lc [expr 1.5*$bf];
 	set lc [expr 0.0*$d];
-	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 9  20 1e-8 $lc
+	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 9 20 1e-8 $lc
 	
 ############################################################################
 #              Recorders					                			   
@@ -124,7 +124,7 @@ puts "Recorders ..."
 # Record reactions
 	recorder Node -file $dataDir/C6_Elkady2018_lc0DIP9_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
 	
-		# Record local section deformations
+# Record local section deformations
    recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_curvatureLoc.txt -ele 12 LocalSectionCurvature;
 	
 # Record stress and strains for fibers
@@ -171,8 +171,8 @@ puts "Recorders ..."
 set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize50.txt"
 set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize50.txt"
 set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize50.txt"
-#set TotalNumberOfSteps 1143;	# number of steps in ground motion for resize 100
-set TotalNumberOfSteps 2264;	# number of steps in ground motion for resize 50
+#set TotalNumberOfSteps 1144;	# number of steps in ground motion for resize 100
+set TotalNumberOfSteps 2265;	# number of steps in ground motion for resize 50
 
 
 # Start timer
@@ -247,11 +247,11 @@ set FloorNodes [list  1 2 ];
 	# pattern UniformExcitation 4 $CtrlDOFRotZ -disp $topRotationZSeries;
 	pattern MultipleSupport 2  {
 		groundMotion 1 Plain -disp  $lateralDispXSeries 
-		groundMotion 2 Plain -disp  $lateralDispZSeries 
-		groundMotion 3 Plain -disp  $topRotationZSeries 
+		#groundMotion 2 Plain -disp  $lateralDispZSeries 
+		#groundMotion 3 Plain -disp  $topRotationZSeries 
 	    imposedMotion $CtrlNode  $CtrlDOFLatX 1	
-		imposedMotion $CtrlNode  $CtrlDOFLatZ 2	
-		imposedMotion $CtrlNode  $CtrlDOFRotZ 3	
+		#imposedMotion $CtrlNode  $CtrlDOFLatZ 2	
+		#imposedMotion $CtrlNode  $CtrlDOFRotZ 3	
 	};	# end pattern
 	
 	

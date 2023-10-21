@@ -131,6 +131,9 @@ puts "Recorders ..."
 	
 	# Record local section deformations
    recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_curvatureLoc.txt -ele 12 LocalSectionCurvature;
+   
+ # Record moment distribution
+   recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_momentDistribution.txt -ele 12 momentDistribution;
 	
 # Record stress and strains for fibers
 #recorder Element -file $dataDir/W625C1C30_Suzuki2021_lc15bfLcSurDx2_strainFiberExtremePos.txt -ele 12 section 1 fiber 170.7 32.13 strain; 
