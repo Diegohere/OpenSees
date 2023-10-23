@@ -691,6 +691,10 @@ TestNonlocalElement2dDH::update(void)
 				eLocalSubdivide[i] = eLocal[i];
 				FSectionSubdivide[i] = FSection[i];
 				srSubdivide[i] = sr[i];
+
+				//Added 23.10.2023 so that goes to zero when change l
+				eu_nonlocal_Tot[i].Zero();
+				eu_local_Tot[i].Zero();
 			}
 
 			// calculate nodal force increments and update nodal forces dq=KelementTrial*dvTrial

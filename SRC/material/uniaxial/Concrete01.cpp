@@ -234,18 +234,19 @@ Concrete01::setTrial (double strain, double &stress, double &tangent, double str
   
   // check for a quick return
   if (Tstrain > 0.0) {
-    Tstress = 0;
+    /*Tstress = 0;
     Ttangent = 0;
     stress = 0;
-    tangent = 0;
+    tangent = 0;*/
 	//Modified by DH
-	  /*Tstress = 0.01 * abs(Tstrain);
-	  Ttangent = 0.01;
+	  /*Tstress = smallSlope * (Tstrain-CendStrain);*/
+	  Tstress = Cstress+ smallSlope * (dStrain);
+	  Ttangent = smallSlope;
 	  stress = Tstress;
-	  tangent = Ttangent;*/
-	double Tinit = getInitialTangent();
+	  tangent = Ttangent;
+	/*double Tinit = getInitialTangent();
 	double alphaEl = 0.01;
-	tangent = alphaEl * Tinit + (1. - alphaEl) * Ttangent;
+	tangent = alphaEl * Tinit + (1. - alphaEl) * Ttangent;*/
     return 0;
   }
   
@@ -277,8 +278,13 @@ Concrete01::setTrial (double strain, double &stress, double &tangent, double str
   
   // Made it into tension
   else {
-    Tstress = 0.0;
-    Ttangent = 0.0;
+    /*Tstress = 0.0;
+    Ttangent = 0.0;*/
+	//Modified by DH
+	  double TendStrainTheory = (TunloadSlope * CendStrain - Cstress) / (TunloadSlope); // strain at which stress is zero and changes sign
+	  Tstress = 0. + smallSlope * (strain- TendStrainTheory);
+	  //Tstress = Cstress + smallSlope * (dStrain);
+	  Ttangent = smallSlope;
   }
   
   //opserr << "Concrete01::setTrial() " << strain << " " << tangent << " " << strain << endln;
@@ -287,12 +293,12 @@ Concrete01::setTrial (double strain, double &stress, double &tangent, double str
   tangent =  Ttangent;
 
   //Modified by DH
-  if (abs(Ttangent) < 0.0001)
+  /*if (abs(Ttangent) < 0.0001)
   {
 	  double Tinit = getInitialTangent();
 	  double alphaEl = 0.01;
 	  tangent= alphaEl * Tinit + (1. - alphaEl) * Ttangent;
-  }
+  }*/
   
   return 0;
 }
@@ -346,8 +352,11 @@ void Concrete01::reload ()
     Tstress = Ttangent*(Tstrain-TendStrain);
   }
   else {
-    Tstress = 0.0;
-    Ttangent = 0.0;
+    /*Tstress = 0.0;
+    Ttangent = 0.0;*/
+	//Modified by DH
+	  Tstress = smallSlope * (Tstrain - CendStrain);
+	  Ttangent = smallSlope;
   }
 }
 
@@ -364,8 +373,8 @@ void Concrete01::envelope ()
     Tstress = fpc + Ttangent*(Tstrain-epsc0);
   }
   else {
-    Tstress = fpcu;
-    Ttangent = 0.0;
+    /*Tstress = fpcu;
+    Ttangent = 0.0;*/
 	  //Modified by DH
 	  /*if (Tstrain>0.)
 	  {
@@ -377,6 +386,8 @@ void Concrete01::envelope ()
 		  Tstress = fpcu - 0.01 * abs(Tstrain - epscu);
 		  Ttangent = 0.01;
 	  }*/
+	  Tstress = fpcu - smallSlope * abs(Tstrain - epscu);
+	  Ttangent = smallSlope;
   }
 }
 
