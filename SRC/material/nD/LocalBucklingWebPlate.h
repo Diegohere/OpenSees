@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version 30.03.2023
+// Version 14.11.2023
 //
 
 #ifndef CPP_LocalBucklingWebPlate_H

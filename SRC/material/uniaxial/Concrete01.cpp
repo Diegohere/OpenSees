@@ -113,6 +113,8 @@ Concrete01::Concrete01
   Ctangent = Ec0;
   CunloadSlope = Ec0;
   Ttangent = Ec0;
+
+  smallSlope = 1. / 1000. * Ec0;
   
   // Set trial values
   this->revertToLastCommit();

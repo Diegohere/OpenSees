@@ -1135,6 +1135,7 @@ TestNonlocalElement2dDH::update(void)
 
 					// check for convergence of this interval
 					if (dv.Norm() < Tol)
+					//if (dv.Norm()/(dvTrial.Norm()+ DBL_EPSILON) < Tol)
 					{
 						// set the target displacement
 						dvToDo -= dvTrial;

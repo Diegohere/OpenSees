@@ -90,8 +90,8 @@ class Concrete01 : public UniaxialMaterial
   double fpcu;   // Crushing strength
   double epscu;  // Strain at crushing strength
 
-  double smallSlope = 0.001; // Added by DH for help solve flate tangent
-  //double smallSlope; // Added by DH for help solve flate tangent
+  //double smallSlope = 0.001; // Added by DH for help solve flate tangent
+  double smallSlope; // Added by DH for help solve flate tangent
   
   /*** CONVERGED History Variables ***/
   double CminStrain;   // Smallest previous concrete strain (compression)
