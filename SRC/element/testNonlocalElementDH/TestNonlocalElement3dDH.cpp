@@ -577,8 +577,8 @@ TestNonlocalElement3dDH::update(void)
 	dv = crdTransf->getBasicIncrDeltaDisp();
 
 	//todo
-	/*opserr << "This is v:" << v << endln;
-	opserr << "This is dv:" << dv << endln;*/
+	//opserr << "This is v:" << v << endln;
+	//opserr << "This is dv:" << dv << endln;
 
 	if (initialFlag != 0 && dv.Norm() <= DBL_EPSILON && numEleLoads == 0)
 		return 0;
@@ -932,6 +932,7 @@ TestNonlocalElement3dDH::update(void)
 						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
 						{
 							opserr << "TestNonlocalElement3dDH::update() - section failed in setTrial\n";
+							opserr << "This is element: " << this->getTag() << endln;
 							opserr << "This is section: " << i + 1 << endln;
 							return -1;
 						}
@@ -1574,6 +1575,14 @@ TestNonlocalElement3dDH::getResistingForceIncInertia()
 	if (betaK != 0.0 || betaK0 != 0.0 || betaKc != 0.0)
 		theVector += this->getRayleighDampingForces();
 
+	/*Vector testDampingForces = this->getRayleighDampingForces();
+	double testNormDampingForces = testDampingForces.Norm();
+	if (testNormDampingForces>0.)
+	{
+		opserr << "This is testDampingForces:" << testDampingForces << endln;
+	}*/
+	
+
 	return theVector;
 }
 
@@ -1852,7 +1861,7 @@ TestNonlocalElement3dDH::setResponse(const char** argv, int argc, OPS_Stream& ou
 		output.tag("ResponseType", "My_2");
 		output.tag("ResponseType", "T");
 
-		theResponse = new ElementResponse(this, 3, Vector(3));
+		theResponse = new ElementResponse(this, 3, Vector(6));
 	}
 
 	//Nonlocal section deformations
@@ -1876,11 +1885,31 @@ TestNonlocalElement3dDH::setResponse(const char** argv, int argc, OPS_Stream& ou
 		theResponse = new ElementResponse(this, 6, Matrix(2,numSections));
 	}
 
+	//Nonlocal section curvatures
+	else if (strcmp(argv[0], "NonlocalSectionCurvature") == 0)
+	{
+		//int order = sections[0]->getOrder();  //use section 0 to get order
+		theResponse = new ElementResponse(this, 7, Matrix(2, numSections));
+	}
+
 	// Moment distribution along length
 	else if (strcmp(argv[0], "momentDistribution") == 0)
 	{
 		//int order = sections[0]->getOrder();  //use section 0 to get order
-		theResponse = new ElementResponse(this, 7, Matrix(2, numSections));
+		theResponse = new ElementResponse(this, 8, Matrix(2, numSections));
+	}
+
+	// Element basic deformations
+	else if (strcmp(argv[0], "basicDeformation") == 0)
+	{
+		output.tag("ResponseType", "eps");
+		output.tag("ResponseType", "thetaZ_1");
+		output.tag("ResponseType", "thetaZ_2");
+		output.tag("ResponseType", "thetaY_1");
+		output.tag("ResponseType", "thetaY_2");
+		output.tag("ResponseType", "thetaX");
+
+		theResponse = new ElementResponse(this, 9, Vector(6));
 	}
 
 	//Section response
@@ -2009,7 +2038,20 @@ TestNonlocalElement3dDH::getResponse(int responseID, Information& eleInfo)
 		return eleInfo.setMatrix(localCurvatureOutput);
 	}
 
-	case 7: //moment distribution
+	case 7: //nonlocal section curvatures
+	{
+		Matrix nonlocalCurvatureOutput(2, numSections);
+		for (int i = 0; i < numSections; i++)
+		{
+			nonlocalCurvatureOutput(0, i) = eNonlocal[i](1); //y axis
+			nonlocalCurvatureOutput(1, i) = eNonlocal[i](2); //z axis
+		}
+		//todo
+		//opserr << "This is nonlocalCurvatureOutput" << nonlocalCurvatureOutput << endln;
+		return eleInfo.setMatrix(nonlocalCurvatureOutput);
+	}
+
+	case 8: //moment distribution
 	{
 		Matrix momentDistributionOutput(2, numSections);
 		for (int i = 0; i < numSections; i++)
@@ -2020,6 +2062,13 @@ TestNonlocalElement3dDH::getResponse(int responseID, Information& eleInfo)
 		//todo
 		//opserr << "This is localCurvatureOutput" << localCurvatureOutput << endln;
 		return eleInfo.setMatrix(momentDistributionOutput);
+	}
+
+	case 9: //element basic deformations
+	{
+		Vector vp(6);
+		vp = crdTransf->getBasicTrialDisp();
+		return eleInfo.setVector(vp);
 	}
 
 	default:

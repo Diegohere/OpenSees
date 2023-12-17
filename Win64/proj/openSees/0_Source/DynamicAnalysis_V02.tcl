@@ -15,7 +15,7 @@ wipeAnalysis;
 
 set show_iter 0; # Convergence information: 0 - no information / 2 - last iteration step
 
-set tol_0 1.0e-10;  
+set tol_0 1.0e-8;  
 set tol_1 [expr 10*$tol_0];  
 set tol_2 [expr 10*$tol_1];  
 set tol_3 [expr 10*$tol_2];  
@@ -64,7 +64,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		puts "0";
 		set currentTolerance $tol_0;
 		set currentdt [expr $dt_analysis];
-		source DynamicSolutionAlgorithmSubFile_V02.tcl
+		source DynamicSolutionAlgorithmSubFile_V03.tcl
 		set controlTime [getTime];
 	}	
 	# ------- TOLERANCE_1 ----------------------------
@@ -72,7 +72,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		puts "1";
 		set currentTolerance $tol_1;
 		set currentdt [expr $dt_analysis];
-		source DynamicSolutionAlgorithmSubFile_V02.tcl
+		source DynamicSolutionAlgorithmSubFile_V03.tcl
 		set controlTime [getTime];
 	}
 	# ------- TOLERANCE_2 ----------------------------
@@ -80,7 +80,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		puts "2";
 		set currentTolerance $tol_2;
 		set currentdt [expr $dt_analysis];
-		source DynamicSolutionAlgorithmSubFile_V02.tcl
+		source DynamicSolutionAlgorithmSubFile_V03.tcl
 		set controlTime [getTime];
 	}	
 	# ------- TOLERANCE_3 ----------------------------
@@ -88,7 +88,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		puts "3";
 		set currentTolerance $tol_3;
 		set currentdt [expr $dt_analysis];
-		source DynamicSolutionAlgorithmSubFile_V02.tcl
+		source DynamicSolutionAlgorithmSubFile_V03.tcl
 		set controlTime [getTime];
 	}	
 	# ------- TOLERANCE_4 ----------------------------
@@ -96,7 +96,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		puts "4";
 		set currentTolerance $tol_4;
 		set currentdt [expr $dt_analysis];
-		source DynamicSolutionAlgorithmSubFile_V02.tcl
+		source DynamicSolutionAlgorithmSubFile_V03.tcl
 		set controlTime [getTime];
 	}	
 	# ------- TOLERANCE_5 ----------------------------
@@ -104,7 +104,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		puts "5";
 		set currentTolerance $tol_5;
 		set currentdt [expr $dt_analysis];
-		source DynamicSolutionAlgorithmSubFile_V02.tcl
+		source DynamicSolutionAlgorithmSubFile_V03.tcl
 		set controlTime [getTime];
 	}	
 	# ------- TOLERANCE_6 ----------------------------
@@ -112,7 +112,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		puts "6";
 		set currentTolerance $tol_6;
 		set currentdt [expr $dt_analysis];
-		source DynamicSolutionAlgorithmSubFile_V02.tcl
+		source DynamicSolutionAlgorithmSubFile_V03.tcl
 		set controlTime [getTime];
 	}
 	#puts "we go back to checking collapse";
