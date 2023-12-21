@@ -426,6 +426,7 @@ NDTestNonlocalFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
         opserr << "This fiber did not converge!" << endln;
         opserr << "This is coordY: " << y << "      This is coordZ: " << z << endln;
         //opserr << "This is coordZ: " << z << endln;
+        return -1;
     }
     const Vector &stress = theMat->getStress();
     const Matrix &tangent = theMat->getTangent();

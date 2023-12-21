@@ -160,11 +160,21 @@ VariableTimeStepDirectIntegrationAnalysis::analyze(int numSteps, double dT, doub
 
       
       // if still here reset result for next loop
-      result = 0;
+      //result = 0; //Updated by Diego Heredia 19.12.2023 to solve issue with non updating of time when failed in setDomain
     }
 
     // now we determine a new delta T for next loop
-    currentDt = this->determineDt(currentDt, dtMin, dtMax, Jd, theTest);
+    /*currentDt = this->determineDt(currentDt, dtMin, dtMax, Jd, theTest);*/
+    //Updated by Diego Heredia 19.12.2023 to solve issue with non updating of time when failed in setDomain
+    if (result<0)
+    {
+        result = 0;
+        currentDt /= 4.;
+    }
+    else
+    {
+        currentDt = dtMax;
+    }
   }
 
 

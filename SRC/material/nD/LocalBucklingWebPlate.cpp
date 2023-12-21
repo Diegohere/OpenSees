@@ -756,6 +756,12 @@ int LocalBucklingWebPlate::timeIntegration() {
 					else { // the capping point has been passed or we have not converged
 						//deltaStrain_trial /= 2.;
 						deltaStrain_trial = deltaStrain_trial / 2.;
+						//Try solving issue with high shear strains 18.12.2023
+						if (iterationNumber_timeIntegration >= 0.2 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
+						{
+							//sigmaCTrial = yieldStressTot;
+							sigmaCTrial = sqrt(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)));
+						}
 					}
 				}
 				else { // if chi1c !=0 --> softening stage
@@ -787,10 +793,15 @@ int LocalBucklingWebPlate::timeIntegration() {
 						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER) { // capping point is reached
 							calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
 						}
-
 					}
 					else { // the capping point has been passed or if we have not converged
 						deltaStrain_trial = deltaStrain_trial / 2.;
+						//Try solving issue with high shear strains 18.12.2023
+						if (iterationNumber_timeIntegration >= 0.2 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
+						{
+							//sigmaCTrial = yieldStressTot;
+							sigmaCTrial = sqrt(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)));
+						}
 					}
 
 					// Set tensile ellipsoid yield surface properties for end of elastic recovery stage

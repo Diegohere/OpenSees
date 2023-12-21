@@ -2093,9 +2093,16 @@ Domain::update(void)
   ElementIter &theEles = this->getElements();
   Element *theEle;
 
+  //int counter = 0; 
   while ((theEle = theEles()) != 0) {
     ops_TheActiveElement = theEle;
     ok += theEle->update();
+    // Modification by Diego Heredia to exit loop on elements as soon as one element does not converge
+    //counter+= 1;
+    if (ok<0)
+    {
+        break;
+    }
   }
 
   if (ok != 0)
