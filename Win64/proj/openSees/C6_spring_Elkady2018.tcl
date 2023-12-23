@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_C6Spring_Elkady2018;			# name of output folder
+	set dataDir results4Paper_C6Spring_Elkady2018;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -28,7 +28,7 @@
 	set bSurTFlange [expr $bf/(2*$tf)];
 	set bSurTWeb [expr $h/$tw];
 	
-	set sigmaC0_Web [expr 1.2*370.5703];
+	set sigmaC0_Web [expr 1.15*370.5703];
 	set sigmaC0_Flange [expr 1.0* 511.1520];
 	
 	set alphaRegularization_Web 1.0;							# Factor for regularization web 
@@ -113,7 +113,7 @@
 	
 	#set lc [expr 1.5*$bf];
 	set lc [expr 1.0*$d];
-	element testNonlocalElementDH 23 2 3 $ColTransfTag Simpson 1 17 20 1e-8 $lc
+	element testNonlocalElementDH 23 2 3 $ColTransfTag Simpson 1 23 20 1e-8 $lc
 	
 	# Zero length element definition
 	 uniaxialMaterial Elastic 3 976617499682.016
@@ -128,47 +128,47 @@ puts "Recorders ..."
 
 #lc20bfLcSurDx4
 # Record displacements 
-	recorder Node -file $dataDir/C6_Elkady2018_lc10DIP17_Disp.txt -node 3 -dof 1 2 3 4 5 6 disp;
+	recorder Node -file $dataDir/C6_Elkady2018_lc10DIP23_Disp.txt -node 3 -dof 1 2 3 4 5 6 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/C6_Elkady2018_lc10DIP17_RBase.txt -node 2 -dof 1 2 3 4 5 6 reaction;
-	recorder Node -file $dataDir/C6_Elkady2018_lc10DIP17_RTop.txt -node 3 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/C6_Elkady2018_lc10DIP23_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/C6_Elkady2018_lc10DIP23_RTop.txt -node 3 -dof 1 2 3 4 5 6 reaction;
 	
 # Record local section deformations
-   recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_curvatureLoc.txt -ele 23 LocalSectionCurvature;
+   recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_curvatureLoc.txt -ele 23 LocalSectionCurvature;
    
 # Record moment distribution
-   #recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_momentDistribution.txt -ele 23 momentDistribution;
+   #recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_momentDistribution.txt -ele 23 momentDistribution;
 	
 # Record spring
-	#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_SpringMoment.txt -ele 12 -dof 6	force
-	#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_SpringRot.txt -ele 12 -dof 6	deformation
+	#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_SpringMoment.txt -ele 12 -dof 6	force;
+	#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_SpringRot.txt -ele 12 -dof 6	deformation;
 
 # Record stress and strains for fibers
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY300Z41.txt -ele 12 section 1 fiber 300.35 40.50 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY300Z41.txt -ele 12 section 1 fiber 300.35 40.50 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY258Z0.txt -ele 12 section 1 fiber 258.03 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY258Z0.txt -ele 12 section 1 fiber 258.03 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY201Z0.txt -ele 12 section 1 fiber 200.69 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY201Z0.txt -ele 12 section 1 fiber 200.69 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY143Z0.txt -ele 12 section 1 fiber 143.35 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY143Z0.txt -ele 12 section 1 fiber 143.35 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY86Z0.txt -ele 12 section 1 fiber 86.01 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY86Z0.txt -ele 12 section 1 fiber 86.01 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY29Z0.txt -ele 12 section 1 fiber 28.67 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY29Z0.txt -ele 12 section 1 fiber 28.67 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-29Z0.txt -ele 12 section 1 fiber -28.67 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-29Z0.txt -ele 12 section 1 fiber -28.67 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-86Z0.txt -ele 12 section 1 fiber -86.01 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-86Z0.txt -ele 12 section 1 fiber -86.01 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-143Z0.txt -ele 12 section 1 fiber -143.35 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-143Z0.txt -ele 12 section 1 fiber -143.35 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-201Z0.txt -ele 12 section 1 fiber -200.69 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-201Z0.txt -ele 12 section 1 fiber -200.69 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-258Z0.txt -ele 12 section 1 fiber -258.03 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-258Z0.txt -ele 12 section 1 fiber -258.03 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-300Z41.txt -ele 12 section 1 fiber -300.35 40.50 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-300Z41.txt -ele 12 section 1 fiber -300.35 40.50 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY300Z41.txt -ele 12 section 1 fiber 300.35 40.50 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY300Z41.txt -ele 12 section 1 fiber 300.35 40.50 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY258Z0.txt -ele 12 section 1 fiber 258.03 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY258Z0.txt -ele 12 section 1 fiber 258.03 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY201Z0.txt -ele 12 section 1 fiber 200.69 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY201Z0.txt -ele 12 section 1 fiber 200.69 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY143Z0.txt -ele 12 section 1 fiber 143.35 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY143Z0.txt -ele 12 section 1 fiber 143.35 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY86Z0.txt -ele 12 section 1 fiber 86.01 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY86Z0.txt -ele 12 section 1 fiber 86.01 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY29Z0.txt -ele 12 section 1 fiber 28.67 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY29Z0.txt -ele 12 section 1 fiber 28.67 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY-29Z0.txt -ele 12 section 1 fiber -28.67 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY-29Z0.txt -ele 12 section 1 fiber -28.67 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY-86Z0.txt -ele 12 section 1 fiber -86.01 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY-86Z0.txt -ele 12 section 1 fiber -86.01 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY-143Z0.txt -ele 12 section 1 fiber -143.35 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY-143Z0.txt -ele 12 section 1 fiber -143.35 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY-201Z0.txt -ele 12 section 1 fiber -200.69 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY-201Z0.txt -ele 12 section 1 fiber -200.69 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY-258Z0.txt -ele 12 section 1 fiber -258.03 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY-258Z0.txt -ele 12 section 1 fiber -258.03 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_stressFiberY-300Z41.txt -ele 12 section 1 fiber -300.35 40.50 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP23_strainFiberY-300Z41.txt -ele 12 section 1 fiber -300.35 40.50 strain; 
 
 
 

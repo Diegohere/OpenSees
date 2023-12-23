@@ -590,13 +590,11 @@ TestNonlocalElement3dDH::update(void)
 	double L = crdTransf->getInitialLength();
 	double oneOverL = 1.0 / L;
 
-	double* xi;
-	xi = new double[numSections];
+	double xi[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, xi);
 
 	//double wt[maxNumSections];
-	double* wt;
-	wt = new double[numSections];
+	double wt[maxNumSections];
 	beamIntegr->getSectionWeights(numSections, L, wt);
 
 	////todo
@@ -639,16 +637,12 @@ TestNonlocalElement3dDH::update(void)
 	static Matrix deStar_nonlocal_Tot(NEBD, numSections);
 	static Matrix eu_local_Tot(NEBD, numSections);
 	static Matrix eu_nonlocal_Tot(NEBD, numSections);*/
-	Vector* deStar_local_Tot;
-	Vector* deStar_nonlocal_Tot;
-	Vector* eu_local_Tot;
-	Vector* eu_nonlocal_Tot;
-	deStar_local_Tot = new Vector[numSections];
-	deStar_nonlocal_Tot = new Vector[numSections];
-	eu_local_Tot = new Vector[numSections];
-	eu_nonlocal_Tot = new Vector[numSections];
-	Vector* s_Tot;
-	s_Tot = new Vector[numSections];
+	Vector test[maxNumSections];
+	Vector deStar_local_Tot[maxNumSections];
+	Vector deStar_nonlocal_Tot[maxNumSections];
+	Vector eu_local_Tot[maxNumSections];
+	Vector eu_nonlocal_Tot[maxNumSections];
+	Vector s_Tot[maxNumSections];
 	//static Matrix Felement_nonlocal(NEBD, NEBD);
 
 	//Initialization of array of vector and matrices for nonlocal formulation
@@ -2151,8 +2145,8 @@ void
 TestNonlocalElement3dDH::initCoefficientMatrixH()
 {
 	double L = crdTransf->getInitialLength();
-	double* secX = new double[numSections];
-	beamIntegr->getSectionLocations(numSections, L, secX);	// relative locations of sections (x/L)
+	double secX[maxNumSections];
+	beamIntegr->getSectionLocations(numSections, L, secX);
 
 	double dx = L * (secX[1] - secX[0]);	// spaces between first and second integration points
 
@@ -2454,12 +2448,9 @@ TestNonlocalElement3dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 
 	//get info on integration quadrature rule
 	double L = crdTransf->getInitialLength();
-	double* xi;
-	xi = new double[numSections];
+	double xi[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, xi);
-	//double wt[maxNumSections];
-	double* wt;
-	wt = new double[numSections];
+	double wt[maxNumSections];
 	beamIntegr->getSectionWeights(numSections, L, wt);
 
 	/*for (int i = 0; i < numSections; i++) {

@@ -71,7 +71,7 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release.DLL|x64'">.\..\..\bin\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\..\..\obj\opensees\release\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release.DLL|x64'">.\..\..\obj\opensees\release\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release.DLL|x64'">false</LinkIncremental>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\..\..\bin\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug.DLL|x64'">.\..\..\bin\</OutDir>
