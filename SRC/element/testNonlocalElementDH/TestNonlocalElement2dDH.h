@@ -75,7 +75,7 @@ public:
 	int getResponse(int responseID, Information& eleInfo);
 
 	// Method to display element
-	int	displaySelf(Renderer& theViewer, int displayMode, float fact);
+	int	displaySelf(Renderer& theViewer, int displayMode, float fact, const char** displayModes = 0, int numModes = 0);
 
 	// Methods for parallel processing; base class: Channel
 	int sendSelf(int commitTag, Channel& theChannel);

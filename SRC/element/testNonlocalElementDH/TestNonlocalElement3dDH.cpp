@@ -637,7 +637,6 @@ TestNonlocalElement3dDH::update(void)
 	static Matrix deStar_nonlocal_Tot(NEBD, numSections);
 	static Matrix eu_local_Tot(NEBD, numSections);
 	static Matrix eu_nonlocal_Tot(NEBD, numSections);*/
-	Vector test[maxNumSections];
 	Vector deStar_local_Tot[maxNumSections];
 	Vector deStar_nonlocal_Tot[maxNumSections];
 	Vector eu_local_Tot[maxNumSections];
@@ -1309,9 +1308,7 @@ TestNonlocalElement3dDH::computeSectionForces(Vector& sp, int isec)
 
 	double L = crdTransf->getInitialLength();
 
-	//double xi[maxNumSections];
-	double* xi;
-	xi = new double[numSections];
+	double xi[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, xi);
 	double x = xi[isec] * L;
 

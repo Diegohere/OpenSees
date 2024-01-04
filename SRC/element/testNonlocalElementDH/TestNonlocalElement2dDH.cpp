@@ -589,13 +589,11 @@ TestNonlocalElement2dDH::update(void)
 	double L = crdTransf->getInitialLength();
 	double oneOverL = 1.0 / L;
 
-	double* xi;
-	xi = new double[numSections];
+	double xi[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, xi);
 
 	//double wt[maxNumSections];
-	double* wt;
-	wt = new double[numSections];
+	double wt[maxNumSections];
 	beamIntegr->getSectionWeights(numSections, L, wt);
 
 	////todo
@@ -639,16 +637,11 @@ TestNonlocalElement2dDH::update(void)
 	static Matrix deStar_nonlocal_Tot(NEBD, numSections);
 	static Matrix eu_local_Tot(NEBD, numSections);
 	static Matrix eu_nonlocal_Tot(NEBD, numSections);*/
-	Vector* deStar_local_Tot;
-	Vector* deStar_nonlocal_Tot;
-	Vector* eu_local_Tot;
-	Vector* eu_nonlocal_Tot;
-	deStar_local_Tot = new Vector[numSections];
-	deStar_nonlocal_Tot = new Vector[numSections];
-	eu_local_Tot = new Vector[numSections];
-	eu_nonlocal_Tot = new Vector[numSections];
-	Vector* s_Tot;
-	s_Tot = new Vector[numSections];
+	Vector deStar_local_Tot[maxNumSections];
+	Vector deStar_nonlocal_Tot[maxNumSections];
+	Vector eu_local_Tot[maxNumSections];
+	Vector eu_nonlocal_Tot[maxNumSections];
+	Vector s_Tot[maxNumSections];
 	//static Matrix Felement_nonlocal(NEBD, NEBD);
 
 	//Initialization of array of vector and matrices for nonlocal formulation
@@ -1260,9 +1253,7 @@ TestNonlocalElement2dDH::computeSectionForces(Vector& sp, int isec)
 
 	double L = crdTransf->getInitialLength();
 
-	//double xi[maxNumSections];
-	double* xi;
-	xi = new double[numSections];
+	double xi[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, xi);
 	double x = xi[isec] * L;
 
@@ -1621,43 +1612,15 @@ TestNonlocalElement2dDH::Print(OPS_Stream& s, int flag)
 
 //Method to draw and view the element
 int
-TestNonlocalElement2dDH::displaySelf(Renderer& theViewer, int displayMode, float fact)
+TestNonlocalElement2dDH::displaySelf(Renderer& theViewer, int displayMode, float fact, const char** displayModes, int numModes)
 {
-	// first determine the end points of the beam based on the display factor 
-	const Vector& end1Crd = theNodes[0]->getCrds();
-	const Vector& end2Crd = theNodes[1]->getCrds();
-
 	static Vector v1(3);
 	static Vector v2(3);
 
-	if (displayMode >= 0) {
-		const Vector& end1Disp = theNodes[0]->getDisp();
-		const Vector& end2Disp = theNodes[1]->getDisp();
+	theNodes[0]->getDisplayCrds(v1, fact, displayMode);
+	theNodes[1]->getDisplayCrds(v2, fact, displayMode);
 
-		for (int i = 0; i < 2; i++) {
-			v1(i) = end1Crd(i) + end1Disp(i) * fact;
-			v2(i) = end2Crd(i) + end2Disp(i) * fact;
-		}
-	}
-	else {
-		int mode = displayMode * -1;
-		const Matrix& eigen1 = theNodes[0]->getEigenvectors();
-		const Matrix& eigen2 = theNodes[1]->getEigenvectors();
-		if (eigen1.noCols() >= mode) {
-			for (int i = 0; i < 2; i++) {
-				v1(i) = end1Crd(i) + eigen1(i, mode - 1) * fact;
-				v2(i) = end2Crd(i) + eigen2(i, mode - 1) * fact;
-			}
-		}
-		else {
-			for (int i = 0; i < 2; i++) {
-				v1(i) = end1Crd(i);
-				v2(i) = end2Crd(i);
-			}
-		}
-	}
-
-	return theViewer.drawLine(v1, v2, 1.0, 1.0);
+	return theViewer.drawLine(v1, v2, 1.0, 1.0, this->getTag());
 }
 
 //Method to define response parameters
@@ -1729,6 +1692,30 @@ TestNonlocalElement2dDH::setResponse(const char** argv, int argc, OPS_Stream& ou
 	{
 		//int order = sections[0]->getOrder();  //use section 0 to get order
 		theResponse = new ElementResponse(this, 6, Vector(numSections));
+	}
+
+	//Nonlocal section curvatures
+	else if (strcmp(argv[0], "NonlocalSectionCurvature") == 0)
+	{
+		//int order = sections[0]->getOrder();  //use section 0 to get order
+		theResponse = new ElementResponse(this, 7, Vector(numSections));
+	}
+
+	// Moment distribution along length
+	else if (strcmp(argv[0], "momentDistribution") == 0)
+	{
+		//int order = sections[0]->getOrder();  //use section 0 to get order
+		theResponse = new ElementResponse(this, 8, Vector(numSections));
+	}
+
+	// Element basic deformations
+	else if (strcmp(argv[0], "basicDeformation") == 0)
+	{
+		output.tag("ResponseType", "eps");
+		output.tag("ResponseType", "theta_1");
+		output.tag("ResponseType", "theta_2");
+
+		theResponse = new ElementResponse(this, 9, Vector(3));
 	}
 
 	//Section response
@@ -1830,6 +1817,38 @@ TestNonlocalElement2dDH::getResponse(int responseID, Information& eleInfo)
 		return eleInfo.setVector(localCurvatureOutput);
 	}
 
+	case 7: //nonlocal section curvatures
+	{
+		Vector nonlocalCurvatureOutput(numSections);
+		for (int i = 0; i < numSections; i++)
+		{
+			nonlocalCurvatureOutput(i) = eNonlocal[i](1);
+		}
+		//todo
+		//opserr << "This is nonlocalCurvatureOutput" << nonlocalCurvatureOutput << endln;
+		return eleInfo.setVector(nonlocalCurvatureOutput);
+	}
+
+	case 8: //moment distribution
+	{
+		Vector momentDistributionOutput(numSections);
+		for (int i = 0; i < numSections; i++)
+		{
+			momentDistributionOutput(i) = sr[i](1);
+		}
+		//todo
+		//opserr << "This is localCurvatureOutput" << localCurvatureOutput << endln;
+		return eleInfo.setVector(momentDistributionOutput);
+	}
+
+	case 9: //element basic deformations
+	{
+		Vector vp(3);
+		vp = crdTransf->getBasicTrialDisp();
+		return eleInfo.setVector(vp);
+	}
+
+
 	default:
 		return -1;
 	}
@@ -1910,8 +1929,8 @@ void
 TestNonlocalElement2dDH::initCoefficientMatrixH()
 {
 	double L = crdTransf->getInitialLength();
-	double* secX = new double[numSections];
-	beamIntegr->getSectionLocations(numSections, L, secX);	// relative locations of sections (x/L)
+	double secX[maxNumSections];
+	beamIntegr->getSectionLocations(numSections, L, secX);
 
 	double dx = L * (secX[1] - secX[0]);	// spaces between first and second integration points
 
@@ -2218,12 +2237,9 @@ TestNonlocalElement2dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 
 	//get info on integration quadrature rule
 	double L = crdTransf->getInitialLength();
-	double* xi;
-	xi = new double[numSections];
+	double xi[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, xi);
-	//double wt[maxNumSections];
-	double* wt;
-	wt = new double[numSections];
+	double wt[maxNumSections];
 	beamIntegr->getSectionWeights(numSections, L, wt);
 
 	/*for (int i = 0; i < numSections; i++) {
