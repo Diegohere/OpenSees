@@ -49,7 +49,7 @@ set           tf_Col1_12_1_b 9.00;#Flange thickness
 set            r_Col1_12_1_b 0.00;#Radius at the k-area
 set            A_Col1_12_1_b 10270.00;#Cross-sectional area
 set           Ix_Col1_12_1_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_12_1_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_12_1_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_12_1_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_12_1_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_12_1_b 221779539.00;#Torsion constant
@@ -62,7 +62,7 @@ set           tf_Col1_12_1_t 9.00;#Flange thickness
 set            r_Col1_12_1_t 0.00;#Radius at the k-area
 set            A_Col1_12_1_t 10270.00;#Cross-sectional area
 set           Ix_Col1_12_1_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_12_1_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_12_1_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_12_1_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_12_1_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_12_1_t 221779539.00;#Torsion constant
@@ -76,7 +76,7 @@ set           tf_Col1_12_2_b 9.00;#Flange thickness
 set            r_Col1_12_2_b 0.00;#Radius at the k-area
 set            A_Col1_12_2_b 10270.00;#Cross-sectional area
 set           Ix_Col1_12_2_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_12_2_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_12_2_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_12_2_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_12_2_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_12_2_b 221779539.00;#Torsion constant
@@ -89,7 +89,7 @@ set           tf_Col1_12_2_t 9.00;#Flange thickness
 set            r_Col1_12_2_t 0.00;#Radius at the k-area
 set            A_Col1_12_2_t 10270.00;#Cross-sectional area
 set           Ix_Col1_12_2_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_12_2_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_12_2_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_12_2_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_12_2_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_12_2_t 221779539.00;#Torsion constant
@@ -103,7 +103,7 @@ set           tf_Col1_12_3_b 9.00;#Flange thickness
 set            r_Col1_12_3_b 0.00;#Radius at the k-area
 set            A_Col1_12_3_b 10270.00;#Cross-sectional area
 set           Ix_Col1_12_3_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_12_3_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_12_3_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_12_3_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_12_3_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_12_3_b 221779539.00;#Torsion constant
@@ -116,7 +116,7 @@ set           tf_Col1_12_3_t 9.00;#Flange thickness
 set            r_Col1_12_3_t 0.00;#Radius at the k-area
 set            A_Col1_12_3_t 10270.00;#Cross-sectional area
 set           Ix_Col1_12_3_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_12_3_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_12_3_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_12_3_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_12_3_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_12_3_t 221779539.00;#Torsion constant
@@ -130,7 +130,7 @@ set           tf_Col1_23_1_b 9.00;#Flange thickness
 set            r_Col1_23_1_b 0.00;#Radius at the k-area
 set            A_Col1_23_1_b 10270.00;#Cross-sectional area
 set           Ix_Col1_23_1_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_23_1_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_23_1_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_23_1_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_23_1_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_23_1_b 221779539.00;#Torsion constant
@@ -143,7 +143,7 @@ set           tf_Col1_23_1_t 9.00;#Flange thickness
 set            r_Col1_23_1_t 0.00;#Radius at the k-area
 set            A_Col1_23_1_t 10270.00;#Cross-sectional area
 set           Ix_Col1_23_1_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_23_1_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_23_1_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_23_1_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_23_1_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_23_1_t 221779539.00;#Torsion constant
@@ -157,7 +157,7 @@ set           tf_Col1_23_2_b 9.00;#Flange thickness
 set            r_Col1_23_2_b 0.00;#Radius at the k-area
 set            A_Col1_23_2_b 10270.00;#Cross-sectional area
 set           Ix_Col1_23_2_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_23_2_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_23_2_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_23_2_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_23_2_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_23_2_b 221779539.00;#Torsion constant
@@ -170,7 +170,7 @@ set           tf_Col1_23_2_t 9.00;#Flange thickness
 set            r_Col1_23_2_t 0.00;#Radius at the k-area
 set            A_Col1_23_2_t 10270.00;#Cross-sectional area
 set           Ix_Col1_23_2_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_23_2_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_23_2_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_23_2_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_23_2_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_23_2_t 221779539.00;#Torsion constant
@@ -184,7 +184,7 @@ set           tf_Col1_23_3_b 9.00;#Flange thickness
 set            r_Col1_23_3_b 0.00;#Radius at the k-area
 set            A_Col1_23_3_b 10270.00;#Cross-sectional area
 set           Ix_Col1_23_3_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_23_3_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_23_3_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_23_3_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_23_3_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_23_3_b 221779539.00;#Torsion constant
@@ -197,7 +197,7 @@ set           tf_Col1_23_3_t 9.00;#Flange thickness
 set            r_Col1_23_3_t 0.00;#Radius at the k-area
 set            A_Col1_23_3_t 10270.00;#Cross-sectional area
 set           Ix_Col1_23_3_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_23_3_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_23_3_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_23_3_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_23_3_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_23_3_t 221779539.00;#Torsion constant
@@ -211,7 +211,7 @@ set           tf_Col1_34_1_b 9.00;#Flange thickness
 set            r_Col1_34_1_b 0.00;#Radius at the k-area
 set            A_Col1_34_1_b 10270.00;#Cross-sectional area
 set           Ix_Col1_34_1_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_34_1_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_34_1_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_34_1_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_34_1_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_34_1_b 221779539.00;#Torsion constant
@@ -224,7 +224,7 @@ set           tf_Col1_34_1_t 9.00;#Flange thickness
 set            r_Col1_34_1_t 0.00;#Radius at the k-area
 set            A_Col1_34_1_t 10270.00;#Cross-sectional area
 set           Ix_Col1_34_1_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_34_1_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_34_1_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_34_1_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_34_1_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_34_1_t 221779539.00;#Torsion constant
@@ -238,7 +238,7 @@ set           tf_Col1_34_2_b 9.00;#Flange thickness
 set            r_Col1_34_2_b 0.00;#Radius at the k-area
 set            A_Col1_34_2_b 10270.00;#Cross-sectional area
 set           Ix_Col1_34_2_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_34_2_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_34_2_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_34_2_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_34_2_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_34_2_b 221779539.00;#Torsion constant
@@ -251,7 +251,7 @@ set           tf_Col1_34_2_t 9.00;#Flange thickness
 set            r_Col1_34_2_t 0.00;#Radius at the k-area
 set            A_Col1_34_2_t 10270.00;#Cross-sectional area
 set           Ix_Col1_34_2_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_34_2_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_34_2_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_34_2_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_34_2_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_34_2_t 221779539.00;#Torsion constant
@@ -265,7 +265,7 @@ set           tf_Col1_34_3_b 9.00;#Flange thickness
 set            r_Col1_34_3_b 0.00;#Radius at the k-area
 set            A_Col1_34_3_b 10270.00;#Cross-sectional area
 set           Ix_Col1_34_3_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_34_3_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_34_3_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_34_3_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_34_3_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_34_3_b 221779539.00;#Torsion constant
@@ -278,7 +278,7 @@ set           tf_Col1_34_3_t 9.00;#Flange thickness
 set            r_Col1_34_3_t 0.00;#Radius at the k-area
 set            A_Col1_34_3_t 10270.00;#Cross-sectional area
 set           Ix_Col1_34_3_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_34_3_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_34_3_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_34_3_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_34_3_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_34_3_t 221779539.00;#Torsion constant
@@ -292,7 +292,7 @@ set           tf_Col1_45_1_b 9.00;#Flange thickness
 set            r_Col1_45_1_b 0.00;#Radius at the k-area
 set            A_Col1_45_1_b 10270.00;#Cross-sectional area
 set           Ix_Col1_45_1_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_45_1_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_45_1_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_45_1_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_45_1_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_45_1_b 221779539.00;#Torsion constant
@@ -305,7 +305,7 @@ set           tf_Col1_45_1_t 9.00;#Flange thickness
 set            r_Col1_45_1_t 0.00;#Radius at the k-area
 set            A_Col1_45_1_t 10270.00;#Cross-sectional area
 set           Ix_Col1_45_1_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_45_1_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_45_1_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_45_1_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_45_1_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_45_1_t 221779539.00;#Torsion constant
@@ -319,7 +319,7 @@ set           tf_Col1_45_2_b 9.00;#Flange thickness
 set            r_Col1_45_2_b 0.00;#Radius at the k-area
 set            A_Col1_45_2_b 10270.00;#Cross-sectional area
 set           Ix_Col1_45_2_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_45_2_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_45_2_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_45_2_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_45_2_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_45_2_b 221779539.00;#Torsion constant
@@ -332,7 +332,7 @@ set           tf_Col1_45_2_t 9.00;#Flange thickness
 set            r_Col1_45_2_t 0.00;#Radius at the k-area
 set            A_Col1_45_2_t 10270.00;#Cross-sectional area
 set           Ix_Col1_45_2_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_45_2_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_45_2_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_45_2_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_45_2_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_45_2_t 221779539.00;#Torsion constant
@@ -346,7 +346,7 @@ set           tf_Col1_45_3_b 9.00;#Flange thickness
 set            r_Col1_45_3_b 0.00;#Radius at the k-area
 set            A_Col1_45_3_b 10270.00;#Cross-sectional area
 set           Ix_Col1_45_3_b 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_45_3_b 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_45_3_b 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_45_3_b 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_45_3_b 118.00;#Radius of gyration about weak axis
 set            J_Col1_45_3_b 221779539.00;#Torsion constant
@@ -359,7 +359,7 @@ set           tf_Col1_45_3_t 9.00;#Flange thickness
 set            r_Col1_45_3_t 0.00;#Radius at the k-area
 set            A_Col1_45_3_t 10270.00;#Cross-sectional area
 set           Ix_Col1_45_3_t 143000000.00;#Second moment of inertia about strong axis
-set           Zx_Col1_45_3_t 1110000.00;#Plastic section modulus abotu strong axis
+set           Zx_Col1_45_3_t 784888.53;#Plastic section modulus abotu strong axis
 set           Iy_Col1_45_3_t 143000000.00;#Second moment of inertia about weak axis
 set           ry_Col1_45_3_t 118.00;#Radius of gyration about weak axis
 set            J_Col1_45_3_t 221779539.00;#Torsion constant
@@ -1479,49 +1479,44 @@ element testNonlocalElementDH 014303015301 014303 015301 $ColTransfTag Simpson 1
 
 # Beam-column element for Beams G1;
 # Direction-1 Depth-1 Span-1 Floor-2 Beam X direction;
-element ModElasticBeam2d  1121411222 11214 11222 $A_Beam1_1_12_2 $E [expr ($n_fac+1)/$n_fac*2.1958*$Ix_Beam1_1_12_2] $K11_two $K33_two $K44_two $BeamXDirTransfTag;
+element elasticBeamColumn  1121411222 11214 11222 $A_Beam1_1_12_2 $E [expr ($n_fac+1)/$n_fac*2.1958*$Ix_Beam1_1_12_2] $BeamXDirTransfTag;
 # Direction-1 Depth-1 Span-1 Floor-3 Beam X direction;
-element ModElasticBeam2d  1131411322 11314 11322 $A_Beam1_1_12_3 $E [expr ($n_fac+1)/$n_fac*2.2013*$Ix_Beam1_1_12_3] $K11_two $K33_two $K44_two $BeamXDirTransfTag;
+element elasticBeamColumn  1131411322 11314 11322 $A_Beam1_1_12_3 $E [expr ($n_fac+1)/$n_fac*2.2013*$Ix_Beam1_1_12_3] $BeamXDirTransfTag;
 # Direction-1 Depth-1 Span-1 Floor-4 Beam X direction;
-element ModElasticBeam2d  1141411422 11414 11422 $A_Beam1_1_12_4 $E [expr ($n_fac+1)/$n_fac*2.7195*$Ix_Beam1_1_12_4] $K11_two $K33_two $K44_two $BeamXDirTransfTag;
+element elasticBeamColumn  1141411422 11414 11422 $A_Beam1_1_12_4 $E [expr ($n_fac+1)/$n_fac*2.7195*$Ix_Beam1_1_12_4] $BeamXDirTransfTag;
 # Direction-1 Depth-1 Span-1 Floor-5 Beam X direction;
-element ModElasticBeam2d  1151411522 11514 11522 $A_Beam1_1_12_5 $E [expr ($n_fac+1)/$n_fac*2.5790*$Ix_Beam1_1_12_5] $K11_two $K33_two $K44_two $BeamXDirTransfTag;
+element elasticBeamColumn  1151411522 11514 11522 $A_Beam1_1_12_5 $E [expr ($n_fac+1)/$n_fac*2.5790*$Ix_Beam1_1_12_5] $BeamXDirTransfTag;
 # Direction-1 Depth-1 Span-2 Floor-2 Beam X direction;
-element ModElasticBeam2d  1122411232 11224 11232 $A_Beam1_1_23_2 $E [expr ($n_fac+1)/$n_fac*2.1958*$Ix_Beam1_1_23_2] $K11_two $K33_two $K44_two $BeamXDirTransfTag;
+element elasticBeamColumn  1122411232 11224 11232 $A_Beam1_1_23_2 $E [expr ($n_fac+1)/$n_fac*2.1958*$Ix_Beam1_1_23_2] $BeamXDirTransfTag;
 # Direction-1 Depth-1 Span-2 Floor-3 Beam X direction;
-element ModElasticBeam2d  1132411332 11324 11332 $A_Beam1_1_23_3 $E [expr ($n_fac+1)/$n_fac*2.2013*$Ix_Beam1_1_23_3] $K11_two $K33_two $K44_two $BeamXDirTransfTag;
+element elasticBeamColumn  1132411332 11324 11332 $A_Beam1_1_23_3 $E [expr ($n_fac+1)/$n_fac*2.2013*$Ix_Beam1_1_23_3] $BeamXDirTransfTag;
 # Direction-1 Depth-1 Span-2 Floor-4 Beam X direction;
-element ModElasticBeam2d  1142411432 11424 11432 $A_Beam1_1_23_4 $E [expr ($n_fac+1)/$n_fac*2.7195*$Ix_Beam1_1_23_4] $K11_two $K33_two $K44_two $BeamXDirTransfTag;
+element elasticBeamColumn  1142411432 11424 11432 $A_Beam1_1_23_4 $E [expr ($n_fac+1)/$n_fac*2.7195*$Ix_Beam1_1_23_4] $BeamXDirTransfTag;
 # Direction-1 Depth-1 Span-2 Floor-5 Beam X direction;
-element ModElasticBeam2d  1152411532 11524 11532 $A_Beam1_1_23_5 $E [expr ($n_fac+1)/$n_fac*2.5790*$Ix_Beam1_1_23_5] $K11_two $K33_two $K44_two $BeamXDirTransfTag;
+element elasticBeamColumn  1152411532 11524 11532 $A_Beam1_1_23_5 $E [expr ($n_fac+1)/$n_fac*2.5790*$Ix_Beam1_1_23_5] $BeamXDirTransfTag;
 
 # Floor movement / Rigid Diaphram
-# For each depth;
-equalDOF 112102 112202 1;
-equalDOF 112102 112302 1;
-equalDOF 113102 113202 1;
-equalDOF 113102 113302 1;
-equalDOF 114102 114202 1;
-equalDOF 114102 114302 1;
-equalDOF 115102 115202 1;
-equalDOF 115102 115302 1;
-# Assign mass;
-mass 112104 6.19266055 1.e-10 1.e-10; #kton
-mass 112202 6.19266055 1.e-10 1.e-10; #kton
-mass 112204 6.19266055 1.e-10 1.e-10; #kton
-mass 112302 6.19266055 1.e-10 1.e-10; #kton
-mass 113104 5.97604485 1.e-10 1.e-10; #kton
-mass 113202 5.97604485 1.e-10 1.e-10; #kton
-mass 113204 5.97604485 1.e-10 1.e-10; #kton
-mass 113302 5.97604485 1.e-10 1.e-10; #kton
-mass 114104 6.14169215 1.e-10 1.e-10; #kton
-mass 114202 6.14169215 1.e-10 1.e-10; #kton
-mass 114204 6.14169215 1.e-10 1.e-10; #kton
-mass 114302 6.14169215 1.e-10 1.e-10; #kton
-mass 115104 7.19928644 1.e-10 1.e-10; #kton
-mass 115202 7.19928644 1.e-10 1.e-10; #kton
-mass 115204 7.19928644 1.e-10 1.e-10; #kton
-mass 115302 7.19928644 1.e-10 1.e-10; #kton
+set RigidDiaphragm ON ;
+set XMidSlab 5000.000000;
+node 0020 $XMidSlab $Floor2 ;
+node 0030 $XMidSlab $Floor3 ;
+node 0040 $XMidSlab $Floor4 ;
+node 0050 $XMidSlab $Floor5 ;
+# Constraints for rigid diaphragm master nodes ;
+fix  0020 0  1  1;
+fix  0030 0  1  1;
+fix  0040 0  1  1;
+fix  0050 0  1  1;
+# ------------------------define Rigid Diaphram, dof 2 is normal to floor ;
+set motionDir 1 ;
+rigidDiaphragm $motionDir 0020 112102 112104  112202 112204  112302 112304  ; #Storey 2 
+rigidDiaphragm $motionDir 0030 113102 113104  113202 113204  113302 113304  ; #Storey 3 
+rigidDiaphragm $motionDir 0040 114102 114104  114202 114204  114302 114304  ; #Storey 4 
+rigidDiaphragm $motionDir 0050 115102 115104  115202 115204  115302 115304  ; #Storey 5 
+mass 0020 24.77064220 1.e-10 1.e-10; #ton
+mass 0030 23.90417941 1.e-10 1.e-10; #ton
+mass 0040 24.56676860 1.e-10 1.e-10; #ton
+mass 0050 28.79714577 1.e-10 1.e-10; #ton
 # Create recorders;
 # Floor Lateral Displacement in X direction;
 recorder Node -file $Result/2dModelYDir1dFiber_lc10D_FloorDispX.txt  -time  -node 011103  011203  011303  112102  112202  112302  113102  113202  113302  114102  114202  114302  115102  115202  115302  -dof 1 disp;#Left middle of panel zone
@@ -1530,9 +1525,9 @@ recorder Node -file $Result/2dModelYDir1dFiber_lc10D_ColumnStorey1DispY.txt  -ti
 # Column Displacement in X direction;
 recorder Node -file $Result/2dModelYDir1dFiber_lc10D_ColumnStorey1DispX.txt  -time  -node 012101  012201  012301  -dof 1 disp;#Column top node
 # Displacement of rigid diaphragm node in x direction;
-recorder Node -file $Result/2dModelYDir1dFiber_lc10D_rigidDiaphragmDispX.txt  -time  -node 112102  113102  114102  115102  -dof 1 disp;#equal DOF master node
+recorder Node -file $Result/2dModelYDir1dFiber_lc10D_rigidDiaphragmDispX.txt  -time  -node 0020  0030  0040  0050  -dof 1 disp;#equal DOF master node
 # Acceleration of equal DOF master node in x direction;
-recorder Node -file $Result/2dModelYDir1dFiber_lc10D_rigidDiaphragmAccelX.txt  -time  -node 011103  112102  113102  114102  115102  -dof 1 accel;#equal DOF master node
+recorder Node -file $Result/2dModelYDir1dFiber_lc10D_rigidDiaphragmAccelX.txt  -time  -node 011103  0020  0030  0040  0050  -dof 1 accel;#equal DOF master node
 # Reaction Forces  in X direction ;
 recorder Node -file $Result/2dModelYDir1dFiber_lc10D_ReactionX.txt -time  -node 011103  011203  011303  -dof 1 reaction;
 # Reaction Forces Vertical (Y) direction;
@@ -1940,38 +1935,21 @@ recorder Element -file $Result/2dModelYDir1dFiber_lc10D_Column011303012301_basic
 # Mode Shapes;
 set numModes 4;
 set pi [expr 2.0*asin(1.0)];
-set nEigen 5;
+set nEigen 2;
 set lambdaNTot [eigen [expr $nEigen]];
 set lambdaI [lindex $lambdaNTot 0];
 set lambdaJ [lindex $lambdaNTot 1];
-set lambdaK [lindex $lambdaNTot 2];
-set lambdaL [lindex $lambdaNTot 3];
-set lambdaM [lindex $lambdaNTot 4];
-set lambdaN [lindex $lambdaNTot 5];
 DisplayModel2D ModeShape 2000 522  10  512  384  1;
 DisplayModel2D ModeShape 2000 1032 10  512  384  2;
-DisplayModel2D ModeShape 2000 1532 10  512  384  3;
 set w1 [expr pow($lambdaI,0.5)];
 set w2 [expr pow($lambdaJ,0.5)];
-set w3 [expr pow($lambdaK,0.5)];
-set w4 [expr pow($lambdaL,0.5)];
-set w5 [expr pow($lambdaM,0.5)];
 set T1 [expr 2.0*$pi/$w1];
 set T2 [expr 2.0*$pi/$w2];
-set T3 [expr 2.0*$pi/$w3];
-set T4 [expr 2.0*$pi/$w4];
-set T5 [expr 2.0*$pi/$w5];
 puts "";
 puts "T1 = [expr {double(round($T1*1000))/1000}] s";
 puts "T2 = [expr {double(round($T2*1000))/1000}] s";
-puts "T3 = [expr {double(round($T3*1000))/1000}] s";
-puts "T4 = [expr {double(round($T4*1000))/1000}] s";
-puts "T5 = [expr {double(round($T5*1000))/1000}] s";
 puts "w1 = [expr $w1]";
 puts "w2 = [expr $w2]";
-puts "w3 = [expr $w3]";
-puts "w4 = [expr $w4]";
-puts "w5 = [expr $w5]";
 puts "Eigen Analysis Done";
 
 #Store Eigen vector of 1st mode;
@@ -2015,356 +1993,3 @@ loadConst -time 0.0;
 wipeAnalysis;
 puts "Gravity Done";
 
-
-# Nonlinear dynamic analysis 
-
-# Rayleigh Damping
-# calculate damping parameters for earthquake loading
-set zeta_EQ 0.03;		# percentage of critical damping
-set zeta_FV 0.5;		# percentage of critical damping
-set a0_EQ [expr $zeta_EQ*2.0*$w1*$w2/($w1+$w2)];	# mass damping coefficient based on first and second modes
-set a1_EQ [expr $zeta_EQ*2.0/($w1+$w2)];	# stiffness damping coefficient based on first and scond modes
-set a0_FV [expr $zeta_FV*2.0*$w1*$w2/($w1+$w2)];	# mass damping coefficient based on first and second modes
-set a1_FV [expr $zeta_FV*2.0/($w1+$w2)];	# stiffness damping coefficient based on first and scond modes
-set a1_EQ_mod_two [expr $a1_EQ*(1.0+10.0000)/10.0000]; # modified stiffness damping coefficient used for n modified elements. See Zareian & Medina 2010.
-set a1_EQ_mod_one [expr (1.0+1.0/(2*10.0000))*$a1_EQ];    # modified stiffness damping coefficient used for n modified elements. See Zareian & Medina 2010.
-set a1_FV_mod_two [expr $a1_FV*(1.0+10.0000)/10.0000]; # modified stiffness damping coefficient used for n modified elements. See Zareian & Medina 2010.
-set a1_FV_mod_one [expr (1.0+1.0/(2*10.0000))*$a1_FV];    # modified stiffness damping coefficient used for n modified elements. See Zareian & Medina 2010.
-
-# 20% level earthquake
-
-# Damping for 20% level earthquake
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  -rayleigh 0.0 0.0 $a1_EQ 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 7 -node 112104  112202  112204  112302  113104  113202  113204  113302  114104  114202  114204  114302  115104  115202  115204  115302 -rayleigh $a0_EQ 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define level 20% ground motion parameters
-
-set pattern1ID 1;              # Pattern ID
-set GMXdirection 1;				# ground motion direction (1 = x)
-set GMEQYL02file "Takatori_YDir_EQL02.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 4100;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries1 "Series -dt $dt -filePath $GMEQYL02file -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern1ID $GMXdirection -accel $accelSeries1;
-
-puts "Running Level 20% Dynamic Analysis..."
-# define dynamic analysis parameters
-set dt_analysis 0.0100;			# timestep of analysis
-set FloorNodes [list  011103  112102  112102  113102  113102  114102  114102  115102  115102  ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V03        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTimeLevel20 [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Level 20% ground motion time: $currentTimeLevel20";
-set tFinish [clock seconds];
-set tFinishEQL02 [expr $tFinish - $tStart];
-puts "Level 20% ground motion analysis duration: $tFinishEQL02] s";
-loadConst -time 0.0;
-wipeAnalysis;
-puts "Level 20% ground motion Done";
-
-# Free vibration beween 20% and 40% level earthquake motions
-
-# Damping for free vibration
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  -rayleigh 0.0 0.0 $a1_FV 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  -rayleigh 0.0 0.0 $a1_FV_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 7 -node 112104  112202  112204  112302  113104  113202  113204  113302  114104  114202  114204  114302  115104  115202  115204  115302 -rayleigh $a0_FV 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define parameters for Free vibration beween 20% and 40% level earthquake motions
-
-set pattern4ID 4;              # Pattern ID
-set FVYfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 500;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries4 "Series -dt $dt -filePath $FVYfile -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern4ID $GMXdirection -accel $accelSeries4;
-
-puts "Running Free vibration beween 20% and 40% level earthquake..."
-# define dynamic analysis parameters
-set dt_analysis 0.0100;			# timestep of analysis
-set FloorNodes [list  011103 112102 112102 113102 113102 114102 114102 115102 115102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V03        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTime [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Free vibration beween 20% and 40% level earthquake: $currentTime";
-set tFinish [clock seconds];
-set tFinishFV0204 [expr $tFinish - $tStart];
-puts "Free vibration beween 20% and 40% level earthquake analysis duration: $tFinishFV0204 s";
-loadConst -time 0.0;
-wipeAnalysis;
-puts "Free vibration beween 20% and 40% level earthquake Done";
-
-# 40% level earthquake
-
-# Damping for 40% level earthquake
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  -rayleigh 0.0 0.0 $a1_EQ 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 7 -node 112104  112202  112204  112302  113104  113202  113204  113302  114104  114202  114204  114302  115104  115202  115204  115302 -rayleigh $a0_EQ 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define level 40% ground motion parameters
-
-set pattern7ID 7;              # Pattern ID
-set GMEQYL04file "Takatori_YDir_EQL04.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 4100;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries7 "Series -dt $dt -filePath $GMEQYL04file -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern7ID $GMXdirection -accel $accelSeries7;
-
-puts "Running Level 40% Dynamic Analysis..."
-# define dynamic analysis parameters
-set dt_analysis 0.0100;			# timestep of analysis
-set FloorNodes [list  011103 112102 112102 113102 113102 114102 114102 115102 115102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V03        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTimeLevel40 [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Level 40% ground motion time: $currentTimeLevel40";
-set tFinish [clock seconds];
-set tFinishEQL04 [expr $tFinish - $tStart];
-puts "Level 40% ground motion analysis duration: $tFinishEQL04] s";
-loadConst -time 0.0;
-wipeAnalysis;
-puts "Level 40% ground motion Done";
-
-# Free vibration beween 40% and 60% level earthquake motions
-
-# Damping for free vibration
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  -rayleigh 0.0 0.0 $a1_FV 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  -rayleigh 0.0 0.0 $a1_FV_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 7 -node 112104  112202  112204  112302  113104  113202  113204  113302  114104  114202  114204  114302  115104  115202  115204  115302 -rayleigh $a0_FV 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define parameters for Free vibration beween 20% and 40% level earthquake motions
-
-set pattern10ID 10;              # Pattern ID
-set FVYfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 500;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries10 "Series -dt $dt -filePath $FVYfile -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern10ID $GMXdirection -accel $accelSeries10;
-
-puts "Running Free vibration beween 40% and 60% level earthquake..."
-# define dynamic analysis parameters
-set dt_analysis 0.0100;			# timestep of analysis
-set FloorNodes [list  011103 112102 112102 113102 113102 114102 114102 115102 115102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V03        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTime [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Free vibration beween 40% and 60% level earthquake: $currentTime";
-set tFinish [clock seconds];
-set tFinishFV0406 [expr $tFinish - $tStart];
-puts "Free vibration beween 40% and 60% level earthquake analysis duration: $tFinishFV0406 s";
-loadConst -time 0.0;
-wipeAnalysis;
-puts "Free vibration beween 40% and 60% level earthquake Done";
-
-# 60% level earthquake
-
-# Damping for 60% level earthquake
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  -rayleigh 0.0 0.0 $a1_EQ 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 7 -node 112104  112202  112204  112302  113104  113202  113204  113302  114104  114202  114204  114302  115104  115202  115204  115302 -rayleigh $a0_EQ 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define level 60% ground motion parameters
-
-set pattern13ID 13;              # Pattern ID
-set GMEQYL06file "Takatori_YDir_EQL06.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 4100;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries13 "Series -dt $dt -filePath $GMEQYL06file -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern13ID $GMXdirection -accel $accelSeries13;
-
-puts "Running Level 60% Dynamic Analysis..."
-# define dynamic analysis parameters
-set dt_analysis 0.0100;			# timestep of analysis
-set FloorNodes [list  011103 112102 112102 113102 113102 114102 114102 115102 115102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V03        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTimeLevel60 [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Level 60% ground motion time: $currentTimeLevel60";
-set tFinish [clock seconds];
-set tFinishEQL06 [expr $tFinish - $tStart];
-puts "Level 60% ground motion analysis duration: $tFinishEQL06] s";
-loadConst -time 0.0;
-wipeAnalysis;
-puts "Level 60% ground motion Done";
-
-# Free vibration beween 60% and 100% level earthquake motions
-
-# Damping for free vibration
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  -rayleigh 0.0 0.0 $a1_FV 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  -rayleigh 0.0 0.0 $a1_FV_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 7 -node 112104  112202  112204  112302  113104  113202  113204  113302  114104  114202  114204  114302  115104  115202  115204  115302 -rayleigh $a0_FV 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define parameters for Free vibration beween 20% and 40% level earthquake motions
-
-set pattern16ID 16;             # Pattern ID
-set FVYfile "5SecFreeVibrationMotion.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 500;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries16 "Series -dt $dt -filePath $FVYfile -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern16ID $GMXdirection -accel $accelSeries16;
-
-puts "Running Free vibration beween 60% and 100% level earthquake..."
-# define dynamic analysis parameters
-set dt_analysis 0.0100;			# timestep of analysis
-set FloorNodes [list  011103 112102 112102 113102 113102 114102 114102 115102 115102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V03        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTime [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Free vibration beween 60% and 100% level earthquake: $currentTime";
-set tFinish [clock seconds];
-set tFinishFV0610 [expr $tFinish - $tStart];
-puts "Free vibration beween 60% and 100% level earthquake analysis duration: $tFinishFV0610 s";
-loadConst -time 0.0;
-wipeAnalysis;
-puts "Free vibration beween 60% and 100% level earthquake Done";
-
-# 100% level earthquake
-
-# Damping for 100% level earthquake
-# assign damping to frame columns
-region 1 -ele  011103012101  012103013101  013103014101  014103015101  011203012201  012203013201  013203014201  014203015201  011303012301  012303013301  013303014301  014303015301  -rayleigh 0.0 0.0 $a1_EQ 0.0;# assign stiffness proportional damping to columns without splices
-region 3 -ele  1121411222  1131411322  1141411422  1151411522  1122411232  1132411332  1142411432  1152411532  -rayleigh 0.0 0.0 $a1_EQ_mod_two 0.0;# assign stiffness proportional damping to beams G1
-region 7 -node 112104  112202  112204  112302  113104  113202  113204  113302  114104  114202  114204  114302  115104  115202  115204  115302 -rayleigh $a0_EQ 0.0 0.0 0.0;# assign mass proportional damping to structure (assign to nodes with mass)
-
-# Define level 100% ground motion parameters
-
-set pattern19ID 19;              # Pattern ID
-set GMEQYL10file "Takatori_YDir_EQL10.txt";      # ground motion filename
-set dt 0.0100;					# timestep of input GM file
-set Scalefact 1.0000;				# ground motion scaling factor
-set TotalNumberOfSteps 618;	# number of steps in ground motion
-set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-
-# define the acceleration series for the ground motion
-# syntax:  "Series -dt $timestep_of_record -filePath $filename_with_acc_history -factor $scale_record_by_this_amount
-set g 9810;
-set accelSeries19 "Series -dt $dt -filePath $GMEQYL10file -factor [expr $Scalefact*$g]";
-
-# create load pattern: apply acceleration to all fixed nodes with UniformExcitation
-# command: pattern UniformExcitation $patternID $GMdir -accel $timeSeriesID 
-pattern UniformExcitation $pattern19ID $GMXdirection -accel $accelSeries19;
-
-puts "Running Level 100% Dynamic Analysis..."
-# define dynamic analysis parameters
-set dt_analysis 0.0100;			# timestep of analysis
-set FloorNodes [list  011103 112102 112102 113102 113102 114102 114102 115102 115102 ]; 
-set FloorElevation [list 0 3450.0 6950.0 10450.0 13975.0 ]; 
-set tStart [clock seconds];
-
-# proc DynamicAnalysis {dt  dt_anal_Step   GMtime  numStories numBays DriftLimit FloorNodes  FloorElevation   h1       htyp};
-DynamicAnalysis_V03        $dt  $dt_analysis  $GMtime    4       0.12    $FloorNodes     3450.0000      3500.0000;
-
-# output time at end of analysis	
-set currentTimeLevel100 [getTime];	# get current analysis time	(after dynamic analysis)
-puts "Level 100% ground motion time: $currentTimeLevel100";
-set tFinish [clock seconds];
-set tFinishEQL10 [expr $tFinish - $tStart];
-puts "Level 100% ground motion analysis duration: $tFinishEQL10] s";
-loadConst -time 0.0;
-wipeAnalysis;
-puts "Level 100% ground motion Done";
-
-puts "Level 20% ground motion time: $currentTimeLevel20";
-puts "Level 20% ground motion analysis duration: $tFinishEQL02] s";
-puts "Free vibration beween 20% and 40% level earthquake analysis duration: $tFinishFV0204 s";
-puts "Level 40% ground motion time: $currentTimeLevel40";
-puts "Level 40% ground motion analysis duration: $tFinishEQL04] s";
-puts "Free vibration beween 40% and 60% level earthquake analysis duration: $tFinishFV0406 s";
-puts "Level 60% ground motion time: $currentTimeLevel60";
-puts "Level 60% ground motion analysis duration: $tFinishEQL06] s";
-puts "Free vibration beween 60% and 100% level earthquake analysis duration: $tFinishFV0610 s";
-puts "Level 100% ground motion time: $currentTimeLevel100";
-puts "Level 100% ground motion analysis duration: $tFinishEQL10] s";
-
-wipe;
-wipe all;
