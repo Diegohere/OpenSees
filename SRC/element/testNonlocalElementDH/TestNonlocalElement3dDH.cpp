@@ -2153,6 +2153,8 @@ TestNonlocalElement3dDH::initCoefficientMatrixH()
 	double ASection = sections[0]->getSectionArea();
 	//WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
 	WSofteningTol = -1. * ASection * 0.5 * 378. * 1e-6;
+	/*double alphaSoftTol = 1e3;
+	WSofteningTol = alphaSoftTol * WSofteningTol;*/
 
 	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
 	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;

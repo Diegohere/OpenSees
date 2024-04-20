@@ -137,8 +137,9 @@ double *wt)
 		for (int i = 2; i < (numSections - 1); i += 2)
 			wt[i] = 1.0 / 3.0;
 
-		for (int i = 0; i < numSections; i++)
-			wt[i] /= ((numSections - 1.0) / 2.0);
+        for (int i = 0; i < numSections; i++) {
+            wt[i] /= ((numSections - 1.0) / 2.0);
+        }
 	}
 }
 
