@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version  14.11.2023
+// Version  20.04.2024
 //
 
 #include "LocalBucklingFlangePlate.h"
@@ -27,6 +27,8 @@ void* OPS_LocalBucklingFlangePlate(void) {
 	}
 	NDMaterial* theMaterial = 0;
 
+	double numData = OPS_GetNumRemainingInputArgs();
+
 	// Parameters for parsing
 	const unsigned int N_TAGS = 1;
 	const unsigned int N_HARDENING_PROPERTIES = 7;
@@ -35,13 +37,15 @@ void* OPS_LocalBucklingFlangePlate(void) {
 	const unsigned int REQUIRED_NUMBACKSTRESSES = 2;
 	const unsigned int BACKSTRESS_SPACE = REQUIRED_NUMBACKSTRESSES * N_PARAM_PER_BACK;
 	const unsigned int N_REGULARIZATION_PARAMETERS = 1;
+	const unsigned int N_CYCLIC_PARAMETERS = 23;
 
 	std::string inputInstructions = "Invalid args, want:\n"
 		"nDMaterial LocalBucklingFlangePlate "
 		"tag? E? nu? fy? QInf? b? DInf? a? "
 		"N? C1? gamma1? <C2? gamma2? C3? gamma3? ... C8? gamma8?>"
 		"bPlate? tPlate? sigmaC0?"
-		"alphaReg?";
+		"alphaReg?"
+		"<cyclic parameters?>";
 
 	// Containers for the inputs
 	int nInputsToRead;
@@ -51,6 +55,7 @@ void* OPS_LocalBucklingFlangePlate(void) {
 	double backstressProps[BACKSTRESS_SPACE];  // holds C's and gamma's
 	double softeningProps[N_SOFTENING_PROPERTIES];  // holds bPlate, tPlate, sigmaC0
 	double regularizationgProps[N_REGULARIZATION_PARAMETERS];  // holds alphaReg
+	double cyclicProps[N_CYCLIC_PARAMETERS]; // hold cyclic parameters beta1, beta2 and beta3 (regrssion parameters)
 	std::vector<double> cK;
 	std::vector<double> gammaK;
 
@@ -109,19 +114,43 @@ void* OPS_LocalBucklingFlangePlate(void) {
 	}
 
 
-	// Allocate the material
-	theMaterial = new LocalBucklingFlangePlate(materialTag[0],
-		hardeningProps[0], hardeningProps[1], hardeningProps[2],
-		hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
-		cK, gammaK,
-		softeningProps[0], softeningProps[1], softeningProps[2],
-		regularizationgProps[0]);
+	if (numData == 17)
+	{
+		// Allocate the material
+		theMaterial = new LocalBucklingFlangePlate(materialTag[0],
+			hardeningProps[0], hardeningProps[1], hardeningProps[2],
+			hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
+			cK, gammaK,
+			softeningProps[0], softeningProps[1], softeningProps[2],
+			regularizationgProps[0]);
+	}
+	else if (numData == 40)
+	{
+		// Get parameters for cyclic loading
+		nInputsToRead = N_CYCLIC_PARAMETERS;
+		if (OPS_GetDoubleInput(&nInputsToRead, cyclicProps) != 0) {
+			opserr << "Problem with parameters for cyclic loading" << endln;
+			return 0;
+		}
+
+		// Allocate the material
+		theMaterial = new LocalBucklingFlangePlate(materialTag[0],
+			hardeningProps[0], hardeningProps[1], hardeningProps[2],
+			hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
+			cK, gammaK,
+			softeningProps[0], softeningProps[1], softeningProps[2],
+			regularizationgProps[0],
+			cyclicProps[0], cyclicProps[1], cyclicProps[2], cyclicProps[3], cyclicProps[4], cyclicProps[5], cyclicProps[6], cyclicProps[7], cyclicProps[8], cyclicProps[9],
+			cyclicProps[10], cyclicProps[11], cyclicProps[12], cyclicProps[13], cyclicProps[14], cyclicProps[15], cyclicProps[16], cyclicProps[17], cyclicProps[18],
+			cyclicProps[19], cyclicProps[20], cyclicProps[21], cyclicProps[22]);
+	}
 
 	return theMaterial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
+// If cylic properties are not specified
 LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poissonRatio,
 	double sy0, double qInf, double b, double dInf, double a,
 	std::vector<double> cK, std::vector<double> gammaK,
@@ -256,6 +285,35 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poi
 		alphaPBKIntermed.push_back(Vector(N_DIMS));
 	}
 
+	//Set the value of regression parameters for cyclic loading
+	// For A992 Grade B steel
+	beta1RegressionEuSurEl = 2.048;
+	beta2RegressionEuSurEl = -1.045;
+	beta3RegressionEuSurEl = -0.258;
+	beta1RegressionSigmaPrBezier = 0.0141;
+	beta2RegressionSigmaPrBezier = 0.0;
+	beta3RegressionSigmaPrBezier = -0.7482;
+	beta1RegressionSigmaYrBezier = 661.2565;
+	beta2RegressionSigmaYrBezier = -0.1378;
+	beta3RegressionSigmaYrBezier = 0.0736;
+	beta1RegressionKPrBezier = -607.9379;
+	beta2RegressionKPrBezier = -0.9333;
+	beta3RegressionKPrBezier = -0.3443;
+	beta1RegressionKYrBezier = -0.1636;
+	beta2RegressionKYrBezier = 1.4685;
+	beta3RegressionKYrBezier = -0.4245;
+	beta1RegressionAlphaPrBezier = -0.0061;
+	beta2RegressionAlphaPrBezier = 0.4908;
+	beta3RegressionAlphaPrBezier = 0.6108;
+	beta1RegressionAlphaYrBezier = 3.7849;
+	beta2RegressionAlphaYrBezier = -0.7960;
+	beta3RegressionAlphaYrBezier = 1.1552;
+	// beta1RegressionErc = 1e20; // very large number so no cyclic degradation
+	// beta2RegressionErc = 1.0; // very large number so no cyclic degradation
+	beta1RegressionErc = 1.5093e4;
+	beta2RegressionErc = -1.4374;
+
+
 	// Zero all the vectors and matrices
 	revertToStart();
 
@@ -277,6 +335,198 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poi
 	// Set the value of floorF1c
 	initializeFloorF1c();
 };
+
+	/* ----------------------------------------------------------------------------------------------------------------- */
+
+// If cylic properties are specified
+	LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poissonRatio,
+		double sy0, double qInf, double b, double dInf, double a,
+		std::vector<double> cK, std::vector<double> gammaK,
+		double bPlate, double tPlate, double sigmaC0,
+		double alphaReg,
+		double beta1RegressionEuSurEl, double beta2RegressionEuSurEl, double beta3RegressionEuSurEl,
+		double beta1RegressionSigmaPrBezier, double beta2RegressionSigmaPrBezier, double beta3RegressionSigmaPrBezier,
+		double beta1RegressionSigmaYrBezier, double beta2RegressionSigmaYrBezier, double beta3RegressionSigmaYrBezier,
+		double beta1RegressionKPrBezier, double beta2RegressionKPrBezier, double beta3RegressionKPrBezier,
+		double beta1RegressionKYrBezier, double beta2RegressionKYrBezier, double beta3RegressionKYrBezier,
+		double beta1RegressionAlphaPrBezier, double beta2RegressionAlphaPrBezier, double beta3RegressionAlphaPrBezier,
+		double beta1RegressionAlphaYrBezier, double beta2RegressionAlphaYrBezier, double beta3RegressionAlphaYrBezier,
+		double beta1RegressionErc, double beta2RegressionErc)
+		: NDMaterial(tag, ND_TAG_LocalBucklingWebPlate),
+		elasticModulus(E),
+		poissonRatio(poissonRatio),
+		initialYield(sy0),
+		qInf(qInf),
+		bIso(b),
+		dInf(dInf),
+		aIso(a),
+		cK(cK),
+		gammaK(gammaK),
+		bPlateWidth(bPlate),
+		tPlateThickness(tPlate),
+		sigmaC0Stress(sigmaC0),
+		alphaRegularization(alphaReg),
+
+		beta1RegressionEuSurEl(beta1RegressionEuSurEl),
+		beta2RegressionEuSurEl(beta2RegressionEuSurEl),
+		beta3RegressionEuSurEl(beta3RegressionEuSurEl),
+		beta1RegressionSigmaPrBezier(beta1RegressionSigmaPrBezier),
+		beta2RegressionSigmaPrBezier(beta2RegressionSigmaPrBezier),
+		beta3RegressionSigmaPrBezier(beta3RegressionSigmaPrBezier),
+		beta1RegressionSigmaYrBezier(beta1RegressionSigmaYrBezier),
+		beta2RegressionSigmaYrBezier(beta2RegressionSigmaYrBezier),
+		beta3RegressionSigmaYrBezier(beta3RegressionSigmaYrBezier),
+		beta1RegressionKPrBezier(beta1RegressionKPrBezier),
+		beta2RegressionKPrBezier(beta2RegressionKPrBezier),
+		beta3RegressionKPrBezier(beta3RegressionKPrBezier),
+		beta1RegressionKYrBezier(beta1RegressionKYrBezier),
+		beta2RegressionKYrBezier(beta2RegressionKYrBezier),
+		beta3RegressionKYrBezier(beta3RegressionKYrBezier),
+		beta1RegressionAlphaPrBezier(beta1RegressionAlphaPrBezier),
+		beta2RegressionAlphaPrBezier(beta2RegressionAlphaPrBezier),
+		beta3RegressionAlphaPrBezier(beta3RegressionAlphaPrBezier),
+		beta1RegressionAlphaYrBezier(beta1RegressionAlphaYrBezier),
+		beta2RegressionAlphaYrBezier(beta2RegressionAlphaYrBezier),
+		beta3RegressionAlphaYrBezier(beta3RegressionAlphaYrBezier),
+		beta1RegressionErc(beta1RegressionErc),
+		beta2RegressionErc(beta2RegressionErc),
+
+		shearModulus(E / (2. * (1. + poissonRatio))),
+		bulkModulus(E / (3. * (1. - 2. * poissonRatio))),
+		strainConverged(N_DIMS),
+		strainTrial(N_DIMS),
+		strainPlasticConverged(N_DIMS),
+		strainPlasticTrial(N_DIMS),
+		strainPostBucklingConverged(N_DIMS),
+		strainPostBucklingTrial(N_DIMS),
+		strainPEqConverged(0.),
+		strainPEqTrial(0.),
+		strainPBEqConverged(0.),
+		strainPBEqTrial(0.),
+		strainIncrementDecomposition(N_DIMS, N_DIMS),
+		strainDecomposition(N_DIMS, N_DIMS),
+		stressConverged(N_DIMS),
+		stressTrial(N_DIMS),
+		sumEjConverged(0.),
+		sumEjTrial(0.),
+		c1cConverged(0.),
+		c1cTrial(0.),
+
+		b_1tConverged(0.),
+		sigmaPrBezierConverged(0.),
+		sigmaYrBezierConverged(0.),
+		epsilonPB11UnloadConverged(0.),
+		backstressAfterCompressionConverged(N_DIMS),
+		epsilonPB11MinConverged(0.),
+		alphaPrBezierConverged(0.),
+		alphaYrBezierConverged(0.),
+		kPrBezierConverged(0.),
+		kYrBezierConverged(0.),
+		rAlphaBackstress1Converged(0.),
+		rAlphaBackstress2Converged(0.),
+		c1cUnloadConverged(0.),
+		ErcConverged(0.),
+		sigmaCConverged(0.),
+		yieldStressPBConverged(0.),
+		sigmaYieldAfterCompressionConverged(0.),
+		backstress11TotAfterFullPLRecovConverged(0.),
+		sigmaYieldTotAfterFullPLRecovConverged(0.),
+
+		b_1tTrial(0.),
+		sigmaPrBezierTrial(0.),
+		sigmaYrBezierTrial(0.),
+		epsilonPB11UnloadTrial(0.),
+		backstressAfterCompressionTrial(N_DIMS),
+		epsilonPB11MinTrial(0.),
+		alphaPrBezierTrial(0.),
+		alphaYrBezierTrial(0.),
+		kPrBezierTrial(0.),
+		kYrBezierTrial(0.),
+		rAlphaBackstress1Trial(0.),
+		rAlphaBackstress2Trial(0.),
+		c1cUnloadTrial(0.),
+		sigmaCTrial(0.),
+		yieldStressPBTrial(0.),
+		sigmaYieldAfterCompressionTrial(0.),
+		backstress11TotAfterFullPLRecovTrial(0.),
+		sigmaYieldTotAfterFullPLRecovTrial(0.),
+
+		strainIntermed(N_DIMS),
+		strainPlasticIntermed(N_DIMS),
+		strainPostBucklingIntermed(N_DIMS),
+		strainPEqIntermed(0.),
+		strainPBEqIntermed(0.),
+		stressIntermed(N_DIMS),
+		sumEjIntermed(0.),
+		c1cIntermed(0.),
+		b_1tIntermed(0.),
+		sigmaPrBezierIntermed(0.),
+		sigmaYrBezierIntermed(0.),
+		epsilonPB11UnloadIntermed(0.),
+		backstressAfterCompressionIntermed(N_DIMS),
+		epsilonPB11MinIntermed(0.),
+		alphaPrBezierIntermed(0.),
+		alphaYrBezierIntermed(0.),
+		kPrBezierIntermed(0.),
+		kYrBezierIntermed(0.),
+		rAlphaBackstress1Intermed(0.),
+		rAlphaBackstress2Intermed(0.),
+		c1cUnloadIntermed(0.),
+		sigmaCIntermed(0.),
+		yieldStressPBIntermed(0.),
+		sigmaYieldAfterCompressionIntermed(0.),
+		backstress11TotAfterFullPLRecovIntermed(0.),
+		sigmaYieldTotAfterFullPLRecovIntermed(0.),
+
+		elasticLoading(0),
+		plasticLoading(0),
+		postBucklingLoading(0),
+		elasticMatrix(Matrix(N_DIMS, N_DIMS)),
+		stiffnessInitial(Matrix(N_DIMS, N_DIMS)),
+		stiffnessConverged(Matrix(N_DIMS, N_DIMS)),
+		stiffnessTrial(Matrix(N_DIMS, N_DIMS)),
+		PMat(Matrix(N_DIMS, N_DIMS)),
+		pVect(Vector(N_DIMS)),
+		ppMat(Matrix(N_DIMS, N_DIMS)),
+		qMat(Matrix(N_DIMS, N_DIMS)),
+		qMatT(Matrix(N_DIMS, N_DIMS)),
+		lambdaC(N_DIMS),
+		lambdaP(N_DIMS),
+		lambdapp(N_DIMS)
+	{
+		// Set the number of backstresses
+		nBackstresses = cK.size();
+		for (unsigned int i = 0; i < nBackstresses; ++i) {
+			alphaPKTrial.push_back(Vector(N_DIMS));
+			alphaPKConverged.push_back(Vector(N_DIMS));
+			alphaPKIntermed.push_back(Vector(N_DIMS));
+
+			alphaPBKTrial.push_back(Vector(N_DIMS));
+			alphaPBKConverged.push_back(Vector(N_DIMS));
+			alphaPBKIntermed.push_back(Vector(N_DIMS));
+		}
+
+		// Zero all the vectors and matrices
+		revertToStart();
+
+		// Set the Eigendecomposition matrices
+		initializeEigendecompositions();
+
+		// Set elastic parameters and elastic stiffness matrix
+		calculateElasticStiffness();
+		stiffnessInitial = elasticMatrix;
+		stiffnessTrial = elasticMatrix;
+		stiffnessConverged = elasticMatrix;
+
+		// Set the value of b_chi1c
+		initializeBChi1c();
+
+		// Set the value of Erc
+		initializeErc();
+
+		// Set the value of floorF1c
+		initializeFloorF1c();
+	};
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 

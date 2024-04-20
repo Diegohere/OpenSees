@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.12.2021
-// Version 14.11.2023
+// Version 20.04.2024
 //
 
 #ifndef CPP_LocalBucklingWebPlate_H
@@ -28,6 +28,19 @@ public:
 		double qInf, double b, double dInf, double a,
 		std::vector<double> cK, std::vector<double> gammaK,
 		double bPlate, double tPlate, double sigmaC0, double alphaReg);
+
+	LocalBucklingWebPlate(int tag, double E, double poissonRatio, double sy0,
+		double qInf, double b, double dInf, double a,
+		std::vector<double> cK, std::vector<double> gammaK,
+		double bPlate, double tPlate, double sigmaC0, double alphaReg,
+		double beta1RegressionEuSurEl, double beta2RegressionEuSurEl, double beta3RegressionEuSurEl,
+		double beta1RegressionSigmaPrBezier, double beta2RegressionSigmaPrBezier, double beta3RegressionSigmaPrBezier,
+		double beta1RegressionSigmaYrBezier, double beta2RegressionSigmaYrBezier, double beta3RegressionSigmaYrBezier,
+		double beta1RegressionKPrBezier, double beta2RegressionKPrBezier, double beta3RegressionKPrBezier,
+		double beta1RegressionKYrBezier, double beta2RegressionKYrBezier, double beta3RegressionKYrBezier,
+		double beta1RegressionAlphaPrBezier, double beta2RegressionAlphaPrBezier, double beta3RegressionAlphaPrBezier,
+		double beta1RegressionAlphaYrBezier, double beta2RegressionAlphaYrBezier, double beta3RegressionAlphaYrBezier,
+		double beta1RegressionErc, double beta2RegressionErc);
 
 	// Constructor, parallel processing
 	LocalBucklingWebPlate(void);
@@ -401,56 +414,32 @@ private:
 	Vector lambdapp;
 
 	// Parameters for regression formulas
-	//const double beta1RegressionEuSurEl = 2.5748;
-	//const double beta2RegressionEuSurEl = -0.9810;
-	//const double beta3RegressionEuSurEl = -0.3669;
-	//const double beta1RegressionSigmaPrBezier = 0.0591;
-	//const double beta2RegressionSigmaPrBezier = -0.7717;
-	//const double beta3RegressionSigmaPrBezier = -0.9443;
-	//const double beta1RegressionSigmaYrBezier = 639.7184;
-	//const double beta2RegressionSigmaYrBezier = -0.1339;
-	//const double beta3RegressionSigmaYrBezier = 0.0251;
-	//const double beta1RegressionKPrBezier = -789.6460;
-	//const double beta2RegressionKPrBezier = -0.8472;
-	//const double beta3RegressionKPrBezier = -0.3919;
-	//const double beta1RegressionKYrBezier = -0.2072;
-	//const double beta2RegressionKYrBezier = 1.3612;
-	//const double beta3RegressionKYrBezier = -0.1157;
-	//const double beta1RegressionAlphaPrBezier = -0.042;
-	//const double beta2RegressionAlphaPrBezier = 0.2026;
-	//const double beta3RegressionAlphaPrBezier = 1.0587;
-	//const double beta1RegressionAlphaYrBezier = 1.1640;
-	//const double beta2RegressionAlphaYrBezier = -0.4144;
-	//const double beta3RegressionAlphaYrBezier = 0.9174;
-	////const double beta1RegressionErc = 1e20; // very large number so no cyclic degradation
-	//const double beta1RegressionErc = 303424.192036106;
-	//const double beta2RegressionErc = -1.9895;
+	double beta1RegressionEuSurEl;
+	double beta2RegressionEuSurEl;
+	double beta3RegressionEuSurEl;
+	double beta1RegressionSigmaPrBezier;
+	double beta2RegressionSigmaPrBezier;
+	double beta3RegressionSigmaPrBezier;
+	double beta1RegressionSigmaYrBezier;
+	double beta2RegressionSigmaYrBezier;
+	double beta3RegressionSigmaYrBezier;
+	double beta1RegressionKPrBezier;
+	double beta2RegressionKPrBezier;
+	double beta3RegressionKPrBezier;
+	double beta1RegressionKYrBezier;
+	double beta2RegressionKYrBezier;
+	double beta3RegressionKYrBezier;
+	double beta1RegressionAlphaPrBezier;
+	double beta2RegressionAlphaPrBezier;
+	double beta3RegressionAlphaPrBezier;
+	double beta1RegressionAlphaYrBezier;
+	double beta2RegressionAlphaYrBezier;
+	double beta3RegressionAlphaYrBezier;
+	double beta1RegressionErc;
+	double beta2RegressionErc;
 
-	const double beta1RegressionEuSurEl = 2.6638;
-	const double beta2RegressionEuSurEl = -1.0704;
-	const double beta3RegressionEuSurEl = -0.4351;
-	const double beta1RegressionSigmaPrBezier = 0.0429;
-	const double beta2RegressionSigmaPrBezier = -0.5942;
-	const double beta3RegressionSigmaPrBezier = -0.8667;
-	const double beta1RegressionSigmaYrBezier = 632.9923;
-	const double beta2RegressionSigmaYrBezier = -0.1125;
-	const double beta3RegressionSigmaYrBezier = 0.0414;
-	const double beta1RegressionKPrBezier = -825.8651;
-	const double beta2RegressionKPrBezier = -0.9581;
-	const double beta3RegressionKPrBezier = -0.4764;
-	const double beta1RegressionKYrBezier = -0.2438;
-	const double beta2RegressionKYrBezier = 1.2421;
-	const double beta3RegressionKYrBezier = -0.1793;
-	const double beta1RegressionAlphaPrBezier = -0.0198;
-	const double beta2RegressionAlphaPrBezier = 0.3339;
-	const double beta3RegressionAlphaPrBezier = 0.9841;
-	const double beta1RegressionAlphaYrBezier = 1.0459;
-	const double beta2RegressionAlphaYrBezier = -0.3699;
-	const double beta3RegressionAlphaYrBezier = 0.9629;
-	//const double beta1RegressionErc = 1e20; // very large number so no cyclic degradation
-	//const double beta2RegressionErc = 1.0; // very large number so no cyclic degradation
-	const double beta1RegressionErc = 2.6207e5;
-	const double beta2RegressionErc = -1.9363;
+
+
 
 };
 

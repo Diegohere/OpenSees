@@ -63,9 +63,35 @@
 	set J   [expr $do**3*$tPlate]; 		# torsional constant   
 	set GJ 	[expr $G*$J];  			# torsional stiffness 
 	
+	#Define parameters for cyclic material law
+	set beta1RegressionEuSurEl 2.048;
+	set beta2RegressionEuSurEl -1.045;
+	set beta3RegressionEuSurEl -0.258;
+	set beta1RegressionSigmaPrBezier 0.0141;
+	set beta2RegressionSigmaPrBezier 0.0;
+	set beta3RegressionSigmaPrBezier -0.7482;
+	set beta1RegressionSigmaYrBezier 661.2565;
+	set beta2RegressionSigmaYrBezier -0.1378;
+	set beta3RegressionSigmaYrBezier 0.0736;
+	set beta1RegressionKPrBezier -607.9379;
+	set beta2RegressionKPrBezier -0.9333;
+	set beta3RegressionKPrBezier -0.3443;
+	set beta1RegressionKYrBezier -0.1636;
+	set beta2RegressionKYrBezier 1.4685;
+	set beta3RegressionKYrBezier -0.4245;
+	set beta1RegressionAlphaPrBezier -0.0061;
+	set beta2RegressionAlphaPrBezier 0.4908;
+	set beta3RegressionAlphaPrBezier 0.6108;
+	set beta1RegressionAlphaYrBezier 3.7849;
+	set beta2RegressionAlphaYrBezier -0.7960;
+	set beta3RegressionAlphaYrBezier 1.1552;
+	set beta1RegressionErc 1.5093e4;
+	set beta2RegressionErc -1.4374;
+	
 	#nDMaterial ElasticIsotropic 1 $E $nu
 	#nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 370.0 0.0 1.0 0.0 1.0 1 3512.0 30.0 $bPlate $tPlate $sigmaC0 1.;
-	nDMaterial LocalBucklingFlangePlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization;
+	#nDMaterial LocalBucklingFlangePlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization;
+	nDMaterial LocalBucklingFlangePlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization $beta1RegressionEuSurEl $beta2RegressionEuSurEl $beta3RegressionEuSurEl $beta1RegressionSigmaPrBezier $beta2RegressionSigmaPrBezier $beta3RegressionSigmaPrBezier $beta1RegressionSigmaYrBezier $beta2RegressionSigmaYrBezier $beta3RegressionSigmaYrBezier $beta1RegressionKPrBezier $beta2RegressionKPrBezier $beta3RegressionKPrBezier $beta1RegressionKYrBezier $beta2RegressionKYrBezier $beta3RegressionKYrBezier $beta1RegressionAlphaPrBezier $beta2RegressionAlphaPrBezier $beta3RegressionAlphaPrBezier $beta1RegressionAlphaYrBezier $beta2RegressionAlphaYrBezier $beta3RegressionAlphaYrBezier $beta1RegressionErc $beta2RegressionErc;
 
 	
 	set N_LoadingDir 2;
@@ -102,8 +128,8 @@ puts "Recorders ..."
 	#recorder Node -file $dataDir/WebPlate_bSurT25_assymetric_RBase_OpenSees.txt -node 1 -dof 1 reaction;
 	
 # Record stress and strains for fibers
-	recorder Element -file $dataDir/FlangePlate_bSurT8_incrementalTo005_stressFiber.txt -ele 12 section 1 fiber 150. 150. 1 stress;
-	recorder Element -file $dataDir/FlangePlate_bSurT8_incrementalTo005_strainFiber.txt -ele 12 section 1 fiber 150. 150. 1 strain;
+	recorder Element -file $dataDir/FlangePlate_bSurT8_incrementalTo005_stressFiber_updated.txt -ele 12 section 1 fiber 150. 150. 1 stress;
+	recorder Element -file $dataDir/FlangePlate_bSurT8_incrementalTo005_strainFiber_updated.txt -ele 12 section 1 fiber 150. 150. 1 strain;
 	
 #######################################################################################
 #                                                                                     #
