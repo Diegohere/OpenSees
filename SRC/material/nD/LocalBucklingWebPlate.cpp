@@ -286,7 +286,7 @@ LocalBucklingWebPlate::LocalBucklingWebPlate(int tag, double E, double poissonRa
 	}
 
 	//Set the value of regression parameters for cyclic loading
-	// For A992 Grade B steel
+	// For A992 Grade 50 steel
 	beta1RegressionEuSurEl = 2.6638;
 	beta2RegressionEuSurEl = -1.0704;
 	beta3RegressionEuSurEl = -0.4351;

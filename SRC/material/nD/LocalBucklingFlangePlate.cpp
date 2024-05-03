@@ -286,7 +286,7 @@ LocalBucklingFlangePlate::LocalBucklingFlangePlate(int tag, double E, double poi
 	}
 
 	//Set the value of regression parameters for cyclic loading
-	// For A992 Grade B steel
+	// For A992 Grade 50 steel
 	beta1RegressionEuSurEl = 2.048;
 	beta2RegressionEuSurEl = -1.045;
 	beta3RegressionEuSurEl = -0.258;
