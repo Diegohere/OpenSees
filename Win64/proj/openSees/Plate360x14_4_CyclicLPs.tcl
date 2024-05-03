@@ -90,8 +90,9 @@
 	
 	#nDMaterial ElasticIsotropic 1 $E $nu
 	#nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 370.0 0.0 1.0 0.0 1.0 1 3512.0 30.0 $bPlate $tPlate $sigmaC0 1.;
-	nDMaterial LocalBucklingWebPlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization;
+	#nDMaterial LocalBucklingWebPlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization;
 	#nDMaterial LocalBucklingWebPlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization $beta1RegressionEuSurEl $beta2RegressionEuSurEl $beta3RegressionEuSurEl $beta1RegressionSigmaPrBezier $beta2RegressionSigmaPrBezier $beta3RegressionSigmaPrBezier $beta1RegressionSigmaYrBezier $beta2RegressionSigmaYrBezier $beta3RegressionSigmaYrBezier $beta1RegressionKPrBezier $beta2RegressionKPrBezier $beta3RegressionKPrBezier $beta1RegressionKYrBezier $beta2RegressionKYrBezier $beta3RegressionKYrBezier $beta1RegressionAlphaPrBezier $beta2RegressionAlphaPrBezier $beta3RegressionAlphaPrBezier $beta1RegressionAlphaYrBezier $beta2RegressionAlphaYrBezier $beta3RegressionAlphaYrBezier $beta1RegressionErc $beta2RegressionErc;
+	nDMaterial HLBModel 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization 1 1;
 
 	
 	set N_LoadingDir 2;
@@ -128,8 +129,8 @@ puts "Recorders ..."
 	#recorder Node -file $dataDir/WebPlate_bSurT25_incrementalTo005_RBase_OpenSees.txt -node 1 -dof 1 reaction;
 	
 # Record stress and strains for fibers
-	recorder Element -file $dataDir/WebPlate_bSurT25_incrementalTo005_stressFiber_previous.txt -ele 12 section 1 fiber 150. 150. 1 stress;
-	recorder Element -file $dataDir/WebPlate_bSurT25_incrementalTo005_strainFiber_previous.txt -ele 12 section 1 fiber 150. 150. 1 strain;
+	recorder Element -file $dataDir/WebPlate_bSurT25_incrementalTo005_stressFiber_updated.txt -ele 12 section 1 fiber 150. 150. 1 stress;
+	recorder Element -file $dataDir/WebPlate_bSurT25_incrementalTo005_strainFiber_updated.txt -ele 12 section 1 fiber 150. 150. 1 strain;
 	
 #######################################################################################
 #                                                                                     #

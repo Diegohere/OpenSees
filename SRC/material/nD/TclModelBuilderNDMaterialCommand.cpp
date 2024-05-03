@@ -128,6 +128,7 @@ extern void* OPS_UVCplanestress(void);
 extern  void *OPS_SAniSandMSMaterial(void);
 extern void* OPS_LocalBucklingWebPlate(void);
 extern void* OPS_LocalBucklingFlangePlate(void);
+extern void* OPS_HLBModel(void);
 
 extern  void *OPS_ElasticIsotropicMaterialThermal(void);  //L.Jiang [SIF]
 extern  void *OPS_DruckerPragerMaterialThermal(void);//L.Jiang [SIF]
@@ -435,6 +436,15 @@ TclModelBuilderNDMaterialCommand (ClientData clientData, Tcl_Interp *interp, int
 	else if ((strcmp(argv[1], "LocalBucklingFlangePlate") == 0)) {
 
 	void* theMat = OPS_LocalBucklingFlangePlate();
+	if (theMat != 0)
+		theMaterial = (NDMaterial*)theMat;
+	else
+		return TCL_ERROR;
+	}
+
+	else if ((strcmp(argv[1], "HLBModel") == 0)) {
+
+	void* theMat = OPS_HLBModel();
 	if (theMat != 0)
 		theMaterial = (NDMaterial*)theMat;
 	else

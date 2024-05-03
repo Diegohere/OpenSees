@@ -1421,6 +1421,10 @@
     <ClCompile Include="..\..\..\SRC\material\uniaxial\CFSTsteel.cpp">
       <Filter>uniaxial</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\material\section\NDTestShear4HSSFiberSection3d.cpp" />
+    <ClCompile Include="..\..\..\SRC\material\nD\HLBModel.cpp">
+      <Filter>nD</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\material\uniaxial\AxialSp.h">
@@ -2629,6 +2633,10 @@
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\material\uniaxial\CFSTsteel.h">
       <Filter>uniaxial</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\material\section\NDTestShear4HSSFiberSection3d.h" />
+    <ClInclude Include="..\..\..\SRC\material\nD\HLBModel.h">
+      <Filter>nD</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
