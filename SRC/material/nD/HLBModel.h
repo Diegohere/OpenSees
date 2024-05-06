@@ -7,6 +7,7 @@
 #define CPP_HLBModel_H
 
 #include <vector>
+#include <string>
 #include "NDMaterial.h"
 #include <OPS_Globals.h>
 #include <elementAPI.h>
@@ -27,12 +28,12 @@ public:
 	HLBModel(int tag, double E, double poissonRatio, double sy0,
 		double qInf, double b, double dInf, double a,
 		std::vector<double> cK, std::vector<double> gammaK,
-		double bPlate, double tPlate, double sigmaC0, double alphaReg, int plateType, int steelType);
+		double bPlate, double tPlate, double sigmaC0, double alphaReg, std::string plateType, std::string steelType);
 
 	HLBModel(int tag, double E, double poissonRatio, double sy0,
 		double qInf, double b, double dInf, double a,
 		std::vector<double> cK, std::vector<double> gammaK,
-		double bPlate, double tPlate, double sigmaC0, double alphaReg, int plateType,
+		double bPlate, double tPlate, double sigmaC0, double alphaReg, std::string plateType,
 		double beta1RegressionEuSurEl, double beta2RegressionEuSurEl, double beta3RegressionEuSurEl,
 		double beta1RegressionSigmaPrBezier, double beta2RegressionSigmaPrBezier, double beta3RegressionSigmaPrBezier,
 		double beta1RegressionSigmaYrBezier, double beta2RegressionSigmaYrBezier, double beta3RegressionSigmaYrBezier,
@@ -181,7 +182,9 @@ private:
 	void initializeBChi1c(void);
 
 	// Initialize value of floorF1c
-	void initializeFloorF1c(void);
+	void initializeFloorF1c_WebPlate(void);
+	void initializeFloorF1c_FlangePlate(void);
+	void (HLBModel::* initializeFloorF1c) (void);
 
 	//// Initialize value of sigmaYrO
 	//void initializeSigmaYrO(void);
@@ -295,10 +298,10 @@ private:
 	double alphaRegularization;
 
 	// Plate type
-	int plateType;
+	std::string plateType;
 
 	//Steel material
-	int steelMaterial;
+	std::string steelMaterial;
 
 	// Plate stress properties (fixed for now, could be set by the constructor)
 	//const double alpha_chi1c = 1. / 3.;

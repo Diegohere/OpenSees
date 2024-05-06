@@ -58,8 +58,6 @@ void* OPS_HLBModel(void) {
 	double cyclicProps[N_CYCLIC_PARAMETERS]; // hold cyclic parameters beta1, beta2 and beta3 (regrssion parameters)
 	std::vector<double> cK;
 	std::vector<double> gammaK;
-	int plateTypeContainer[1]; // for the plate type
-	int steelTypeContainer[1]; // for the steel type
 
 	// Get the material tag
 	nInputsToRead = N_TAGS;
@@ -116,14 +114,9 @@ void* OPS_HLBModel(void) {
 	}
 
 	// Get plate type
-	nInputsToRead = 1;
-	if (OPS_GetIntInput(&nInputsToRead, plateTypeContainer) != 0) {
-		opserr << "Problem with parameters for plate boundary type" << endln;
-		return 0;
-	}
-	int knownPlateBC[] = { 1, 2 }; // known plate boundary conditions (see documentation)
-	if (plateTypeContainer[0] != knownPlateBC[0] && plateTypeContainer[0] != knownPlateBC[1])
-	{
+	const char* plateTypePointer = OPS_GetString();
+	std::string plateType(plateTypePointer);
+	if (plateType != "web" && plateType != "flange") {
 		opserr << "Problem with parameters for plate boundary type" << endln;
 		return 0;
 	}
@@ -131,14 +124,9 @@ void* OPS_HLBModel(void) {
 	if (numData==19)
 	{
 		// Read the steel type
-		nInputsToRead = 1;
-		if (OPS_GetIntInput(&nInputsToRead, steelTypeContainer) != 0) {
-			opserr << "Problem with parameter for steel material" << endln;
-			return 0;
-		}
-		int knownSteelType[] = { 1}; // known steel material (see documentation)
-		if (steelTypeContainer[0] != knownSteelType[0] )
-		{
+		const char* steelTypePointer = OPS_GetString();
+		std::string steelType(steelTypePointer);
+		if (steelType != "A992Gr50") {
 			opserr << "Problem with parameter for steel material" << endln;
 			return 0;
 		}
@@ -149,7 +137,7 @@ void* OPS_HLBModel(void) {
 			hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
 			cK, gammaK,
 			softeningProps[0], softeningProps[1], softeningProps[2],
-			regularizationgProps[0], plateTypeContainer[0], steelTypeContainer[0]);
+			regularizationgProps[0], plateType, steelType);
 	}
 	else if (numData==41)
 	{
@@ -166,7 +154,7 @@ void* OPS_HLBModel(void) {
 			hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
 			cK, gammaK,
 			softeningProps[0], softeningProps[1], softeningProps[2],
-			regularizationgProps[0], plateTypeContainer[0],
+			regularizationgProps[0], plateType,
 			cyclicProps[0], cyclicProps[1], cyclicProps[2], cyclicProps[3], cyclicProps[4], cyclicProps[5], cyclicProps[6], cyclicProps[7], cyclicProps[8], cyclicProps[9],
 			cyclicProps[10], cyclicProps[11], cyclicProps[12], cyclicProps[13], cyclicProps[14], cyclicProps[15], cyclicProps[16], cyclicProps[17], cyclicProps[18],
 			cyclicProps[19], cyclicProps[20], cyclicProps[21], cyclicProps[22]);
@@ -183,7 +171,7 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 	double sy0, double qInf, double b, double dInf, double a,
 	std::vector<double> cK, std::vector<double> gammaK,
 	double bPlate, double tPlate, double sigmaC0,
-	double alphaReg, int plateType, int steelType)
+	double alphaReg, std::string plateType, std::string steelType)
 	: NDMaterial(tag, ND_TAG_HLBModel),
 	elasticModulus(E),
 	poissonRatio(poissonRatio),
@@ -316,9 +304,9 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 	}
 
 	//Set the value of regression parameters for cyclic loading
-	if (plateType==1) // if web plate
+	if (plateType == "web") // if web plate
 	{
-		if (steelMaterial==1) // if A992 Grade 50 steel material
+		if (steelType == "A992Gr50") // if A992 Grade 50 steel material
 		{
 			// For A992 Grade 50 steel for the web plate
 			beta1RegressionEuSurEl = 2.6638;
@@ -348,9 +336,9 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 			beta2RegressionErc = -1.9363;
 		}
 	}
-	else if (plateType==2) // if flange plate
+	else if (plateType == "flange") // if flange plate
 	{
-		if (steelMaterial == 1) // if A992 Grade 50 steel material
+		if (steelType == "A992Gr50") // if A992 Grade 50 steel material
 		{
 			// For A992 Grade 50 steel
 			beta1RegressionEuSurEl = 2.048;
@@ -394,17 +382,19 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 	stiffnessConverged = elasticMatrix;
 
 	// Select functions for compressive yield surface evolution during softening based on appropriate plate boundary conditions
-	if (plateType == 1) //web plate
+	if (plateType == "web") //web plate
 	{
+		alpha_chi1c = 1. / 3.;
 		calculateSigmaSurSigmaY = &HLBModel::calculateSigmaSurSigmaY_WebPlate;
 		calculateDSigmaSurSigmaYdEpsilonPB11 = &HLBModel::calculateDSigmaSurSigmaYdEpsilonPB11_WebPlate;
-		alpha_chi1c = 1. / 3.;
+		initializeFloorF1c = &HLBModel::initializeFloorF1c_WebPlate;
 	}
-	else if (plateType == 2) // flange plate
+	else if (plateType == "flange") // flange plate
 	{
+		alpha_chi1c = 2. / 3.;
 		calculateSigmaSurSigmaY = &HLBModel::calculateSigmaSurSigmaY_FlangePlate;
 		calculateDSigmaSurSigmaYdEpsilonPB11 = &HLBModel::calculateDSigmaSurSigmaYdEpsilonPB11_FlangePlate;
-		alpha_chi1c = 2. / 3.;
+		initializeFloorF1c = &HLBModel::initializeFloorF1c_FlangePlate;
 	}
 
 	// Set the value of b_chi1c
@@ -414,7 +404,7 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 	initializeErc();
 
 	// Set the value of floorF1c
-	initializeFloorF1c();	
+	(this->*initializeFloorF1c)();
 };
 
 	/* ----------------------------------------------------------------------------------------------------------------- */
@@ -424,7 +414,7 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 		double sy0, double qInf, double b, double dInf, double a,
 		std::vector<double> cK, std::vector<double> gammaK,
 		double bPlate, double tPlate, double sigmaC0,
-		double alphaReg, int plateType,
+		double alphaReg, std::string plateType,
 		double beta1RegressionEuSurEl, double beta2RegressionEuSurEl, double beta3RegressionEuSurEl,
 		double beta1RegressionSigmaPrBezier, double beta2RegressionSigmaPrBezier, double beta3RegressionSigmaPrBezier,
 		double beta1RegressionSigmaYrBezier, double beta2RegressionSigmaYrBezier, double beta3RegressionSigmaYrBezier,
@@ -601,17 +591,19 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 		stiffnessConverged = elasticMatrix;
 
 		// Select functions for compressive yield surface evolution during softening based on appropriate plate boundary conditions
-		if (plateType == 1) //web plate
+		if (plateType == "-web") //web plate
 		{
+			alpha_chi1c = 1. / 3.;
 			calculateSigmaSurSigmaY = &HLBModel::calculateSigmaSurSigmaY_WebPlate;
 			calculateDSigmaSurSigmaYdEpsilonPB11 = &HLBModel::calculateDSigmaSurSigmaYdEpsilonPB11_WebPlate;
-			alpha_chi1c = 1. / 3.;
+			initializeFloorF1c = &HLBModel::initializeFloorF1c_WebPlate;
 		}
-		else if (plateType == 2) // flange plate
+		else if (plateType == "-flange") // flange plate
 		{
+			alpha_chi1c = 2. / 3.;
 			calculateSigmaSurSigmaY = &HLBModel::calculateSigmaSurSigmaY_FlangePlate;
 			calculateDSigmaSurSigmaYdEpsilonPB11 = &HLBModel::calculateDSigmaSurSigmaYdEpsilonPB11_FlangePlate;
-			alpha_chi1c = 2. / 3.;
+			initializeFloorF1c = &HLBModel::initializeFloorF1c_FlangePlate;
 		}
 
 		// Set the value of b_chi1c
@@ -621,7 +613,7 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 		initializeErc();
 
 		// Set the value of floorF1c
-		initializeFloorF1c();
+		(this->*initializeFloorF1c)();
 	};
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -775,7 +767,7 @@ HLBModel::HLBModel()
 	initializeErc();
 
 	// Set the value of floorF1c
-	initializeFloorF1c();
+	(this->*initializeFloorF1c)();
 
 }
 
@@ -2576,17 +2568,20 @@ int HLBModel::revertToStart() {
 NDMaterial* HLBModel::getCopy() {
 
 	HLBModel* theCopy;
+	/*theCopy = new HLBModel(this->getTag(), elasticModulus, poissonRatio,
+			initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
+			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType,
+			beta1RegressionEuSurEl, beta2RegressionEuSurEl, beta3RegressionEuSurEl,
+			beta1RegressionSigmaPrBezier, beta2RegressionSigmaPrBezier, beta3RegressionSigmaPrBezier,
+			beta1RegressionSigmaYrBezier, beta2RegressionSigmaYrBezier, beta3RegressionSigmaYrBezier,
+			beta1RegressionKPrBezier, beta2RegressionKPrBezier, beta3RegressionKPrBezier,
+			beta1RegressionKYrBezier, beta2RegressionKYrBezier, beta3RegressionKYrBezier,
+			beta1RegressionAlphaPrBezier, beta2RegressionAlphaPrBezier, beta3RegressionAlphaPrBezier,
+			beta1RegressionAlphaYrBezier, beta2RegressionAlphaYrBezier, beta3RegressionAlphaYrBezier,
+			beta1RegressionErc, beta2RegressionErc);*/
 	theCopy = new HLBModel(this->getTag(), elasticModulus, poissonRatio,
 		initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
-		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType,
-		beta1RegressionEuSurEl, beta2RegressionEuSurEl, beta3RegressionEuSurEl,
-		beta1RegressionSigmaPrBezier, beta2RegressionSigmaPrBezier, beta3RegressionSigmaPrBezier,
-		beta1RegressionSigmaYrBezier, beta2RegressionSigmaYrBezier, beta3RegressionSigmaYrBezier,
-		beta1RegressionKPrBezier, beta2RegressionKPrBezier, beta3RegressionKPrBezier,
-		beta1RegressionKYrBezier, beta2RegressionKYrBezier, beta3RegressionKYrBezier,
-		beta1RegressionAlphaPrBezier, beta2RegressionAlphaPrBezier, beta3RegressionAlphaPrBezier,
-		beta1RegressionAlphaYrBezier, beta2RegressionAlphaYrBezier, beta3RegressionAlphaYrBezier,
-		beta1RegressionErc,  beta2RegressionErc);
+		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial);
 
 	// Copy all the internals
 	theCopy->strainConverged = strainConverged;
@@ -2703,7 +2698,7 @@ NDMaterial* HLBModel::getCopy() {
 NDMaterial* HLBModel::getCopy(const char* code) {
 	if (strcmp(code, getType()) == 0) {
 		HLBModel* theCopy;
-		theCopy = new HLBModel(this->getTag(), elasticModulus, poissonRatio,
+		/*theCopy = new HLBModel(this->getTag(), elasticModulus, poissonRatio,
 			initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
 			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType,
 			beta1RegressionEuSurEl, beta2RegressionEuSurEl, beta3RegressionEuSurEl,
@@ -2713,7 +2708,10 @@ NDMaterial* HLBModel::getCopy(const char* code) {
 			beta1RegressionKYrBezier, beta2RegressionKYrBezier, beta3RegressionKYrBezier,
 			beta1RegressionAlphaPrBezier, beta2RegressionAlphaPrBezier, beta3RegressionAlphaPrBezier,
 			beta1RegressionAlphaYrBezier, beta2RegressionAlphaYrBezier, beta3RegressionAlphaYrBezier,
-			beta1RegressionErc, beta2RegressionErc);
+			beta1RegressionErc, beta2RegressionErc);*/
+		theCopy = new HLBModel(this->getTag(), elasticModulus, poissonRatio,
+			initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
+			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial);
 		return theCopy;
 	}
 	else {
@@ -3477,7 +3475,7 @@ void HLBModel::initializeBChi1c() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void HLBModel::initializeFloorF1c() {
+void HLBModel::initializeFloorF1c_WebPlate() {
 	double alphaAngle = 0.;
 	double cPlate = 0.;
 	double AHat = 0., BHat = 0., CHat = 0.;
@@ -3498,6 +3496,65 @@ void HLBModel::initializeFloorF1c() {
 
 	BHat = (pow(tPlateThickness, 2.) * (bPlateWidth - 2. * cPlate)) / (bPlateWidth);
 	CHat = (tPlateThickness * sqrt(pow(cPlate, 2.) + pow((bPlateWidth / 2. ), 2)) - bPlateWidth * tPlateThickness);
+
+	DHat = -pow((BHat), 2);
+	EHat = 2. * BHat * CHat;
+	FHat = -pow((AHat), 2) + 2. * pow((BHat), 2) - pow(CHat, 2);
+	GHat = -2. * BHat * CHat;
+	HHat = pow(AHat, 2) - pow(BHat, 2);
+
+	alpha = -3. * pow(EHat, 2) / (8. * pow(DHat, 2)) + FHat / DHat;
+	beta = pow(EHat, 3) / (8. * pow(DHat, 3)) - (EHat * FHat) / (2. * pow(DHat, 2)) + GHat / DHat;
+	gamma = -3. * pow(EHat, 4) / (256. * pow(DHat, 4)) + (pow(EHat, 2) * FHat) / (16. * pow(DHat, 3)) - (EHat * GHat) / (4. * pow(DHat, 2)) + HHat / DHat;
+
+	P = -pow(alpha, 2) / 12. - gamma;
+	Q = -pow(alpha, 3) / 108. + alpha * gamma / 3 - pow(beta, 2) / 8.;
+	R = -Q / 2. + sqrt(pow(Q, 2) / 4. + pow(P, 3) / 27.);
+	if (pow(Q, 2) / 4. + pow(P, 3) / 27. < 0)
+	{
+		R = -Q / 2.;
+	}
+	U = pow(R, (1. / 3.));
+
+	if (U == 0.)
+	{
+		y = -5. / 6. * alpha - pow(Q, (1. / 3.));
+	}
+	else
+	{
+		y = -5. / 6. * alpha + U - P / (3. * U);
+	}
+	W = sqrt(alpha + 2. * y);
+
+
+	floorF1c = -EHat / (4. * DHat) + (+W) / 2.;
+
+
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+void HLBModel::initializeFloorF1c_FlangePlate() {
+	double alphaAngle = 0.;
+	double cPlate = 0.;
+	double AHat = 0., BHat = 0., CHat = 0.;
+	double DHat = 0., EHat = 0., FHat = 0., GHat = 0., HHat = 0.;
+
+	alphaAngle = 55. * 3.1416 / 180.;
+	cPlate = bPlateWidth / (2. * tan(alphaAngle));
+
+	double alpha = 0.;
+	double beta = 0.;
+	double gamma = 0.;
+	double P = 0.;
+	double Q = 0.;
+	double R = 0.;
+	double U = 0.;
+	double y = 0.;
+	double W = 0.;
+
+	BHat = (pow(tPlateThickness, 2.) * (bPlateWidth - cPlate)) / (bPlateWidth);
+	CHat = (1. / 2. * tPlateThickness * sqrt(pow(cPlate, 2.) + pow((bPlateWidth / 2.), 2)) - bPlateWidth * tPlateThickness);
 
 	DHat = -pow((BHat), 2);
 	EHat = 2. * BHat * CHat;
