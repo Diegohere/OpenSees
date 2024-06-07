@@ -3,7 +3,8 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir resultsWebPlate_bSurT25_CyclicLPs;			# name of output folder
+	#set dataDir resultsWebPlate_bSurT25_CyclicLPs;			# name of output folder
+	set dataDir testFiberConstruct;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 ###################################################################################################
@@ -88,11 +89,14 @@
 	set beta1RegressionErc  2.6207e5;
 	set beta2RegressionErc  -1.9363;
 	
+	set plateType web;
+	set steelMaterial A992Gr50;
+	
 	#nDMaterial ElasticIsotropic 1 $E $nu
 	#nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 370.0 0.0 1.0 0.0 1.0 1 3512.0 30.0 $bPlate $tPlate $sigmaC0 1.;
 	#nDMaterial LocalBucklingWebPlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization;
 	#nDMaterial LocalBucklingWebPlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization $beta1RegressionEuSurEl $beta2RegressionEuSurEl $beta3RegressionEuSurEl $beta1RegressionSigmaPrBezier $beta2RegressionSigmaPrBezier $beta3RegressionSigmaPrBezier $beta1RegressionSigmaYrBezier $beta2RegressionSigmaYrBezier $beta3RegressionSigmaYrBezier $beta1RegressionKPrBezier $beta2RegressionKPrBezier $beta3RegressionKPrBezier $beta1RegressionKYrBezier $beta2RegressionKYrBezier $beta3RegressionKYrBezier $beta1RegressionAlphaPrBezier $beta2RegressionAlphaPrBezier $beta3RegressionAlphaPrBezier $beta1RegressionAlphaYrBezier $beta2RegressionAlphaYrBezier $beta3RegressionAlphaYrBezier $beta1RegressionErc $beta2RegressionErc;
-	nDMaterial HLBModel 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization web A992Gr50;
+	nDMaterial HLBModel 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 $alphaRegularization $plateType $steelMaterial;
 
 	
 	set N_LoadingDir 2;
@@ -106,7 +110,8 @@
 	set yJS [expr $absCoordCorner];
 
 	
-	section NDFiber 1 -GJ $GJ {;	
+	#section NDFiber 1 -GJ $GJ {;
+	section NDFiberTestNonlocal 1 -GJ $GJ {;	
 	#			 matTag  umSubdivY  numSubdivZ  yI  	zI  	yJ    zJ
 	patch rect 1 $N_LoadingDir $N_TranverseDir $yIS $zIS $yJS $zJS;
 
