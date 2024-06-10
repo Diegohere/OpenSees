@@ -67,7 +67,12 @@ CircSectionCell::getCentroidPosition(void)
    return Centroid;
 }
 
-
+//Added by Diego Heredia 10.06.2024
+const Matrix&
+CircSectionCell::getVertCoords(void) const
+{
+    return vertCoord;
+}
 
 void CircSectionCell::Print(OPS_Stream &s, int flag) const
 {

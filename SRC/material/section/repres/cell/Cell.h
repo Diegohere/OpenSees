@@ -34,6 +34,9 @@
 
 #include <OPS_Globals.h>
 
+//Added by Diego Heredia 10.06.2024
+#include <Matrix.h>
+
 class Vector;
 
 class Cell
@@ -53,9 +56,14 @@ class Cell
  
     virtual void   Print(OPS_Stream &s, int flag =0) const = 0;   
     friend OPS_Stream &operator<<(OPS_Stream &s, const Cell &Cell);    
+
+    //Added by Diego Heredia 10.06.2024 
+  //Trick to access getVertCoord from QuadPatch without having to define it for circPatch
+    virtual const  Matrix& getVertCoords(void) const { return  vertCoord; };
     
   protected:
-    
+      //Added by Diego Heredia 10.06.2024
+      Matrix vertCoord;
   private:
 };
 

@@ -339,6 +339,7 @@
 #define SEC_TAG_NDTestShear4RectangleFiberSection3d 38 //Added by Diego Heredia
 #define SEC_TAG_NDTestShear4WFFiberSection3d 39 //Added by Diego Heredia
 #define SEC_TAG_NDTestShear4HSSFiberSection3d 40 //Added by Diego Heredia
+#define SEC_TAG_NDShearFiberSection3d 41 //Added by Diego Heredia
 
 #define SEC_TAG_MCFTFiberSection2d 7601
 

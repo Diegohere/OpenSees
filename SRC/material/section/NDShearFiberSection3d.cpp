@@ -1,4 +1,4 @@
-//Added by Diego Heredia 17.09.2023 for test shear stress distribution
+//Added by Diego Heredia 07.06.2024 for shear stress distribution
 
 #include <stdlib.h>
 #include <string.h>
@@ -10,7 +10,7 @@
 #include <MatrixUtil.h>
 #include <Fiber.h>
 #include <classTags.h>
-#include <NDTestShear4WFFiberSection3d.h>
+#include <NDShearFiberSection3d.h>
 #include <ID.h>
 #include <FEM_ObjectBroker.h>
 #include <Information.h>
@@ -20,13 +20,13 @@
 #include <Parameter.h>
 #include <elementAPI.h>
 
-ID NDTestShear4WFFiberSection3d::code(6);
+ID NDShearFiberSection3d::code(6);
 
-void* OPS_NDTestShear4WFFiberSection3d()
+void* OPS_NDShearFiberSection3d()
 {
     int numData = OPS_GetNumRemainingInputArgs();
     if(numData < 1) {
-	opserr<<"insufficient arguments for NDTestShear4WFFiberSection3d\n";
+	opserr<<"insufficient arguments for NDShearFiberSection3d\n";
 	return 0;
     }
 
@@ -44,36 +44,33 @@ void* OPS_NDTestShear4WFFiberSection3d()
     int num = 30;
 
     //To be modified
-    double bf = 200.;
-    double tf = 15.;
-    double d = 200.;
-    double tw = 15.;
+    MatrixContainer allCellsVertices;
 
-    return new NDTestShear4WFFiberSection3d(tag, bf, tf, d, tw, num, computeCentroid);
+    return new NDShearFiberSection3d(tag, allCellsVertices, num, computeCentroid);
 }
 
 // constructors:
-NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflange, double tflange, double dweb, double tweb, int num,  Fiber** fibers, double a, bool compCentroid) :
-    SectionForceDeformation(tag, SEC_TAG_NDTestShear4WFFiberSection3d),
-    bf(bflange), tf(tflange), d(dweb), tw(tweb),
+NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVert, int num,  Fiber** fibers, double a, bool compCentroid) :
+    SectionForceDeformation(tag, SEC_TAG_NDShearFiberSection3d),
+    allCellsVertices(allCellsVert),
     numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), h(0), beta22(0.), beta23(0.), beta33(0.)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
 
     if (theMaterials == 0) {
-      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate Material pointers";
+      opserr << "NDShearFiberSection3d::NDShearFiberSection3d -- failed to allocate Material pointers";
       exit(-1);
     }
 
     matData = new double [numFibers*3];
 
     if (matData == 0) {
-      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate double array for material data\n";
+      opserr << "NDShearFiberSection3d::NDShearFiberSection3d -- failed to allocate double array for material data\n";
       exit(-1);
     }
 
@@ -93,7 +90,7 @@ NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflan
       theMaterials[i] = theMat->getCopy("BeamFiber");
 
       if (theMaterials[i] == 0) {
-	opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to get copy of a Material\n";
+	opserr << "NDShearFiberSection3d::NDShearFiberSection3d -- failed to get copy of a Material\n";
 	exit(-1);
       }
     }    
@@ -120,31 +117,31 @@ NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflan
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
 
-  //Initialize the shear normalization parameters betas
-  computeShearBetas();
+  //Initialize the quadrilateral mesh
+  determineQuadMesh();
 }
 
-NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflange, double tflange, double dweb, double tweb, int num, double a, bool compCentroid) :
-    SectionForceDeformation(tag, SEC_TAG_NDTestShear4WFFiberSection3d),
-    bf(bflange), tf(tflange), d(dweb), tw(tweb),
+NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVert, int num, double a, bool compCentroid) :
+    SectionForceDeformation(tag, SEC_TAG_NDShearFiberSection3d),
+    allCellsVertices(allCellsVert),
     numFibers(0), sizeFibers(num), theMaterials(0), matData(0),
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), h(0), beta22(0.), beta23(0.), beta33(0.)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
 
 	if (theMaterials == 0) {
-	    opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate Material pointers";
+	    opserr << "NDShearFiberSection3d::NDShearFiberSection3d -- failed to allocate Material pointers";
 	    exit(-1);
 	}
 
 	matData = new double [sizeFibers*3];
 
 	if (matData == 0) {
-	    opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate double array for material data\n";
+	    opserr << "NDShearFiberSection3d::NDShearFiberSection3d -- failed to allocate double array for material data\n";
 	    exit(-1);
 	}
 
@@ -173,38 +170,38 @@ NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflan
     code(4) = SECTION_RESPONSE_VZ;
     code(5) = SECTION_RESPONSE_T;
 
-    //Initialize the shear normalization parameters beta12 and beta13
-    computeShearBetas();
+    //Initialize the quadrilateral mesh
+    determineQuadMesh();
 }
 
-NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflange, double tflange, double dweb, double tweb, int num, NDMaterial **mats,
+NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVert, int num, NDMaterial **mats,
 				   SectionIntegration &si, double a, bool compCentroid):
-  SectionForceDeformation(tag, SEC_TAG_NDTestShear4WFFiberSection3d),
-    bf(bflange), tf(tflange), d(dweb), tw(tweb),
+  SectionForceDeformation(tag, SEC_TAG_NDShearFiberSection3d),
+  allCellsVertices(allCellsVert),
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   sectionIntegr(0), e(6), s(0), ks(0), 
   parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), h(0), beta22(0.), beta23(0.), beta33(0.)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
 
     if (theMaterials == 0) {
-      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate Material pointers";
+      opserr << "NDShearFiberSection3d::NDShearFiberSection3d -- failed to allocate Material pointers";
       exit(-1);
     }
     matData = new double [numFibers*3];
 
     if (matData == 0) {
-      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to allocate double array for material data\n";
+      opserr << "NDShearFiberSection3d::NDShearFiberSection3d -- failed to allocate double array for material data\n";
       exit(-1);
     }
   }
 
   sectionIntegr = si.getCopy();
   if (sectionIntegr == 0) {
-    opserr << "Error: NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d: could not create copy of section integration object" << endln;
+    opserr << "Error: NDShearFiberSection3d::NDShearFiberSection3d: could not create copy of section integration object" << endln;
     exit(-1);
   }
 
@@ -224,7 +221,7 @@ NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflan
     theMaterials[i] = mats[i]->getCopy("BeamFiber");
     
     if (theMaterials[i] == 0) {
-      opserr << "NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d -- failed to get copy of a Material\n";
+      opserr << "NDShearFiberSection3d::NDShearFiberSection3d -- failed to get copy of a Material\n";
       exit(-1);
     }
   }    
@@ -250,19 +247,19 @@ NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d(int tag, double bflan
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
 
-  //Initialize the shear normalization parameters beta12 and beta13
-  computeShearBetas();
+  //Initialize the quadrilateral mesh
+  determineQuadMesh();
 }
 
 // constructor for blank object that recvSelf needs to be invoked upon
-NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d():
-  SectionForceDeformation(0, SEC_TAG_NDTestShear4WFFiberSection3d),
-    bf(0.), tf(0.), d(0.), tw(0.),
+NDShearFiberSection3d::NDShearFiberSection3d():
+  SectionForceDeformation(0, SEC_TAG_NDShearFiberSection3d),
+  allCellsVertices(0.),
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   sectionIntegr(0), e(6), s(0), ks(0),
   parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), h(0), beta22(0.), beta23(0.), beta33(0.)
+    Iy(0.), Iz(0.), connectivity_matrix(numFibers, 4), coordinate_matrix(4, 2)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -279,14 +276,10 @@ NDTestShear4WFFiberSection3d::NDTestShear4WFFiberSection3d():
   code(3) = SECTION_RESPONSE_VY;
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
-
-  //getIndexExtremeFibers();
-  //Initialize the shear normalization parameters beta12 and beta13
-  //computeShearBetas();
 }
 
 int
-NDTestShear4WFFiberSection3d::addFiber(Fiber &newFiber)
+NDShearFiberSection3d::addFiber(Fiber &newFiber)
 {
   // need to create larger arrays
   if(numFibers == sizeFibers) {
@@ -294,7 +287,7 @@ NDTestShear4WFFiberSection3d::addFiber(Fiber &newFiber)
       NDMaterial **newArray = new NDMaterial *[newSize]; 
       double *newMatData = new double [3 * newSize];
       if (newArray == 0 || newMatData == 0) {
-	  opserr <<"NDTestShear4WFFiberSection3d::addFiber -- failed to allocate Fiber pointers\n";
+	  opserr <<"NDShearFiberSection3d::addFiber -- failed to allocate Fiber pointers\n";
 	  return -1;
       }
       
@@ -337,7 +330,7 @@ NDTestShear4WFFiberSection3d::addFiber(Fiber &newFiber)
   theMaterials[numFibers] = theMat->getCopy("BeamFiber");
 
   if (theMaterials[numFibers] == 0) {
-    opserr <<"NDTestShear4WFFiberSection3d::addFiber -- failed to get copy of a Material\n";
+    opserr <<"NDShearFiberSection3d::addFiber -- failed to get copy of a Material\n";
     return -1;
   }
 
@@ -358,7 +351,7 @@ NDTestShear4WFFiberSection3d::addFiber(Fiber &newFiber)
 
 
 // destructor:
-NDTestShear4WFFiberSection3d::~NDTestShear4WFFiberSection3d()
+NDShearFiberSection3d::~NDShearFiberSection3d()
 {
   if (theMaterials != 0) {
     for (int i = 0; i < numFibers; i++)
@@ -385,7 +378,7 @@ NDTestShear4WFFiberSection3d::~NDTestShear4WFFiberSection3d()
 //      0  0 0 Psi22       0 -z
 //      0  0 0       Psi23 Psi33  y]
 int
-NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
+NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 {
   int res = 0;
 
@@ -422,11 +415,6 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
  /* opserr << "This is coord fibers:"<< endln;
   for (int i = 0; i < numFibers; i++) {
       opserr << yLocs[i] << " and " << zLocs[i] << endln;
-  }
-
-  opserr << "This is area fibers:" << endln;
-  for (int i = 0; i < numFibers; i++) {
-      opserr << fiberArea[i]  << endln;
   }*/
   
   static Vector eps(3);
@@ -441,12 +429,6 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
-    double signZ = 1.;
-    if (z<0)
-    {
-        signZ = -1.;
-    }
-
 
     double y2 = y*y;
     double z2 = z*z;
@@ -456,30 +438,36 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     //Compute shear factors
     double Psi22 = 0.;
     double Psi23 = 0.;
+    double Psi32 = 0.;
     double Psi33 = 0.;
-    if (abs(y) > h / 2.) //flange plate
-    {
-        Psi22 = 0.;
-        /*if (abs(z) < tw / 2.)
-        {
-            Psi22 = 1/beta22*(1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y)));
-        }*/
-        Psi23 = 1 / beta23 * (signZ * 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
-        Psi33 = 1 / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
-    }
-    else // web plate
-    {
-        //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
-        Psi22 = 1 / beta22 * (1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y)));
-        Psi23 = 0.;
-        Psi33 = 0.;
-    }
+    //if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
+    //{
+    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    //}
+    //else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
+    //{
+    //    Psi22 = 0.;
+    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+    //    Psi32 = 0.;
+    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    //}
+    //else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
+    //{
+    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+    //    Psi23 = 0.;
+    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+    //    Psi33 = 0.;
+    //}
+
 
     // determine material strain and set it
     eps(0) = d0 - y*d1 + z*d2;
     /*eps(1) = rootAlpha*d3 - z*d5;
     eps(2) = rootAlpha*d4 + y*d5;*/
-    eps(1) = Psi22 * d3 - z * d5;
+    eps(1) = Psi22 * d3 + Psi32 * d4 - z * d5;
     eps(2) = Psi23 * d3 + Psi33 * d4 + y * d5;
 
     res += theMat->setTrialStrain(eps);
@@ -526,10 +514,10 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     ksi(3,4) += alpha*d12;
     ksi(4,3) += alpha*d21;
     ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi22,2)*d11+ pow(Psi23, 2)*d22;
+    ksi(3, 3) += pow(Psi22, 2) * d11 + pow(Psi23, 2) * d22;
     //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
     //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ksi(4, 4) += pow(Psi33, 2) * d22;
+    ksi(4, 4) += pow(Psi32, 2) * d11 + pow(Psi33, 2) * d22;
     /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
     //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
     
@@ -550,7 +538,7 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
     d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi22;
+    d11 *= Psi22 + Psi32;
     d22 *= Psi23 + Psi33;
     
     // Bending-shear coupling terms
@@ -585,7 +573,7 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
     si(3) += Psi22 * sig1 + Psi23 * sig2;
-    si(4) += Psi33 * sig2;
+    si(4) += Psi32 * sig1 + Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -599,13 +587,13 @@ NDTestShear4WFFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 }
 
 const Vector&
-NDTestShear4WFFiberSection3d::getSectionDeformation(void)
+NDShearFiberSection3d::getSectionDeformation(void)
 {
   return e;
 }
 
 const Matrix&
-NDTestShear4WFFiberSection3d::getInitialTangent(void)
+NDShearFiberSection3d::getInitialTangent(void)
 {
   static double kInitial[36];
   static Matrix ki(kInitial, 6, 6);
@@ -636,12 +624,6 @@ NDTestShear4WFFiberSection3d::getInitialTangent(void)
     double y = yLocs[i] - yBar;
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
-
-    double signZ = 1.;
-    if (z < 0)
-    {
-        signZ = -1.;
-    }
 
     double y2 = y*y;
     double z2 = z*z;
@@ -677,24 +659,29 @@ NDTestShear4WFFiberSection3d::getInitialTangent(void)
     //Compute shear factors
     double Psi22 = 0.;
     double Psi23 = 0.;
+    double Psi32 = 0.;
     double Psi33 = 0.;
-    if (abs(y) > h / 2.) //flange plate
-    {
-        Psi22 = 0.;
-        /*if (abs(z) < tw / 2.)
-        {
-            Psi22 = 1 / beta22 * (1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y)));
-        }*/
-        Psi23 = 1 / beta23 * (signZ * 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
-        Psi33 = 1 / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
-    }
-    else // web plate
-    {
-        //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
-        Psi22 = 1 / beta22 * (1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y)));
-        Psi23 = 0.;
-        Psi33 = 0.;
-    }
+    //if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
+    //{
+    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    //}
+    //else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
+    //{
+    //    Psi22 = 0.;
+    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+    //    Psi32 = 0.;
+    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    //}
+    //else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
+    //{
+    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+    //    Psi23 = 0.;
+    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+    //    Psi33 = 0.;
+    //}
     
     // Shear terms
     /*ki(3,3) += alpha*d11;
@@ -704,7 +691,7 @@ NDTestShear4WFFiberSection3d::getInitialTangent(void)
     ki(3, 3) += pow(Psi22, 2) * d11 + pow(Psi23, 2) * d22;
     //ki(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
     //ki(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ki(4, 4) += pow(Psi33, 2) * d22;
+    ki(4, 4) += pow(Psi32, 2) * d11 + pow(Psi33, 2) * d22;
     /*ki(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
     //ki(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
     
@@ -725,7 +712,7 @@ NDTestShear4WFFiberSection3d::getInitialTangent(void)
     /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
     d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi22;
+    d11 *= Psi22 + Psi32;
     d22 *= Psi23 + Psi33;
     
     // Bending-shear coupling terms
@@ -759,21 +746,21 @@ NDTestShear4WFFiberSection3d::getInitialTangent(void)
 }
 
 const Matrix&
-NDTestShear4WFFiberSection3d::getSectionTangent(void)
+NDShearFiberSection3d::getSectionTangent(void)
 {
   return *ks;
 }
 
 const Vector&
-NDTestShear4WFFiberSection3d::getStressResultant(void)
+NDShearFiberSection3d::getStressResultant(void)
 {
   return *s;
 }
 
 SectionForceDeformation*
-NDTestShear4WFFiberSection3d::getCopy(void)
+NDShearFiberSection3d::getCopy(void)
 {
-  NDTestShear4WFFiberSection3d *theCopy = new NDTestShear4WFFiberSection3d ();
+  NDShearFiberSection3d *theCopy = new NDShearFiberSection3d ();
   theCopy->setTag(this->getTag());
 
   theCopy->numFibers = numFibers;
@@ -783,14 +770,14 @@ NDTestShear4WFFiberSection3d::getCopy(void)
     theCopy->theMaterials = new NDMaterial *[numFibers];
 
     if (theCopy->theMaterials == 0) {
-      opserr <<"NDTestShear4WFFiberSection3d::getCopy -- failed to allocate Material pointers\n";
+      opserr <<"NDShearFiberSection3d::getCopy -- failed to allocate Material pointers\n";
       exit(-1);
     }
   
     theCopy->matData = new double [numFibers*3];
 
     if (theCopy->matData == 0) {
-      opserr << "NDTestShear4WFFiberSection3d::getCopy -- failed to allocate double array for material data\n";
+      opserr << "NDShearFiberSection3d::getCopy -- failed to allocate double array for material data\n";
       exit(-1);
     }
 			    
@@ -801,7 +788,7 @@ NDTestShear4WFFiberSection3d::getCopy(void)
       theCopy->theMaterials[i] = theMaterials[i]->getCopy("BeamFiber");
 
       if (theCopy->theMaterials[i] == 0) {
-	opserr <<"NDTestShear4WFFiberSection3d::getCopy -- failed to get copy of a Material";
+	opserr <<"NDShearFiberSection3d::getCopy -- failed to get copy of a Material";
 	exit(-1);
       }
     }  
@@ -832,32 +819,27 @@ NDTestShear4WFFiberSection3d::getCopy(void)
 
   theCopy->Iy = Iy;
   theCopy->Iz = Iz;
-  theCopy->bf = bf;
-  theCopy->tf = tf;
-  theCopy->d = d;
-  theCopy->tw = tw;
-  theCopy->h = h;
-  theCopy->beta22 = beta22;
-  theCopy->beta23 = beta23;
-  theCopy->beta33 = beta33;
+  theCopy->allCellsVertices = allCellsVertices;
+  theCopy->connectivity_matrix = connectivity_matrix;
+  theCopy->coordinate_matrix = coordinate_matrix;
 
   return theCopy;
 }
 
 const ID&
-NDTestShear4WFFiberSection3d::getType ()
+NDShearFiberSection3d::getType ()
 {
   return code;
 }
 
 int
-NDTestShear4WFFiberSection3d::getOrder () const
+NDShearFiberSection3d::getOrder () const
 {
   return 6;
 }
 
 int
-NDTestShear4WFFiberSection3d::commitState(void)
+NDShearFiberSection3d::commitState(void)
 {
   int err = 0;
 
@@ -868,7 +850,7 @@ NDTestShear4WFFiberSection3d::commitState(void)
 }
 
 int
-NDTestShear4WFFiberSection3d::revertToLastCommit(void)
+NDShearFiberSection3d::revertToLastCommit(void)
 {
   int err = 0;
 
@@ -900,12 +882,6 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
     double y = yLocs[i] - yBar;
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
-
-    double signZ = 1.;
-    if (z < 0)
-    {
-        signZ = -1.;
-    }
 
     double y2 = y*y;
     double z2 = z*z;
@@ -949,24 +925,29 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
     //Compute shear factors
     double Psi22 = 0.;
     double Psi23 = 0.;
+    double Psi32 = 0.;
     double Psi33 = 0.;
-    if (abs(y) > h / 2.) //flange plate
-    {
-        Psi22 = 0.;
-        /*if (abs(z) < tw / 2.)
-        {
-            Psi22 = 1 / beta22 * (1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y)));
-        }*/
-        Psi23 = 1 / beta23 * (signZ * 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
-        Psi33 = 1 / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
-    }
-    else // web plate
-    {
-        //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
-        Psi22 = 1 / beta22 * (1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y)));
-        Psi23 = 0.;
-        Psi33 = 0.;
-    }
+    //if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
+    //{
+    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    //}
+    //else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
+    //{
+    //    Psi22 = 0.;
+    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+    //    Psi32 = 0.;
+    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    //}
+    //else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
+    //{
+    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+    //    Psi23 = 0.;
+    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+    //    Psi33 = 0.;
+    //}
     
     // Shear terms
     /*ksi(3,3) += alpha*d11;
@@ -976,7 +957,7 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
     ksi(3, 3) += pow(Psi22, 2) * d11 + pow(Psi23, 2) * d22;
     //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
     //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ksi(4, 4) += pow(Psi33, 2) * d22;
+    ksi(4, 4) += pow(Psi32, 2) * d11 + pow(Psi33, 2) * d22;
     /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
     //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
     
@@ -997,7 +978,7 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
     /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
     d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi22;
+    d11 *= Psi22 + Psi32;
     d22 *= Psi23 + Psi33;
     
     // Bending-shear coupling terms
@@ -1032,7 +1013,7 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
     si(3) += Psi22 * sig1 + Psi23 * sig2;
-    si(4) += Psi33 * sig2;
+    si(4) += Psi32 * sig1 + Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -1044,7 +1025,7 @@ NDTestShear4WFFiberSection3d::revertToLastCommit(void)
 }
 
 int
-NDTestShear4WFFiberSection3d::revertToStart(void)
+NDShearFiberSection3d::revertToStart(void)
 {
   // revert the fibers to start    
   int err = 0;
@@ -1078,12 +1059,6 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
     double y = yLocs[i] - yBar;
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
-
-    double signZ = 1.;
-    if (z < 0)
-    {
-        signZ = -1.;
-    }
 
     double y2 = y*y;
     double z2 = z*z;
@@ -1129,24 +1104,29 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
     double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));*/
     double Psi22 = 0.;
     double Psi23 = 0.;
+    double Psi32 = 0.;
     double Psi33 = 0.;
-    if (abs(y) > h / 2.) //flange plate
-    {
-        Psi22 = 0.;
-        /*if (abs(z) < tw / 2.)
-        {
-            Psi22 = 1 / beta22 * (1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y)));
-        }*/
-        Psi23 = 1 / beta23 * (signZ * 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.));
-        Psi33 = 1 / beta33 * (1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z))));
-    }
-    else // web plate
-    {
-        //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
-        Psi22 = 1 / beta22 * (1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y)));
-        Psi23 = 0.;
-        Psi33 = 0.;
-    }
+    //if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
+    //{
+    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    //}
+    //else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
+    //{
+    //    Psi22 = 0.;
+    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
+    //    Psi32 = 0.;
+    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
+    //}
+    //else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
+    //{
+    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
+    //    Psi23 = 0.;
+    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
+    //    Psi33 = 0.;
+    //}
     
     // Shear terms
     /*ksi(3,3) += alpha*d11;
@@ -1156,7 +1136,7 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
     ksi(3, 3) += pow(Psi22, 2) * d11 + pow(Psi23, 2) * d22;
     //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
     //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ksi(4, 4) += pow(Psi33, 2) * d22;
+    ksi(4, 4) += pow(Psi32, 2) * d11 + pow(Psi33, 2) * d22;
     /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
     //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
     
@@ -1177,7 +1157,7 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
     /*d01 *= rootAlpha; d02 *= rootAlpha;
     d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
     d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi22;
+    d11 *= Psi22 + Psi32;
     d22 *= Psi23 + Psi33;
     
     // Bending-shear coupling terms
@@ -1212,7 +1192,7 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
     /*si(3) += rootAlpha*sig1;
     si(4) += rootAlpha*sig2;*/
     si(3) += Psi22 * sig1 + Psi23 * sig2;
-    si(4) += Psi33 * sig2;
+    si(4) += Psi32 * sig1 + Psi33 * sig2;
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -1224,7 +1204,7 @@ NDTestShear4WFFiberSection3d::revertToStart(void)
 }
 
 int
-NDTestShear4WFFiberSection3d::sendSelf(int commitTag, Channel &theChannel)
+NDShearFiberSection3d::sendSelf(int commitTag, Channel &theChannel)
 {
   int res = 0;
 
@@ -1237,7 +1217,7 @@ NDTestShear4WFFiberSection3d::sendSelf(int commitTag, Channel &theChannel)
   int dbTag = this->getDbTag();
   res += theChannel.sendID(dbTag, commitTag, data);
   if (res < 0) {
-    opserr <<  "NDTestShear4WFFiberSection3d::sendSelf - failed to send ID data\n";
+    opserr <<  "NDShearFiberSection3d::sendSelf - failed to send ID data\n";
     return res;
   }    
 
@@ -1259,7 +1239,7 @@ NDTestShear4WFFiberSection3d::sendSelf(int commitTag, Channel &theChannel)
     
     res += theChannel.sendID(dbTag, commitTag, materialData);
     if (res < 0) {
-      opserr <<  "NDTestShear4WFFiberSection3d::sendSelf - failed to send material data\n";
+      opserr <<  "NDShearFiberSection3d::sendSelf - failed to send material data\n";
       return res;
     }    
 
@@ -1267,7 +1247,7 @@ NDTestShear4WFFiberSection3d::sendSelf(int commitTag, Channel &theChannel)
     Vector fiberData(matData, 3*numFibers);
     res += theChannel.sendVector(dbTag, commitTag, fiberData);
     if (res < 0) {
-      opserr <<  "NDTestShear4WFFiberSection3d::sendSelf - failed to send material data\n";
+      opserr <<  "NDShearFiberSection3d::sendSelf - failed to send material data\n";
       return res;
     }    
 
@@ -1281,7 +1261,7 @@ NDTestShear4WFFiberSection3d::sendSelf(int commitTag, Channel &theChannel)
 }
 
 int
-NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
+NDShearFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
 			 FEM_ObjectBroker &theBroker)
 {
   int res = 0;
@@ -1291,7 +1271,7 @@ NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
   int dbTag = this->getDbTag();
   res += theChannel.recvID(dbTag, commitTag, data);
   if (res < 0) {
-    opserr <<  "NDTestShear4WFFiberSection3d::recvSelf - failed to recv ID data\n";
+    opserr <<  "NDShearFiberSection3d::recvSelf - failed to recv ID data\n";
     return res;
   }    
   this->setTag(data(0));
@@ -1301,7 +1281,7 @@ NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
     ID materialData(2*data(1));
     res += theChannel.recvID(dbTag, commitTag, materialData);
     if (res < 0) {
-      opserr <<  "NDTestShear4WFFiberSection3d::recvSelf - failed to recv material data\n";
+      opserr <<  "NDShearFiberSection3d::recvSelf - failed to recv material data\n";
       return res;
     }    
 
@@ -1325,7 +1305,7 @@ NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
 	theMaterials = new NDMaterial *[numFibers];
 	
 	if (theMaterials == 0) {
-	  opserr <<"NDTestShear4WFFiberSection3d::recvSelf -- failed to allocate Material pointers\n";
+	  opserr <<"NDShearFiberSection3d::recvSelf -- failed to allocate Material pointers\n";
 	  exit(-1);
 	}
 	
@@ -1335,7 +1315,7 @@ NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
 	matData = new double [numFibers*2];
 
 	if (matData == 0) {
-	  opserr <<"NDTestShear4WFFiberSection3d::recvSelf  -- failed to allocate double array for material data\n";
+	  opserr <<"NDShearFiberSection3d::recvSelf  -- failed to allocate double array for material data\n";
 	  exit(-1);
 	}
       }
@@ -1344,7 +1324,7 @@ NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
     Vector fiberData(matData, 3*numFibers);
     res += theChannel.recvVector(dbTag, commitTag, fiberData);
     if (res < 0) {
-      opserr <<  "NDTestShear4WFFiberSection3d::recvSelf - failed to recv material data\n";
+      opserr <<  "NDShearFiberSection3d::recvSelf - failed to recv material data\n";
       return res;
     }    
 
@@ -1363,7 +1343,7 @@ NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
       }
 
       if (theMaterials[i] == 0) {
-	opserr <<"NDTestShear4WFFiberSection3d::recvSelf -- failed to allocate double array for material data\n";
+	opserr <<"NDShearFiberSection3d::recvSelf -- failed to allocate double array for material data\n";
 	exit(-1);
       }
 
@@ -1401,9 +1381,9 @@ NDTestShear4WFFiberSection3d::recvSelf(int commitTag, Channel &theChannel,
 }
 
 void
-NDTestShear4WFFiberSection3d::Print(OPS_Stream &s, int flag)
+NDShearFiberSection3d::Print(OPS_Stream &s, int flag)
 {
-  s << "\nNDTestShear4WFFiberSection3d, tag: " << this->getTag() << endln;
+  s << "\nNDShearFiberSection3d, tag: " << this->getTag() << endln;
   s << "\tSection code: " << code;
   s << "\tNumber of Fibers: " << numFibers << endln;
   s << "\tCentroid (y,z): " << yBar << ' ' << zBar << endln;
@@ -1419,7 +1399,7 @@ NDTestShear4WFFiberSection3d::Print(OPS_Stream &s, int flag)
 }
 
 Response*
-NDTestShear4WFFiberSection3d::setResponse(const char **argv, int argc,
+NDShearFiberSection3d::setResponse(const char **argv, int argc,
 			      OPS_Stream &output)
 {
   Response *theResponse =0;
@@ -1541,7 +1521,7 @@ NDTestShear4WFFiberSection3d::setResponse(const char **argv, int argc,
 
 
 int 
-NDTestShear4WFFiberSection3d::getResponse(int responseID, Information &sectInfo)
+NDShearFiberSection3d::getResponse(int responseID, Information &sectInfo)
 {
   // Just call the base class method ... don't need to define
   // this function, but keeping it here just for clarity
@@ -1550,14 +1530,127 @@ NDTestShear4WFFiberSection3d::getResponse(int responseID, Information &sectInfo)
 
 
 double 
-NDTestShear4WFFiberSection3d::getSectionArea()
+NDShearFiberSection3d::getSectionArea()
 {
     return Abar;
 }
 
 
 void
-NDTestShear4WFFiberSection3d::computeShearBetas()
+NDShearFiberSection3d::determineQuadMesh()
+{
+    std::vector<std::array<double, 2>> uniqueNodes;
+
+    // Iterate over each element in MatrixContainer
+    for (const auto& element : allCellsVertices) {
+        // Add nodes to the connectivity_matrix matrix
+        for (size_t i = 0; i < 4; ++i) {
+            double y = std::round(element(i, 0) / 1e-6) * 1e-6;
+            double z = std::round(element(i, 1) / 1e-6) * 1e-6;
+            std::array<double, 2> node = { y, z };
+
+            auto it = std::find(uniqueNodes.begin(), uniqueNodes.end(), node);
+            if (it == uniqueNodes.end()) {
+                // New node, add to uniqueNodes
+                uniqueNodes.push_back(node);
+            }
+        }
+    }
+    /*for (size_t i = 0; i < uniqueNodes.size(); i++)
+    {
+        opserr << "This is uniqueNodes:" << uniqueNodes[i][0] << " and " << uniqueNodes[i][1] << endln;
+    }*/
+    
+    // Initialize the coordinate_matrix matrix
+    coordinate_matrix.resize(uniqueNodes.size(), 2);
+    for (size_t i = 0; i < uniqueNodes.size(); ++i) {
+        coordinate_matrix(i, 0) = uniqueNodes[i][0];
+        coordinate_matrix(i, 1) = uniqueNodes[i][1];
+    }
+   //opserr << "This is coordinate_matrix:" << coordinate_matrix  << endln;
+
+    for (size_t elemIndex = 0; elemIndex < allCellsVertices.size(); ++elemIndex) {
+        const auto& element = allCellsVertices[elemIndex];
+        for (size_t i = 0; i < 4; ++i) {
+            double y = std::round(element(i, 0) / 1e-6) * 1e-6;
+            double z = std::round(element(i, 1) / 1e-6) * 1e-6;
+            std::array<double, 2> node = { y, z };
+
+            auto it = std::find(uniqueNodes.begin(), uniqueNodes.end(), node);
+            int nodeIndex = std::distance(uniqueNodes.begin(), it);
+            connectivity_matrix(elemIndex, i) = nodeIndex+1; //+1 so that starts at 1
+        }
+    }
+    connectivity_matrix = sort_nodes_in_element(coordinate_matrix, connectivity_matrix);
+
+    //opserr << "This is connectivity_matrix:" << connectivity_matrix << endln;
+    
+}
+
+
+// Function to sort nodes in each element based on angles around centroid
+Matrix 
+NDShearFiberSection3d::sort_nodes_in_element(Matrix coordinate_matrix, Matrix connectivity_matrix) {
+
+    Matrix sorted_connectivity_matrix=Matrix(connectivity_matrix.noRows(),connectivity_matrix.noCols());
+
+    std::array<int, 4> element_nodes;
+
+    // Iterate over each element in connectivity_matrix
+    for (int i = 0; i < connectivity_matrix.noRows(); ++i) {
+        for (int j = 0; j < 4; j++)
+        {
+            element_nodes[j] = connectivity_matrix(i, j);
+        }
+
+        // Compute centroid of element
+        std::array<double, 2> centroid = { 0.0, 0.0 };
+        for (int j = 0; j < element_nodes.size(); ++j) {
+            centroid[0] += coordinate_matrix(element_nodes[j] - 1, 0);
+            centroid[1] += coordinate_matrix(element_nodes[j] - 1, 1);
+        }
+        centroid[0] /= element_nodes.size();
+        centroid[1] /= element_nodes.size();
+
+        // Compute angles relative to centroid
+        std::vector<double> centroid_angles;
+        for (int j = 0; j < element_nodes.size(); ++j) {
+            double angle = std::atan2(coordinate_matrix(element_nodes[j] - 1, 0) - centroid[0],
+                coordinate_matrix(element_nodes[j] - 1, 1) - centroid[1]);
+            if (angle < 0) angle += 2 * 3.1416;
+            centroid_angles.push_back(angle);
+        }
+
+        // Sort indices based on angles in counterclockwise order
+        std::vector<int> sorted_indices(element_nodes.size());
+        std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
+        std::sort(sorted_indices.begin(), sorted_indices.end(), [&centroid_angles](int a, int b) {
+            double angle_a = centroid_angles[a];
+            double angle_b = centroid_angles[b];
+            // Compare angles to sort in counterclockwise order
+            return angle_a < angle_b;
+            });
+
+        // Reorder element nodes based on sorted indices
+        std::array<int, 4> sorted_element_nodes;
+        for (int j = 0; j < element_nodes.size(); ++j) {
+            sorted_element_nodes[j] = element_nodes[sorted_indices[j]];
+        }
+
+        // Add sorted element nodes to sorted_connectivity
+        for (int j = 0; j < 4; j++)
+        {
+            sorted_connectivity_matrix(i, j) = sorted_element_nodes[j];
+        }
+    }
+    //opserr << "This is connectivity_matrix:" << sorted_connectivity_matrix << endln;
+
+    return sorted_connectivity_matrix;
+}
+
+
+void
+NDShearFiberSection3d::computeSectionProperties()
 {
     Iz = 0.;
     Iy = 0.;
@@ -1571,8 +1664,9 @@ NDTestShear4WFFiberSection3d::computeShearBetas()
 
         Iz += pow(y, 2.) * A;
         Iy += pow(z, 2.) * A;
+
+        //opserr << "This is coordY: " << y << "      This is coordZ: " << z << endln;
     }
-    h = d - 2. * tf;
 
     /*opserr << "This is coord fibers:" << endln;
     for (int i = 0; i < numFibers; i++) {
@@ -1584,54 +1678,13 @@ NDTestShear4WFFiberSection3d::computeShearBetas()
         opserr << matData[i * 3 + 2] << endln;
     }*/
 
-    double phi22 = 0.;
-    double phi23 = 0.;
-    double phi33 = 0.;
-    beta22 = 0.;
-    beta23 = 0.;
-    beta33 = 0.;
-    for (int i = 0; i < numFibers; i++) {
-        y = matData[i * 3] - yBar;
-        z = matData[i * 3 + 1] - zBar;
-        A = matData[i * 3 + 2];
-
-        double signZ = 1.;
-        if (z < 0)
-        {
-            signZ = -1.;
-        }
-
-        //phi=Q/(I*b)
-        if (abs(y)>h/2.) //flange plate
-        {
-            phi22 = 0.;
-            /*if (abs(z)<tw/2.)
-            {
-                phi22 = 1. / (Iz * bf) * (0.5 * bf * (0.5 * d - y) * (0.5 * d + y));
-            }*/
-            phi23 = signZ* 1. / (Iz * tf) * (tf * (bf / 2. - abs(z)) * (d - tf) / 2.);
-            phi33 = 1. / (Iy * tf) * (tf * (bf / 2. - z) * (z + 0.5 * (bf / 2. - z)));
-        }
-        else // web plate
-        {
-            //phi22 = 1 / (Iz * tw) * (bf * (d / 2. - h / 2.) * (h / 2. + 0.5 * (d / 2. - h / 2.)) + tw * (h / 2. - y)*(y + 0.5 * (h / 2. - y)));
-            phi22 = 1 / (Iz * tw) * (0.25 * bf * tf * (d + h) + 0.5 * tw * (0.5 * h - y) * (0.5 * h + y));
-            phi23 = 0.;
-            phi33 = 0.;
-        }
-
-        //beta=\integral_A of phi^2
-        beta22 += (pow(phi22, 2) + pow(phi23, 2)) * A;
-        beta23 = beta22;
-        beta33 += pow(phi33, 2) * A;
-    }
 }
 
 
 
 // AddingSensitivity:BEGIN ////////////////////////////////////
 int
-NDTestShear4WFFiberSection3d::setParameter(const char **argv, int argc, Parameter &param)
+NDShearFiberSection3d::setParameter(const char **argv, int argc, Parameter &param)
 {
   if (argc < 1)
     return -1;
@@ -1686,7 +1739,7 @@ NDTestShear4WFFiberSection3d::setParameter(const char **argv, int argc, Paramete
 }
 
 int
-NDTestShear4WFFiberSection3d::updateParameter(int paramID, Information &info)
+NDShearFiberSection3d::updateParameter(int paramID, Information &info)
 {
   switch(paramID) {
   case 1:
@@ -1698,7 +1751,7 @@ NDTestShear4WFFiberSection3d::updateParameter(int paramID, Information &info)
 }
 
 int
-NDTestShear4WFFiberSection3d::activateParameter(int paramID)
+NDShearFiberSection3d::activateParameter(int paramID)
 {
   parameterID = paramID;
 
@@ -1706,13 +1759,13 @@ NDTestShear4WFFiberSection3d::activateParameter(int paramID)
 }
 
 const Vector &
-NDTestShear4WFFiberSection3d::getSectionDeformationSensitivity(int gradIndex)
+NDShearFiberSection3d::getSectionDeformationSensitivity(int gradIndex)
 {
   return dedh;
 }
 
 const Vector &
-NDTestShear4WFFiberSection3d::getStressResultantSensitivity(int gradIndex, bool conditional)
+NDShearFiberSection3d::getStressResultantSensitivity(int gradIndex, bool conditional)
 {
   static Vector ds(6);
   
@@ -1841,7 +1894,7 @@ NDTestShear4WFFiberSection3d::getStressResultantSensitivity(int gradIndex, bool 
 }
 
 const Matrix &
-NDTestShear4WFFiberSection3d::getInitialTangentSensitivity(int gradIndex)
+NDShearFiberSection3d::getInitialTangentSensitivity(int gradIndex)
 {
   static Matrix dksdh(6,6);
   
@@ -1899,7 +1952,7 @@ NDTestShear4WFFiberSection3d::getInitialTangentSensitivity(int gradIndex)
 }
 
 int
-NDTestShear4WFFiberSection3d::commitSensitivity(const Vector& defSens,
+NDShearFiberSection3d::commitSensitivity(const Vector& defSens,
 				    int gradIndex, int numGrads)
 {
   double d0 = defSens(0);

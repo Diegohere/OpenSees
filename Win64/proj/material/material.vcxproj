@@ -253,6 +253,7 @@
     <ClCompile Include="..\..\..\SRC\material\section\LayeredShellFiberSectionThermal.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\MembranePlateFiberSectionThermal.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\NDFiberSectionWarping2d.cpp" />
+    <ClCompile Include="..\..\..\SRC\material\section\NDShearFiberSection3d.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\NDTestNonlocalFiberSection3d.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\NDTestShear4HSSFiberSection3d.cpp" />
     <ClCompile Include="..\..\..\SRC\material\section\NDTestShear4RectangleFiberSection3d.cpp" />
@@ -689,6 +690,7 @@
     <ClInclude Include="..\..\..\SRC\material\section\LayeredShellFiberSectionThermal.h" />
     <ClInclude Include="..\..\..\SRC\material\section\MembranePlateFiberSectionThermal.h" />
     <ClInclude Include="..\..\..\SRC\material\section\NDFiberSectionWarping2d.h" />
+    <ClInclude Include="..\..\..\SRC\material\section\NDShearFiberSection3d.h" />
     <ClInclude Include="..\..\..\SRC\material\section\NDTestNonlocalFiberSection3d.h" />
     <ClInclude Include="..\..\..\SRC\material\section\NDTestShear4HSSFiberSection3d.h" />
     <ClInclude Include="..\..\..\SRC\material\section\NDTestShear4RectangleFiberSection3d.h" />

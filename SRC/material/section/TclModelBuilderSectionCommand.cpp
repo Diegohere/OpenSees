@@ -97,6 +97,8 @@ extern "C" int         OPS_ResetInputNoBuilder(ClientData clientData, Tcl_Interp
 #include <NDTestShear4RectangleFiberSection3d.h> // Added by Diego Heredia
 #include <NDTestShear4WFFiberSection3d.h> // Added by Diego Heredia
 #include <NDTestShear4HSSFiberSection3d.h> // Added by Diego Heredia
+#include <NDShearFiberSection3d.h> // Added by Diego Heredia
+#include <vector>
 
 #include <string.h>
 #include <fstream>
@@ -532,7 +534,8 @@ TclModelBuilderSectionCommand (ClientData clientData, Tcl_Interp *interp, int ar
 		 || strcmp(argv[1], "NDFiberTestNonlocal")==0
 		 || strcmp(argv[1], "NDFiberTestShear4Rectangle") == 0 
 		 || strcmp(argv[1], "NDFiberTestShear4WF") == 0
-		 || strcmp(argv[1], "NDFiberTestShear4HSS") == 0) //updated by Diego Heredia
+		 || strcmp(argv[1], "NDFiberTestShear4HSS") == 0
+		 || strcmp(argv[1], "NDFiberShear") == 0) //updated by Diego Heredia
 
 	return TclCommand_addFiberSection (clientData, interp, argc, argv,
 					   theTclBuilder);
@@ -980,6 +983,9 @@ double DHSS = 0.;
 double tHSS = 0.;
 double rIntHSS = 0.;
 
+// Added by Diego Heredia 10.06.2024
+static bool currentSectionIsNDShearFiberSection3d = false;
+
 int
 buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	     int secTag, UniaxialMaterial &theTorsion);
@@ -1071,6 +1077,11 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
 			opserr << "WARNING invalid rInt" << endln;
 			return TCL_ERROR;
 		}
+	}
+	// Added by Diego Heredia 10.06.2024
+	if (strcmp(argv[1], "NDFiberShear") == 0)
+	{
+		currentSectionIsNDShearFiberSection3d = true;
 	}
 
     // create the fiber section representation (with the geometric information) 
@@ -2223,6 +2234,10 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 
       int  numCells;
       Cell **cell;
+
+	  // Added by Diego Heredia 10.06.2024
+	  using MatrixContainer = std::vector<Matrix>; 
+	  MatrixContainer allCellsVertices; //stores the matrix storing the vertices of each fiber (i.e. of each "cell") 
     
       k = 0;
       for (i = 0; i < numPatches; i++)
@@ -2241,7 +2256,7 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
             opserr <<  "WARNING out of run to create fibers\n";
             return TCL_ERROR;
          }    
-         
+
          //opserr << "\n\tnumCells :" << numCells;
       
          for (j = 0; j < numCells; j++)
@@ -2249,6 +2264,10 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	    fibersMaterial(k) = matTag;
             fibersArea(k)     = cell[j]->getArea();
             fiberPosition     = cell[j]->getCentroidPosition();
+
+			//Added by Diego Heredia 10.06.2024
+			allCellsVertices.push_back(cell[j]->getVertCoords());
+			//opserr << "This is vertCoord" << allCellsVertices[k] <<endln;
 
             fibersPosition(0,k) = fiberPosition(0);
 	    fibersPosition(1,k) = fiberPosition(1);
@@ -2373,7 +2392,7 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	   fiberPosition(0) = fibersPosition(0,k);
 	   fiberPosition(1) = fibersPosition(1,k);  
 	   if (currentSectionIsND || currentSectionIsNDFiberTestNonlocal || currentSectionIsNDTestShear4RectangleFiberSection3d 
-		   || currentSectionIsNDTestShear4WFFiberSection3d || currentSectionIsNDTestShear4HSSFiberSection3d) { // Modified by Diego Heredia
+		   || currentSectionIsNDTestShear4WFFiberSection3d || currentSectionIsNDTestShear4HSSFiberSection3d || currentSectionIsNDShearFiberSection3d) { // Modified by Diego Heredia
 	     ndmaterial = OPS_getNDMaterial(fibersMaterial(k));
 	     if (ndmaterial == 0) {
                opserr <<  "WARNING invalid NDmaterial ID for patch\n";
@@ -2416,6 +2435,10 @@ buildSection(Tcl_Interp *interp, TclModelBuilder *theTclModelBuilder,
 	 else if (currentSectionIsNDTestShear4HSSFiberSection3d) // Added by Diego Heredia
 	 {
 		 section = new NDTestShear4HSSFiberSection3d(secTag, DHSS, tHSS, rIntHSS, numFibers, fiber, currentSectionComputeCentroid);
+	 }
+	 else if (currentSectionIsNDShearFiberSection3d) // Added by Diego Heredia 10.06.2024
+	 {
+		 section = new NDShearFiberSection3d(secTag, allCellsVertices, numFibers, fiber, currentSectionComputeCentroid);
 	 }
 	 else
 	   section = new FiberSection3d(secTag, numFibers, fiber, theTorsion, currentSectionComputeCentroid);

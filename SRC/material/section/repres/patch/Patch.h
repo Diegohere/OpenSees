@@ -57,8 +57,7 @@ class Patch
     virtual void Print(OPS_Stream &s, int flag =0) const =0;   
     friend OPS_Stream &operator<<(OPS_Stream &s, const Patch &patch);    
 
-  protected:
-    
+  protected:      
   private:
 };
 
