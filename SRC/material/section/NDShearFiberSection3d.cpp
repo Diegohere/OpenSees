@@ -57,7 +57,7 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -119,6 +119,12 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
 
   //Initialize the quadrilateral mesh
   determineQuadMesh();
+
+  //Initialize the quadrature for quad fiber elements
+  compute_quadrature();
+
+  //Compute the elastic shear stress distribution functions
+  compute_gradPsi_FiberCenter();
 }
 
 NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVert, int num, double a, bool compCentroid) :
@@ -128,7 +134,7 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
@@ -172,6 +178,12 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
 
     //Initialize the quadrilateral mesh
     determineQuadMesh();
+
+    //Initialize the quadrature for quad fiber elements
+    compute_quadrature();
+
+    //Compute the elastic shear stress distribution functions
+    compute_gradPsi_FiberCenter();
 }
 
 NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVert, int num, NDMaterial **mats,
@@ -182,7 +194,7 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   sectionIntegr(0), e(6), s(0), ks(0), 
   parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -249,6 +261,12 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
 
   //Initialize the quadrilateral mesh
   determineQuadMesh();
+
+  //Initialize the quadrature for quad fiber elements
+  compute_quadrature();
+
+  //Compute the elastic shear stress distribution functions
+  compute_gradPsi_FiberCenter();
 }
 
 // constructor for blank object that recvSelf needs to be invoked upon
@@ -259,7 +277,7 @@ NDShearFiberSection3d::NDShearFiberSection3d():
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   sectionIntegr(0), e(6), s(0), ks(0),
   parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), connectivity_matrix(numFibers, 4), coordinate_matrix(4, 2)
+    Iy(0.), Iz(0.), connectivity_matrix(numFibers, 4), coordinate_matrix(4, 2), points(2), weights(0.)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -822,6 +840,8 @@ NDShearFiberSection3d::getCopy(void)
   theCopy->allCellsVertices = allCellsVertices;
   theCopy->connectivity_matrix = connectivity_matrix;
   theCopy->coordinate_matrix = coordinate_matrix;
+  theCopy->points = points;
+  theCopy->weights = weights;
 
   return theCopy;
 }
@@ -1537,6 +1557,38 @@ NDShearFiberSection3d::getSectionArea()
 
 
 void
+NDShearFiberSection3d::computeSectionProperties()
+{
+    Iz = 0.;
+    Iy = 0.;
+    double y = 0.;
+    double z = 0.;
+    double A = 0.;
+    for (int i = 0; i < numFibers; i++) {
+        y = matData[i * 3] - yBar;
+        z = matData[i * 3 + 1] - zBar;
+        A = matData[i * 3 + 2];
+
+        Iz += pow(y, 2.) * A;
+        Iy += pow(z, 2.) * A;
+
+        //opserr << "This is coordY: " << y << "      This is coordZ: " << z << endln;
+    }
+
+    /*opserr << "This is coord fibers:" << endln;
+    for (int i = 0; i < numFibers; i++) {
+        opserr << matData[i * 3] - yBar << " and " << matData[i * 3 + 1] - zBar << endln;
+    }
+
+    opserr << "This is area fibers:" << endln;
+    for (int i = 0; i < numFibers; i++) {
+        opserr << matData[i * 3 + 2] << endln;
+    }*/
+
+}
+
+
+void
 NDShearFiberSection3d::determineQuadMesh()
 {
     std::vector<std::array<double, 2>> uniqueNodes;
@@ -1583,10 +1635,9 @@ NDShearFiberSection3d::determineQuadMesh()
     }
     connectivity_matrix = sort_nodes_in_element(coordinate_matrix, connectivity_matrix);
 
-    //opserr << "This is connectivity_matrix:" << connectivity_matrix << endln;
+   //opserr << "This is connectivity_matrix:" << connectivity_matrix << endln;
     
 }
-
 
 // Function to sort nodes in each element based on angles around centroid
 Matrix 
@@ -1650,34 +1701,188 @@ NDShearFiberSection3d::sort_nodes_in_element(Matrix coordinate_matrix, Matrix co
 
 
 void
-NDShearFiberSection3d::computeSectionProperties()
+NDShearFiberSection3d::compute_quadrature()
 {
-    Iz = 0.;
-    Iy = 0.;
-    double y = 0.;
-    double z = 0.;
-    double A = 0.;
-    for (int i = 0; i < numFibers; i++) {
-        y = matData[i * 3] - yBar;
-        z = matData[i * 3 + 1] - zBar;
-        A = matData[i * 3 + 2];
+    points.Zero(); // for 1 Gauss point which is at the element centroid
+    weights = 4.;
+}
 
-        Iz += pow(y, 2.) * A;
-        Iy += pow(z, 2.) * A;
 
-        //opserr << "This is coordY: " << y << "      This is coordZ: " << z << endln;
+void
+NDShearFiberSection3d::compute_gradPsi_FiberCenter()
+{
+    int num_nodes = coordinate_matrix.noRows();
+    Vector Phi_sy_globalNodal = Vector(num_nodes);
+    Vector Phi_sz_globalNodal = Vector(num_nodes);
+
+    compute_Phi_fibers(Phi_sy_globalNodal, Phi_sz_globalNodal);
+}
+
+
+void
+NDShearFiberSection3d::compute_Phi_fibers(Vector& Phi_sy_globalNodal, Vector& Phi_sz_globalNodal)
+{
+    int num_nodes = coordinate_matrix.noRows();
+    Matrix K_global = Matrix(num_nodes, num_nodes);
+    Vector f_sy_global = Vector(num_nodes);
+    Vector f_sz_global = Vector(num_nodes);
+
+    assemble_global_quantities(K_global, f_sy_global, f_sz_global);
+
+    // Solve for shear function \Psi for all nodes
+}
+
+
+void
+NDShearFiberSection3d::assemble_global_quantities(Matrix& K_global, Vector& f_sy_global, Vector& f_sz_global)
+{
+    for (int e= 0; e < numFibers; e++)
+    {
+        //Retrieve degrees of freedom of element e
+        Vector dof = Vector(4);
+        for (int i = 0; i < 4; i++)
+        {
+            dof(i) = connectivity_matrix(e, i) - 1;  //   - 1 for c++ indexing
+        }
+
+        //Retrieve nodes of element e
+        Vector connectivity_element = dof + 1;
+        Matrix coordinate_element = Matrix(4, 2);
+        for (int i = 0; i < 4; i++)
+        {
+            coordinate_element(i,0) = coordinate_matrix(connectivity_element(i)-1, 0);  //   - 1 for c++ indexing
+            coordinate_element(i, 1) = coordinate_matrix(connectivity_element(i) - 1, 1);  //   - 1 for c++ indexing
+        }
+        //opserr << "This is coordinate_element:" << coordinate_element << endln;
+
+        //Calculate local stiffness matrix and force vector of element e
+        Matrix K_element = Matrix(4, 4);
+        Vector f_sy_element = Vector(4);
+        Vector f_sz_element = Vector(4);
+        compute_element_quantities(coordinate_element, connectivity_element, K_element, f_sy_element, f_sz_element);
+
+        // Assemble
+        for (int i = 0; i < 4; i++)
+        {
+            f_sy_global(dof(i)) += f_sy_element(i);
+            f_sz_global(dof(i)) += f_sz_element(i);
+
+            for (int j = 0; j < 4; j++)
+            {
+                K_global(dof(i), dof(j)) += K_element(i, j);
+            }
+        } 
     }
+}
 
-    /*opserr << "This is coord fibers:" << endln;
-    for (int i = 0; i < numFibers; i++) {
-        opserr << matData[i * 3] - yBar << " and " << matData[i * 3 + 1] - zBar << endln;
+
+void
+NDShearFiberSection3d::compute_element_quantities(Matrix coordinate_element, Vector connectivity_element, Matrix& K_element, Vector& f_sy_element, Vector& f_sz_element)
+{
+    // No need for loop Integrate numerically using Gauss quadrature because use 1 Gauss quadrature point
+    Vector N = Vector(4);
+    Matrix B = Matrix(2, 4);
+    double Jdet = 0.;
+    compute_NBandJdetQ4(N,B,Jdet, coordinate_element);
+
+    // Compute element stiffness matrix
+    Matrix BtB = Matrix(4, 4);
+    BtB.addMatrixTransposeProduct(1.0, B, B, 1.0);
+    /*opserr << "This is B" << B << endln;
+    opserr << "This is BtB:" << BtB << endln;*/
+    K_element = weights * BtB * Jdet;
+
+    // Compute element force vector
+    Vector yCoords_elements = Vector(4);
+    Vector zCoords_elements = Vector(4);
+    for (int i = 0; i < 4; i++)
+    {
+        yCoords_elements(i) = coordinate_element(i, 0);
+        zCoords_elements(i) = coordinate_element(i, 1);
     }
+    /*double test = N ^ yCoords_elements;
+    opserr << "This is N" << N << endln;
+    opserr << "This is yCoords_elements:" << yCoords_elements << endln;
+    opserr << "This is N ^ yCoords_elements:" << test << endln;*/
+    f_sy_element = -weights * (N ^ yCoords_elements) * N * Jdet;
+    f_sz_element = -weights * (N ^ zCoords_elements) * N * Jdet;
+}
 
-    opserr << "This is area fibers:" << endln;
-    for (int i = 0; i < numFibers; i++) {
-        opserr << matData[i * 3 + 2] << endln;
-    }*/
 
+void
+NDShearFiberSection3d::compute_NBandJdetQ4(Vector& N, Matrix& B, double& Jdet, Matrix coordinate_element)
+{
+    // Gauss integration point
+    double xi = points(0);
+    double eta = points(1);
+
+    // Isoparametric element shape function
+    N(0) = 0.25 * (1 + eta) * (1 + xi);
+    N(1) = 0.25 * (1 - eta) * (1 + xi);
+    N(2) = 0.25 * (1 - eta) * (1 - xi);
+    N(3) = 0.25 * (1 + eta) * (1 - xi);
+
+    //Derivatives of isoparametric element
+    Matrix DN = Matrix(2, 4);
+    DN(0, 0) = 0.25 * (1 + eta);
+    DN(0, 1) = 0.25 * (1 - eta);
+    DN(0, 2) = -0.25 * (1 - eta);
+    DN(0, 3) = -0.25 * (1 + eta);
+    DN(1, 0) = 0.25 * (1 + xi);
+    DN(1, 1) = -0.25 * (1 + xi);
+    DN(1, 2) = -0.25 * (1 - xi);
+    DN(1, 3) = 0.25 * (1 - xi);
+
+    // Jacobian matrix
+    Matrix J = Matrix(2, 2);
+    J = DN * coordinate_element;
+    //opserr << "This is Jacobian matrix:" << J << endln;
+
+    //Compute matrix B and Jacobian determinant
+    Matrix Jinv = Matrix(2, 2);
+    matinv2(J, Jinv, Jdet);
+    B = Jinv * DN;
+    
+}
+
+
+void
+NDShearFiberSection3d::solve_systemSVD(Matrix& A, Vector& b)
+{
+
+}
+
+
+void
+NDShearFiberSection3d::compute_SVD_decomposition(Matrix& A, Matrix& U, Matrix& S, Matrix& Vt)
+{
+
+}
+
+
+#ifdef _WIN32
+extern "C" void DGESVD(char* JOBU, char* JOBVT, int* M, int* N, double* A,
+    int* LDA, double* S, double* U, int* LDU, double* VT,
+    int* LDVT, double* WORK, int* LWORK, int* INFO);
+#else
+extern "C" void dgesvd_(char* JOBU, char* JOBVT, int* M, int* N, double* A,
+    int* LDA, double* S, double* U, int* LDU, double* VT,
+    int* LDVT, double* WORK, int* LWORK, int* INFO);
+#endif
+
+
+
+void
+NDShearFiberSection3d::matinv2( Matrix& A, Matrix& Ainv, double& detA)
+{
+    // Calculate the determinant
+    detA = A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0);
+
+    // Calculate the inverse
+    Ainv(0, 0) = +1. / detA * A(1, 1);
+    Ainv(1, 0) = -1. / detA * A(1, 0);
+    Ainv(0, 1) = -1. / detA * A(0, 1);
+    Ainv(1, 1) = +1. / detA * A(0, 0);
 }
 
 

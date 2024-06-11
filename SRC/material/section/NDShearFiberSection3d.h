@@ -92,8 +92,35 @@ class NDShearFiberSection3d : public SectionForceDeformation
     // Determine connectivity and coordinate matrix of quadrilateral elements
     void determineQuadMesh();
 
-    // Compute the section properties (inertia)
+    // Compute the section geometric properties (inertia)
     void computeSectionProperties();
+
+    //Initialize the quadrature for quad fiber elements
+    void compute_quadrature();
+
+    // Compute the functions for shear stress distributions at each fibre centroid
+    void compute_gradPsi_FiberCenter();
+
+    // Solve the equation for the shear functions Phi_s [Phi_sy_globalNodal, Phi_sz_globalNodal]
+    void compute_Phi_fibers(Vector& Phi_sy_globalNodal, Vector& Phi_sz_globalNodal);
+
+    //Assemble global stiffness matrixand global force vector
+    void assemble_global_quantities(Matrix& K_global, Vector& f_sy_global, Vector& f_sz_global);
+
+    //Calculate local stiffness matrix and force vector of element e
+    void compute_element_quantities(Matrix coordinate_element, Vector connectivity_element, Matrix& K_element, Vector& f_sy_element , Vector& f_sz_element);
+
+    // Compute N B and Jdet for Q4 elements
+    void compute_NBandJdetQ4(Vector& N, Matrix& B, double& Jdet, Matrix coordinate_element);
+
+    // Compute the inverse of a 2x2 matrix
+    void matinv2(Matrix& A, Matrix& Ainv, double& detA);
+
+    //Solve Ax=b using (truncated) SVD decomposition of matrix A
+    void solve_systemSVD(Matrix& A, Vector& b);
+
+    // Compute the (truncated) SVD decomposition of matrix A
+    void compute_SVD_decomposition(Matrix& A, Matrix& U, Matrix& S, Matrix& Vt);
 
   protected:
     
@@ -126,6 +153,10 @@ class NDShearFiberSection3d : public SectionForceDeformation
     // Variables for quadrilateral mesh
     Matrix connectivity_matrix;
     Matrix coordinate_matrix;
+
+    // Variables for quadrature rule for quad elements
+    Vector points;
+    double weights;
 
 // AddingSensitivity:BEGIN //////////////////////////////////////////
     int parameterID;

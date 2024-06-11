@@ -69,8 +69,8 @@
 	#nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 37300000000.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $h $b 800000000000.0 1.0;
 	
 	set NFlange_yDir 2;
-	set NFlange_zDir 2;
-	set NWeb_yDir 2;
+	set NFlange_zDir 4;
+	set NWeb_yDir 10;
 	set NWeb_zDir 2;
 	set NIntersection_yDir [expr $NFlange_yDir]
 	set NIntersection_zDir [expr $NWeb_zDir]
