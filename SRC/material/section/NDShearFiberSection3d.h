@@ -119,8 +119,8 @@ class NDShearFiberSection3d : public SectionForceDeformation
     //Solve Ax=b using (truncated) SVD decomposition of matrix A
     void solve_systemSVD(Matrix& A, Vector& b);
 
-    // Compute the (truncated) SVD decomposition of matrix A
-    void compute_SVD_decomposition(Matrix& A, Matrix& U, Matrix& S, Matrix& Vt);
+    //// Compute the (truncated) SVD decomposition of matrix A
+    //int compute_SVD_decomposition(Matrix& A, Matrix& U, Matrix& S, Matrix& Vt);
 
   protected:
     

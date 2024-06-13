@@ -125,6 +125,26 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
 
   //Compute the elastic shear stress distribution functions
   compute_gradPsi_FiberCenter();
+
+  // Test function for SVD decomposition
+  // Create a 4x4 matrix and initialize elements
+  Matrix A=Matrix(4, 4);
+  A(0, 0) = 54;  A(0, 1) = 47;  A(0, 2) = 58;  A(0, 3) = 84;
+  A(1, 0) = 94;  A(1, 1) = 53;  A(1, 2) = 37;  A(1, 3) = 55;
+  A(2, 0) = 87;  A(2, 1) = 72;  A(2, 2) = 32;  A(2, 3) = 61;
+  A(3, 0) = 19;  A(3, 1) = 79;  A(3, 2) = 17;  A(3, 3) = 50;
+  Matrix U = Matrix(4, 4);
+ Vector S = Vector(4);
+  Matrix V = Matrix(4, 4);
+
+  A.compute_SVD_decomposition(U, S, V);
+  //Matrix Vt = Matrix(4, 4);
+  //Vt.addMatrixTranspose(0., V, 1.0);
+  /*opserr << "This is U:" << U << endln;
+  opserr << "This is S:" << S << endln;
+  opserr << "This is V:" << V<< endln;*/
+  
+
 }
 
 NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVert, int num, double a, bool compCentroid) :
@@ -1853,22 +1873,61 @@ NDShearFiberSection3d::solve_systemSVD(Matrix& A, Vector& b)
 }
 
 
-void
-NDShearFiberSection3d::compute_SVD_decomposition(Matrix& A, Matrix& U, Matrix& S, Matrix& Vt)
-{
+//int
+//NDShearFiberSection3d::compute_SVD_decomposition(Matrix& A, Matrix& U, Matrix& S, Matrix& Vt)
+//{
+//    // Matrix sizes
+//    int m = A.noRows();
+//    int n = A.noCols();
+//    // Check if matrix is square
+//    if (m != n) {
+//        opserr << "Matrix::Solve(b,x) - the matrix of dimensions "
+//            << m << ", " << n << " is not square " << endln;
+//        return -1;
+//    }
+//
+//    // Copy the data to array format
+//    const int dataSize = m * n;
+//    std::vector<double> A_copy(dataSize);
+//    std::vector<double> U_copy(m*m);
+//    std::vector<double> S_copy(std::min(m,n));
+//    std::vector<double> Vt_copy(n*n);
+//    for (int i = 0; i < m; i++)
+//    {
+//        for (int j = 0; j < n; j++)
+//        {
+//            A_copy[i * m + j] = A(i, j);
+//        }
+//    }
+//
+//    Matrix X = Matrix(4, 4);
+//    X.Solve(A, A);
+//
+//
+//    // Call the DGESVD function from Lapack
+//    char JOBU = 'A'; // Compute all left singular vectors
+//    char JOBVT = 'A'; // Compute all right singular vectors
+//    int LWORK = std::max(1, std::max(3 * std::min(m, n) + std::max(m, n), 5 * std::min(m, n)));
+//    int info;
+//    std::vector<double> WORK(LWORK);
+//#ifdef _WIN32
+//    //DGESVD(&JOBU,&JOBVT,&m,&n,A_copy.data(),&m,S_copy.data(),U_copy.data(),&m,Vt_copy.data(),&n,WORK.data(),&LWORK,&info);
+//    //DGESV(&n, &n, A_copy.data(), &n, &n, A_copy.data(), &n, &info);
+//#else
+//    dgesvd_(&JOBU, &JOBVT, &m, &n, A_copy.data(), &m, S_copy.data(), U_copy.data(), &m, Vt_copy.data(), &n, WORK.data(), &LWORK, &info);
+//#endif
+//}
 
-}
 
-
-#ifdef _WIN32
-extern "C" void DGESVD(char* JOBU, char* JOBVT, int* M, int* N, double* A,
-    int* LDA, double* S, double* U, int* LDU, double* VT,
-    int* LDVT, double* WORK, int* LWORK, int* INFO);
-#else
-extern "C" void dgesvd_(char* JOBU, char* JOBVT, int* M, int* N, double* A,
-    int* LDA, double* S, double* U, int* LDU, double* VT,
-    int* LDVT, double* WORK, int* LWORK, int* INFO);
-#endif
+//#ifdef _WIN32
+//extern "C" int DGESVD(char* JOBU, char* JOBVT, int* M, int* N, double* A,
+//    int* LDA, double* S, double* U, int* LDU, double* VT,
+//    int* LDVT, double* WORK, int* LWORK, int* INFO);
+//#else
+//extern "C" void dgesvd_(char* JOBU, char* JOBVT, int* M, int* N, double* A,
+//    int* LDA, double* S, double* U, int* LDU, double* VT,
+//    int* LDVT, double* WORK, int* LWORK, int* INFO);
+//#endif
 
 
 

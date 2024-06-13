@@ -80,6 +80,10 @@ class Matrix
     int addMatrixTripleProduct(double factThis, const Matrix &A, const Matrix &B, double factOther); // A'BA
     int addMatrixTripleProduct(double factThis, const Matrix &A, const Matrix &B, const Matrix &C, double otherFact); //A'BC
 
+    // Added by Diego Heredia 13.06.2024
+    // Compute the (truncated) SVD decomposition of matrix A
+    int compute_SVD_decomposition(Matrix& U, Vector& S, Matrix& Vt);
+
     // overloaded operators 
     inline double &operator()(int row, int col);
     inline double operator()(int row, int col) const;

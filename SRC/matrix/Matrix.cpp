@@ -342,6 +342,15 @@ extern "C" int  DGETRS(char *TRANS, unsigned int sizeT,
 
 extern "C" int  DGETRI(int *N, double *A, int *LDA, 
 			      int *iPiv, double *Work, int *WORKL, int *INFO);
+
+//Added by Diego Heredia 13.06.2024
+//extern "C" int dgesvd(char* JOBU, char* JOBVT, int* M, int* N, double* A,
+//    int* LDA, double* S, double* U, int* LDU, double* VT,
+//    int* LDVT, double* WORK, int* LWORK, int* INFO);
+extern "C" void DGEEV(char* jobvl, char* jobvr, int* n, double* a,
+    int* lda, double* wr, double* wi, double* vl, int* ldvl,
+    double* vr, int* ldvr, double* work, int* lwork, int* info);
+
 //#endif
 #else
 extern "C" int dgesv_(int *N, int *NRHS, double *A, int *LDA, int *iPiv, 
@@ -359,6 +368,14 @@ extern "C" int dgerfs_(char *TRANS, int *N, int *NRHS, double *A, int *LDA,
 		       double *AF, int *LDAF, int *iPiv, double *B, int *LDB, 
 		       double *X, int *LDX, double *FERR, double *BERR, 
 		       double *WORK, int *IWORK, int *INFO);
+
+// Added by Diego Heredia 13.06.2024
+//extern "C" void dgesvd_(char* JOBU, char* JOBVT, int* M, int* N, double* A,
+//    int* LDA, double* S, double* U, int* LDU, double* VT,
+//    int* LDVT, double* WORK, int* LWORK, int* INFO);
+extern "C" void dgeev_(char* jobvl, char* jobvr, int* n, double* A, int* lda,
+    double* w, double* vl, int* ldvl, double* vr, int* ldvr,
+    double* work, int* lwork, int* info);
 
 #endif
 
@@ -553,6 +570,140 @@ Matrix::Solve(const Matrix &b, Matrix &x) const
     */
 #endif
     return -abs(info);
+}
+
+
+// Added by Diego Heredia 13.06.2024
+int 
+Matrix::compute_SVD_decomposition(Matrix& U, Vector& S, Matrix& V)
+{
+    // Matrix sizes
+    int m = numRows;
+    int n = numCols;
+
+    // Step 1: Compute A^T * A
+    double* dataPtr_AtA = new (nothrow) double[m * m];
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            float sum = 0.0;
+            // Compute dot product of column i and column j of A
+            for (int k = 0; k < m; ++k) {
+                sum += data[k + i * m] * data[k + j * m]; // Accessing elements in column-major order
+            }
+            // Store result in column-major order
+            dataPtr_AtA[i + j * n] = sum;
+        }
+    }
+    /*std::cout << "Matrix  A^T * A:\n";
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            std::cout << dataPtr_AtA[i * n + j] << " ";
+        }
+        std::cout << "\n";
+    }*/
+
+    // Step 2: Compute eigenvalues and eigenvectors of A^T * A using LAPACKE_dgeev
+    int lda = n;
+    int ldvl = n;
+    int ldvr = n;
+    double* wr = new (nothrow) double[n];
+    double* wi = new (nothrow) double[n];
+    double* vl = new (nothrow) double[ldvl * n];
+    double* vr = V.data;
+
+    char jobvl = 'N'; // Do notCompute the left eigen vectors
+    char jobvr = 'V'; //  Compute the right eigen vectors
+    double wkopt;
+    double* work;
+    int lwork = -1;
+    int info;
+#ifdef _WIN32
+    // Query and allocate the optimal workspace
+    DGEEV(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+        &wkopt, &lwork, &info);
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+
+    // Solve the eigen problem
+    DGEEV(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+        work, &lwork, &info);
+
+    if (info != 0)
+        return -abs(info);
+#else
+    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+        &wkopt, &lwork, &info);
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+
+    // Solve the eigen problem
+    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+        work, & lwork, & info); 
+#endif
+    /*std::cout << "Eigenvalues of  A^T * A:\n";
+    for (int j = 0; j < n; ++j) {
+           std::cout << wr[j] << " ";
+        std::cout << "\n";
+    }*/
+    /*std::cout << "Eigenvectors of  A^T * A:\n";
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            std::cout << vr[i * n + j] << " ";
+        }
+        std::cout << "\n";
+    }*/
+
+    // Step 3: The singular values are the square roots of the eigenvalues
+    for (int i = 0; i < n; ++i) {
+        S[i] = std::sqrt(wr[i]);
+    }
+    //opserr << "This is S:" << S << endln;
+
+    // Step 4: The right singular vectors (V) are the eigenvectors of A^T * A
+    V.data = vr;
+    //opserr << "This is V:" << V << endln;
+
+    // Step 5: Compute the left singular vectors U
+    double* AmultV=new (nothrow) double[m*n];
+    for (int i = 0; i < n * m; ++i) {
+        AmultV[i] = 0.0;
+    }
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < m; ++i) {
+            for (int k = 0; k < n; ++k) {
+                AmultV[i + j * m] += data[i + k * m] * vr[k + j * n];
+            }
+        }
+    }
+    /*std::cout << "AV:\n";
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            std::cout << AmultV[i * n + j] << " ";
+        }
+        std::cout << "\n";
+    }*/
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            U.data[i + j * m] = AmultV[i + j * m] / S[j];
+        }
+    }
+    //opserr << "This is U:" << U << endln;
+
+    // Free dynamically alocated memory
+    delete[] dataPtr_AtA;
+    
+    delete[] wr;
+    delete[] wi;
+    delete[] vl;
+    delete[] work;
+
+    delete[] AmultV;
+
+    opserr << "This is U:" << U << endln;
+    opserr << "This is S:" << S << endln;
+    opserr << "This is V:" << V << endln;
+
+    return 1;
 }
 
 
