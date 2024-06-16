@@ -147,17 +147,18 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
   A(2, 0) = 0;  A(2, 1) = 0;  A(2, 2) = 3;  A(2, 3) = 2;
   A(3, 0) = 0;  A(3, 1) = 0;  A(3, 2) = 0;  A(3, 3) = 1;
 
-  Matrix Q = Matrix(4, 4);
+ /* Matrix Q = Matrix(4, 4);
  Vector Lambda = Vector(4);
   Matrix Qinv = Matrix(4, 4);
-
-  //A.compute_SVD_decomposition(U, S, V);
-  //Matrix Vt = Matrix(4, 4);
-  //Vt.addMatrixTranspose(0., V, 1.0);
-  A.compute_Eigen_decomposition(Q, Lambda, Qinv);
+A.compute_Eigen_decomposition(Q, Lambda, Qinv);*/
   /*opserr << "This is U:" << U << endln;
   opserr << "This is S:" << S << endln;
   opserr << "This is V:" << V<< endln;*/
+
+  Vector b = Vector(4);
+  b(0) = 1; b(1) = 2; b(2) = 3; b(3) = 4;
+  Vector x = Vector(4);
+  A.solve_truncatedEigen(b, x);
   
 
 }

@@ -81,10 +81,10 @@ class Matrix
     int addMatrixTripleProduct(double factThis, const Matrix &A, const Matrix &B, const Matrix &C, double otherFact); //A'BC
 
     // Added by Diego Heredia 13.06.2024
-    // Compute the (truncated) SVD decomposition of matrix A
-    //int compute_SVD_decomposition(Matrix& U, Vector& S, Matrix& Vt);
     // Compute the eigendecomposition of matrix A
     int compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv);
+    // Solve Ax=b using (truncated Eigen decomposition)
+    int solve_truncatedEigen(const Vector& b, Vector& x);
 
     // overloaded operators 
     inline double &operator()(int row, int col);

@@ -721,7 +721,11 @@ Matrix::compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv)
     }
 
     // copy the data
-    double* A_copy= data;
+    double* A_copy = new (nothrow) double[numCols * numCols];
+    for (int i = 0; i < numCols*numCols; i++)
+    {
+        A_copy[i] = data[i];
+    }
 
     // Step 1: Compute (right) eigen vectors and eigen values of A using LAPACKE_dgeev
     int lda = numCols;
@@ -729,7 +733,6 @@ Matrix::compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv)
     int ldvr = numCols;
     double* wi = new (nothrow) double[numCols];
     double* vl = new (nothrow) double[ldvl * numCols];
-    double* vr = Q.data;
 
     char jobvl = 'N'; // Do notCompute the left eigen vectors
     char jobvr = 'V'; //  Compute the right eigen vectors
@@ -739,17 +742,24 @@ Matrix::compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv)
     int info;
 #ifdef _WIN32
     // Query and allocate the optimal workspace
-    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
         &wkopt, &lwork, &info);
     lwork = (int)wkopt;
     work = new (nothrow) double[lwork];
 
     // Solve the eigen problem
-    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
         work, &lwork, &info);
 
     if (info != 0)
+    {
+        // Free dynamically alocated memory
+        delete[] A_copy;
+        delete[] wi;
+        delete[] vl;
+        delete[] work;
         return -abs(info);
+}
 #else
     dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
         &wkopt, &lwork, &info);
@@ -770,7 +780,15 @@ Matrix::compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv)
     DGETRF(&numCols, &numCols, Qinv.data, &lda, iPIV, &info);
 
     if (info != 0)
+    {
+        // Free dynamically alocated memory
+        delete[] A_copy;
+        delete[] wi;
+        delete[] vl;
+        delete[] work;
+        delete[] iPIV;
         return -abs(info);
+    }
 
     lwork = -1;
     DGETRI(&numCols, Qinv.data, &lda, iPIV,work, &lwork, &info);
@@ -780,31 +798,225 @@ Matrix::compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv)
     DGETRI(&numCols, Qinv.data, &lda, iPIV, work, &lwork, &info);
 
 #else
-    dgetrf_(&numCols, &numCols, Qinv_copy, &lda, iPIV, &info);
+    dgetrf_(&numCols, &numCols, Qinv.data, &lda, iPIV, &info);
 
     if (info != 0)
+    {
+        // Free dynamically alocated memory
+        delete[] A_copy;
+        delete[] wi;
+        delete[] vl;
+        delete[] work;
+        delete[] iPIV;
         return -abs(info);
+    }
 
     lwork = -1;
-    dgetri_(&numCols, Qinv_copy, &lda, iPIV, work, &lwork, &info);
+    dgetri_(&numCols, Qinv.data, &lda, iPIV, work, &lwork, &info);
 
     lwork = (int)wkopt;
     work = new (nothrow) double[lwork];
-    dgetri_(&numCols, Qinv_copy, &lda, iPIV, work, &lwork, &info);
-
+    dgetri_(&numCols, Qinv.data, &lda, iPIV, work, &lwork, &info);
 #endif
 
     // Free dynamically alocated memory
-
+    delete[] A_copy;
     delete[] wi;
     delete[] vl;
     delete[] work;
     delete[] iPIV;
 
 
-    opserr << "This is Q:" << Q << endln;
+    /*opserr << "This is Q:" << Q << endln;
     opserr << "This is Lambda:" << Lambda << endln;
-    opserr << "This is Qinv:" << Qinv << endln;
+    opserr << "This is Qinv:" << Qinv << endln;*/
+
+    return 1;
+}
+
+
+// Added by Diego Heredia 16.06.2024
+int
+Matrix::solve_truncatedEigen(const Vector& b, Vector& x)
+{
+    // Check if matrix is square
+    if (numRows != numCols) {
+        opserr << "compute_Eigen_decomposition - the matrix of dimensions [" << numRows << "," << numCols << "] is not square\n";
+        return -1;
+    }
+
+    // copy the data
+    // copy the data
+    double* A_copy = new (nothrow) double[numCols * numCols];
+    for (int i = 0; i < numCols * numCols; i++)
+    {
+        A_copy[i] = data[i];
+    }
+
+    // Step 1: Compute (right) eigen vectors and eigen values of A using LAPACKE_dgeev
+    int lda = numCols;
+    int ldvl = numCols;
+    int ldvr = numCols;
+    double* wi = new (nothrow) double[numCols];
+    double* vl = new (nothrow) double[ldvl * numCols];
+    double* Q_data = new (nothrow) double[ldvl * numCols];
+    double* Lambda_theData = new (nothrow) double[numCols];
+
+    char jobvl = 'N'; // Do notCompute the left eigen vectors
+    char jobvr = 'V'; //  Compute the right eigen vectors
+    double wkopt;
+    double* work;
+    int lwork = -1;
+    int info;
+#ifdef _WIN32
+    // Query and allocate the optimal workspace
+    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda_theData, wi, vl, &ldvl, Q_data, &ldvr,
+        &wkopt, &lwork, &info);
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+
+    // Solve the eigen problem
+    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda_theData, wi, vl, &ldvl, Q_data, &ldvr,
+        work, &lwork, &info);
+
+    if (info != 0)
+    {
+        // Free dynamically alocated memory
+        delete[] A_copy;
+        delete[] wi;
+        delete[] vl;
+        delete[] work;
+        return -abs(info);
+    }
+#else
+    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda_theData, wi, vl, &ldvl, Q_data, &ldvr,
+        &wkopt, &lwork, &info);
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+
+    // Solve the eigen problem
+    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda_theData, wi, vl, &ldvl, Q_data, &ldvr,
+        work, &lwork, &info);
+
+    if (info != 0)
+    {
+        // Free dynamically alocated memory
+        delete[] A_copy;
+        delete[] wi;
+        delete[] vl;
+        delete[] work;
+        delete[] iPIV;
+        return -abs(info);
+    }
+#endif
+
+    // Step 2: Compute Qinv
+    double* Qinv_data = new (nothrow) double[ldvl * numCols];
+    for (int i = 0; i < numCols*numCols; i++)
+    {
+        Qinv_data[i] = Q_data[i];
+    }
+    int* iPIV = new (nothrow) int[numCols];
+
+#ifdef _WIN32
+
+    DGETRF(&numCols, &numCols, Qinv_data, &lda, iPIV, &info);
+
+    if (info != 0)
+    {
+        // Free dynamically alocated memory
+        delete[] A_copy;
+        delete[] wi;
+        delete[] vl;
+        delete[] work;
+        delete[] iPIV;
+        return -abs(info);
+    }
+
+    lwork = -1;
+    DGETRI(&numCols, Qinv_data, &lda, iPIV, work, &lwork, &info);
+
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+    DGETRI(&numCols, Qinv_data, &lda, iPIV, work, &lwork, &info);
+
+#else
+    dgetrf_(&numCols, &numCols, Qinv_data, &lda, iPIV, &info);
+
+    if (info != 0)
+    {
+        // Free dynamically alocated memory
+        delete[] A_copy;
+        delete[] wi;
+        delete[] vl;
+        delete[] work;
+        delete[] iPIV;
+        return -abs(info);
+    }
+
+    lwork = -1;
+    dgetri_(&numCols, Qinv_data, &lda, iPIV, work, &lwork, &info);
+
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+    dgetri_(&numCols, Qinv_data, &lda, iPIV, work, &lwork, &info);
+
+#endif
+
+    /*std::cout << "Q:\n";
+    for (int j = 0; j < numCols; ++j) {
+        for (int i = 0; i < numCols; ++i) {
+            std::cout << Q_data[i * numCols + j] << " ";
+        }
+        std::cout << "\n";
+    }
+    std::cout << "Lambda:\n";
+    for (int j = 0; j < numCols; ++j) {
+        std::cout << Lambda_theData[j] << " ";
+        std::cout << "\n";
+    }
+    std::cout << "Qinv:\n";
+    for (int j = 0; j < numCols; ++j) {
+        for (int i = 0; i < numCols; ++i) {
+            std::cout << Qinv_data[i * numCols + j] << " ";
+        }
+        std::cout << "\n";
+    }*/
+
+
+    // Step 3 Compute x = Q * (Qinv * b / Lambda)
+    Vector Qinv_b(numCols);
+    for (int i = 0; i < numCols; ++i) {
+        Qinv_b[i] = 0.0;
+        for (int k = 0; k < numCols; ++k) {
+            Qinv_b[i] += Qinv_data[k * numCols + i] * b[k] / Lambda_theData[i];
+        }
+    }
+    //opserr << "This is Qinv_b:" << Qinv_b << endln;
+
+    // Step 2: Compute Q * (Qinv * b / Lambda)
+    for (int i = 0; i < numCols; ++i) {
+        x[i] = 0.0;
+        for (int j = 0; j < numCols; ++j) {
+            x[i] += Q_data[j * numCols + i] * Qinv_b[j];
+        }
+    }
+
+    opserr << "This is x:" << x << endln;
+
+    // Free dynamically alocated memory
+    delete[] A_copy;
+
+    delete[] Q_data;
+    delete[] Lambda_theData;
+    delete[] Qinv_data;
+
+    delete[] wi;
+    delete[] vl;
+    delete[] work;
+    delete[] iPIV;
+
+    opserr << "This is x:" << x << endln;
 
     return 1;
 }
