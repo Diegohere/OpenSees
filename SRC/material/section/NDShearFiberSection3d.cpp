@@ -128,18 +128,33 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
 
   // Test function for SVD decomposition
   // Create a 4x4 matrix and initialize elements
-  Matrix A=Matrix(4, 4);
+ /* Matrix A=Matrix(4, 4);
   A(0, 0) = 54;  A(0, 1) = 47;  A(0, 2) = 58;  A(0, 3) = 84;
   A(1, 0) = 94;  A(1, 1) = 53;  A(1, 2) = 37;  A(1, 3) = 55;
   A(2, 0) = 87;  A(2, 1) = 72;  A(2, 2) = 32;  A(2, 3) = 61;
-  A(3, 0) = 19;  A(3, 1) = 79;  A(3, 2) = 17;  A(3, 3) = 50;
-  Matrix U = Matrix(4, 4);
- Vector S = Vector(4);
-  Matrix V = Matrix(4, 4);
+  A(3, 0) = 19;  A(3, 1) = 79;  A(3, 2) = 17;  A(3, 3) = 50;*/
 
-  A.compute_SVD_decomposition(U, S, V);
+ /* Matrix A = Matrix(4, 4);
+  double epsi = 1e-14;
+  A(0, 0) = 1;       A(0, 1) = 1;       A(0, 2) = 1;       A(0, 3) = 1;
+  A(1, 0) = 1;       A(1, 1) = 1.0+epsi; A(1, 2) = 1;       A(1, 3) = 1;
+  A(2, 0) = 1;       A(2, 1) = 1;       A(2, 2) = 1.0 + epsi; A(2, 3) = 1;
+  A(3, 0) = 1;       A(3, 1) = 1;       A(3, 2) = 1;       A(3, 3) = 1.0 + epsi;*/
+
+  Matrix A = Matrix(4, 4);
+  A(0, 0) = 5;  A(0, 1) = 2;  A(0, 2) = 1;  A(0, 3) = 1;
+  A(1, 0) = 0;  A(1, 1) = 4;  A(1, 2) = 3;  A(1, 3) = 1;
+  A(2, 0) = 0;  A(2, 1) = 0;  A(2, 2) = 3;  A(2, 3) = 2;
+  A(3, 0) = 0;  A(3, 1) = 0;  A(3, 2) = 0;  A(3, 3) = 1;
+
+  Matrix Q = Matrix(4, 4);
+ Vector Lambda = Vector(4);
+  Matrix Qinv = Matrix(4, 4);
+
+  //A.compute_SVD_decomposition(U, S, V);
   //Matrix Vt = Matrix(4, 4);
   //Vt.addMatrixTranspose(0., V, 1.0);
+  A.compute_Eigen_decomposition(Q, Lambda, Qinv);
   /*opserr << "This is U:" << U << endln;
   opserr << "This is S:" << S << endln;
   opserr << "This is V:" << V<< endln;*/

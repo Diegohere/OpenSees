@@ -82,7 +82,9 @@ class Matrix
 
     // Added by Diego Heredia 13.06.2024
     // Compute the (truncated) SVD decomposition of matrix A
-    int compute_SVD_decomposition(Matrix& U, Vector& S, Matrix& Vt);
+    //int compute_SVD_decomposition(Matrix& U, Vector& S, Matrix& Vt);
+    // Compute the eigendecomposition of matrix A
+    int compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv);
 
     // overloaded operators 
     inline double &operator()(int row, int col);

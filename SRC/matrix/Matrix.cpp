@@ -573,43 +573,163 @@ Matrix::Solve(const Matrix &b, Matrix &x) const
 }
 
 
-// Added by Diego Heredia 13.06.2024
-int 
-Matrix::compute_SVD_decomposition(Matrix& U, Vector& S, Matrix& V)
+//// Added by Diego Heredia 13.06.2024
+//int 
+//Matrix::compute_SVD_decomposition(Matrix& U, Vector& S, Matrix& V)
+//{
+//    // Matrix sizes
+//    int m = numRows;
+//    int n = numCols;
+//
+//    // Step 1: Compute A^T * A
+//    double* dataPtr_AtA = new (nothrow) double[m * m];
+//    for (int i = 0; i < n; ++i) {
+//        for (int j = 0; j < n; ++j) {
+//            float sum = 0.0;
+//            // Compute dot product of column i and column j of A
+//            for (int k = 0; k < m; ++k) {
+//                sum += data[k + i * m] * data[k + j * m]; // Accessing elements in column-major order
+//            }
+//            // Store result in column-major order
+//            dataPtr_AtA[i + j * n] = sum;
+//        }
+//    }
+//    /*std::cout << "Matrix  A^T * A:\n";
+//    for (int j = 0; j < n; ++j) {
+//        for (int i = 0; i < n; ++i) {
+//            std::cout << dataPtr_AtA[i * n + j] << " ";
+//        }
+//        std::cout << "\n";
+//    }*/
+//
+//    // Step 2: Compute eigenvalues and eigenvectors of A^T * A using LAPACKE_dgeev
+//    int lda = n;
+//    int ldvl = n;
+//    int ldvr = n;
+//    double* wr = new (nothrow) double[n];
+//    double* wi = new (nothrow) double[n];
+//    double* vl = new (nothrow) double[ldvl * n];
+//    double* vr = V.data;
+//
+//    char jobvl = 'N'; // Do notCompute the left eigen vectors
+//    char jobvr = 'V'; //  Compute the right eigen vectors
+//    double wkopt;
+//    double* work;
+//    int lwork = -1;
+//    int info;
+//#ifdef _WIN32
+//    // Query and allocate the optimal workspace
+//    DGEEV(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+//        &wkopt, &lwork, &info);
+//    lwork = (int)wkopt;
+//    work = new (nothrow) double[lwork];
+//
+//    // Solve the eigen problem
+//    DGEEV(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+//        work, &lwork, &info);
+//
+//    if (info != 0)
+//        return -abs(info);
+//#else
+//    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+//        &wkopt, &lwork, &info);
+//    lwork = (int)wkopt;
+//    work = new (nothrow) double[lwork];
+//
+//    // Solve the eigen problem
+//    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+//        work, & lwork, & info); 
+//#endif
+//    /*std::cout << "Eigenvalues of  A^T * A:\n";
+//    for (int j = 0; j < n; ++j) {
+//           std::cout << wr[j] << " ";
+//        std::cout << "\n";
+//    }*/
+//    /*std::cout << "Eigenvectors of  A^T * A:\n";
+//    for (int j = 0; j < n; ++j) {
+//        for (int i = 0; i < n; ++i) {
+//            std::cout << vr[i * n + j] << " ";
+//        }
+//        std::cout << "\n";
+//    }*/
+//
+//    // Step 3: The singular values are the square roots of the eigenvalues
+//    for (int i = 0; i < n; ++i) {
+//        S[i] = std::sqrt(wr[i]);
+//    }
+//    //opserr << "This is S:" << S << endln;
+//
+//    // Step 4: The right singular vectors (V) are the eigenvectors of A^T * A
+//    V.data = vr;
+//    //opserr << "This is V:" << V << endln;
+//
+//    // Step 5: Compute the left singular vectors U
+//    double* AmultV=new (nothrow) double[m*n];
+//    for (int i = 0; i < n * m; ++i) {
+//        AmultV[i] = 0.0;
+//    }
+//    for (int j = 0; j < n; ++j) {
+//        for (int i = 0; i < m; ++i) {
+//            for (int k = 0; k < n; ++k) {
+//                AmultV[i + j * m] += data[i + k * m] * vr[k + j * n];
+//            }
+//        }
+//    }
+//    /*std::cout << "AV:\n";
+//    for (int j = 0; j < n; ++j) {
+//        for (int i = 0; i < n; ++i) {
+//            std::cout << AmultV[i * n + j] << " ";
+//        }
+//        std::cout << "\n";
+//    }*/
+//    for (int i = 0; i < m; ++i) {
+//        for (int j = 0; j < n; ++j) {
+//            if (S[j]>0)
+//            {
+//                U.data[i + j * m] = AmultV[i + j * m] / S[j];
+//            }
+//        }
+//    }
+//    //opserr << "This is U:" << U << endln;
+//
+//    // Free dynamically alocated memory
+//    delete[] dataPtr_AtA;
+//    
+//    delete[] wr;
+//    delete[] wi;
+//    delete[] vl;
+//    delete[] work;
+//
+//    delete[] AmultV;
+//
+//    /*opserr << "This is U:" << U << endln;
+//    opserr << "This is S:" << S << endln;
+//    opserr << "This is V:" << V << endln;*/
+//
+//    return 1;
+//}
+
+
+// Added by Diego Heredia 15.06.2024
+int
+Matrix::compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv)
 {
-    // Matrix sizes
-    int m = numRows;
-    int n = numCols;
-
-    // Step 1: Compute A^T * A
-    double* dataPtr_AtA = new (nothrow) double[m * m];
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            float sum = 0.0;
-            // Compute dot product of column i and column j of A
-            for (int k = 0; k < m; ++k) {
-                sum += data[k + i * m] * data[k + j * m]; // Accessing elements in column-major order
-            }
-            // Store result in column-major order
-            dataPtr_AtA[i + j * n] = sum;
-        }
+    // Check if matrix is square
+    if (numRows != numCols) {
+        opserr << "compute_Eigen_decomposition - the matrix of dimensions [" << numRows << "," << numCols << "] is not square\n";
+        return -1;
     }
-    /*std::cout << "Matrix  A^T * A:\n";
-    for (int j = 0; j < n; ++j) {
-        for (int i = 0; i < n; ++i) {
-            std::cout << dataPtr_AtA[i * n + j] << " ";
-        }
-        std::cout << "\n";
-    }*/
 
-    // Step 2: Compute eigenvalues and eigenvectors of A^T * A using LAPACKE_dgeev
-    int lda = n;
-    int ldvl = n;
-    int ldvr = n;
-    double* wr = new (nothrow) double[n];
-    double* wi = new (nothrow) double[n];
-    double* vl = new (nothrow) double[ldvl * n];
-    double* vr = V.data;
+    // copy the data
+    double* A_copy= data;
+
+    // Step 1: Compute (right) eigen vectors and eigen values of A using LAPACKE_dgeev
+    int lda = numCols;
+    int ldvl = numCols;
+    int ldvr = numCols;
+    double* wi = new (nothrow) double[numCols];
+    double* vl = new (nothrow) double[ldvl * numCols];
+    double* vr = Q.data;
 
     char jobvl = 'N'; // Do notCompute the left eigen vectors
     char jobvr = 'V'; //  Compute the right eigen vectors
@@ -619,89 +739,72 @@ Matrix::compute_SVD_decomposition(Matrix& U, Vector& S, Matrix& V)
     int info;
 #ifdef _WIN32
     // Query and allocate the optimal workspace
-    DGEEV(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
         &wkopt, &lwork, &info);
     lwork = (int)wkopt;
     work = new (nothrow) double[lwork];
 
     // Solve the eigen problem
-    DGEEV(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
         work, &lwork, &info);
 
     if (info != 0)
         return -abs(info);
 #else
-    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
         &wkopt, &lwork, &info);
     lwork = (int)wkopt;
     work = new (nothrow) double[lwork];
 
     // Solve the eigen problem
-    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
-        work, & lwork, & info); 
+    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+        work, &lwork, &info);
 #endif
-    /*std::cout << "Eigenvalues of  A^T * A:\n";
-    for (int j = 0; j < n; ++j) {
-           std::cout << wr[j] << " ";
-        std::cout << "\n";
-    }*/
-    /*std::cout << "Eigenvectors of  A^T * A:\n";
-    for (int j = 0; j < n; ++j) {
-        for (int i = 0; i < n; ++i) {
-            std::cout << vr[i * n + j] << " ";
-        }
-        std::cout << "\n";
-    }*/
 
-    // Step 3: The singular values are the square roots of the eigenvalues
-    for (int i = 0; i < n; ++i) {
-        S[i] = std::sqrt(wr[i]);
-    }
-    //opserr << "This is S:" << S << endln;
+    // Step 2: Compute Qinv
+    Qinv = Q; // Initialize
+    int* iPIV = new (nothrow) int[numCols];
 
-    // Step 4: The right singular vectors (V) are the eigenvectors of A^T * A
-    V.data = vr;
-    //opserr << "This is V:" << V << endln;
+#ifdef _WIN32
 
-    // Step 5: Compute the left singular vectors U
-    double* AmultV=new (nothrow) double[m*n];
-    for (int i = 0; i < n * m; ++i) {
-        AmultV[i] = 0.0;
-    }
-    for (int j = 0; j < n; ++j) {
-        for (int i = 0; i < m; ++i) {
-            for (int k = 0; k < n; ++k) {
-                AmultV[i + j * m] += data[i + k * m] * vr[k + j * n];
-            }
-        }
-    }
-    /*std::cout << "AV:\n";
-    for (int j = 0; j < n; ++j) {
-        for (int i = 0; i < n; ++i) {
-            std::cout << AmultV[i * n + j] << " ";
-        }
-        std::cout << "\n";
-    }*/
-    for (int i = 0; i < m; ++i) {
-        for (int j = 0; j < n; ++j) {
-            U.data[i + j * m] = AmultV[i + j * m] / S[j];
-        }
-    }
-    //opserr << "This is U:" << U << endln;
+    DGETRF(&numCols, &numCols, Qinv.data, &lda, iPIV, &info);
+
+    if (info != 0)
+        return -abs(info);
+
+    lwork = -1;
+    DGETRI(&numCols, Qinv.data, &lda, iPIV,work, &lwork, &info);
+
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+    DGETRI(&numCols, Qinv.data, &lda, iPIV, work, &lwork, &info);
+
+#else
+    dgetrf_(&numCols, &numCols, Qinv_copy, &lda, iPIV, &info);
+
+    if (info != 0)
+        return -abs(info);
+
+    lwork = -1;
+    dgetri_(&numCols, Qinv_copy, &lda, iPIV, work, &lwork, &info);
+
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+    dgetri_(&numCols, Qinv_copy, &lda, iPIV, work, &lwork, &info);
+
+#endif
 
     // Free dynamically alocated memory
-    delete[] dataPtr_AtA;
-    
-    delete[] wr;
+
     delete[] wi;
     delete[] vl;
     delete[] work;
+    delete[] iPIV;
 
-    delete[] AmultV;
 
-    opserr << "This is U:" << U << endln;
-    opserr << "This is S:" << S << endln;
-    opserr << "This is V:" << V << endln;
+    opserr << "This is Q:" << Q << endln;
+    opserr << "This is Lambda:" << Lambda << endln;
+    opserr << "This is Qinv:" << Qinv << endln;
 
     return 1;
 }
