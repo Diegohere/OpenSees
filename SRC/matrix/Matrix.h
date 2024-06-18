@@ -84,7 +84,7 @@ class Matrix
     // Compute the eigendecomposition of matrix A
     int compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv);
     // Solve Ax=b using (truncated Eigen decomposition)
-    int solve_truncatedEigen(const Vector& b, Vector& x);
+    int solve_truncatedEigen(const Vector& b, Vector& x, const double& tol);
 
     // overloaded operators 
     inline double &operator()(int row, int col);

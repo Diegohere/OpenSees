@@ -57,7 +57,8 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.),
+    gradPsi_sy_globalCentroid(num,2), gradPsi_sz_globalCentroid(num,2)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -117,6 +118,9 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
 
+  // Compute section properties
+  computeSectionProperties();
+
   //Initialize the quadrilateral mesh
   determineQuadMesh();
 
@@ -127,39 +131,36 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
   compute_gradPsi_FiberCenter();
 
   // Test function for SVD decomposition
-  // Create a 4x4 matrix and initialize elements
- /* Matrix A=Matrix(4, 4);
-  A(0, 0) = 54;  A(0, 1) = 47;  A(0, 2) = 58;  A(0, 3) = 84;
-  A(1, 0) = 94;  A(1, 1) = 53;  A(1, 2) = 37;  A(1, 3) = 55;
-  A(2, 0) = 87;  A(2, 1) = 72;  A(2, 2) = 32;  A(2, 3) = 61;
-  A(3, 0) = 19;  A(3, 1) = 79;  A(3, 2) = 17;  A(3, 3) = 50;*/
-
  /* Matrix A = Matrix(4, 4);
-  double epsi = 1e-14;
-  A(0, 0) = 1;       A(0, 1) = 1;       A(0, 2) = 1;       A(0, 3) = 1;
-  A(1, 0) = 1;       A(1, 1) = 1.0+epsi; A(1, 2) = 1;       A(1, 3) = 1;
-  A(2, 0) = 1;       A(2, 1) = 1;       A(2, 2) = 1.0 + epsi; A(2, 3) = 1;
-  A(3, 0) = 1;       A(3, 1) = 1;       A(3, 2) = 1;       A(3, 3) = 1.0 + epsi;*/
-
-  Matrix A = Matrix(4, 4);
   A(0, 0) = 5;  A(0, 1) = 2;  A(0, 2) = 1;  A(0, 3) = 1;
   A(1, 0) = 0;  A(1, 1) = 4;  A(1, 2) = 3;  A(1, 3) = 1;
   A(2, 0) = 0;  A(2, 1) = 0;  A(2, 2) = 3;  A(2, 3) = 2;
-  A(3, 0) = 0;  A(3, 1) = 0;  A(3, 2) = 0;  A(3, 3) = 1;
+  A(3, 0) = 0;  A(3, 1) = 0;  A(3, 2) = 0;  A(3, 3) = 1;*/
+  /*Vector b = Vector(4);
+  b(0) = 1; b(1) = 2; b(2) = 3; b(3) = 4;*/
+  //ctor x = Vector(4);
 
- /* Matrix Q = Matrix(4, 4);
- Vector Lambda = Vector(4);
-  Matrix Qinv = Matrix(4, 4);
-A.compute_Eigen_decomposition(Q, Lambda, Qinv);*/
-  /*opserr << "This is U:" << U << endln;
-  opserr << "This is S:" << S << endln;
-  opserr << "This is V:" << V<< endln;*/
+  /*Matrix A = Matrix(6, 6);
+  A(0, 0) = 6; A(0, 1) = 2; A(0, 2) = 1; A(0, 3) = 0; A(0, 4) = 0; A(0, 5) = 0;
+  A(1, 0) = 2; A(1, 1) = 7; A(1, 2) = 2; A(1, 3) = 0; A(1, 4) = 0; A(1, 5) = 0;
+  A(2, 0) = 1; A(2, 1) = 2; A(2, 2) = 8; A(2, 3) = 3; A(2, 4) = 0; A(2, 5) = 0;
+  A(3, 0) = 0; A(3, 1) = 0; A(3, 2) = 3; A(3, 3) = 9; A(3, 4) = 4; A(3, 5) = 0;
+  A(4, 0) = 0; A(4, 1) = 0; A(4, 2) = 0; A(4, 3) = 4; A(4, 4) = 10; A(4, 5) = 5;
+  A(5, 0) = 0; A(5, 1) = 0; A(5, 2) = 0; A(5, 3) = 0; A(5, 4) = 5; A(5, 5) = 11;*/
+  /*Matrix A = Matrix(6, 6);
+  A(0, 0) = 1; A(0, 1) = 0; A(0, 2) = 0; A(0, 3) = 0; A(0, 4) = 0; A(0, 5) = 1;
+  A(1, 0) = 0; A(1, 1) = 2; A(1, 2) = 0; A(1, 3) = 0; A(1, 4) = 0; A(1, 5) = 2;
+  A(2, 0) = 0; A(2, 1) = 0; A(2, 2) = 3; A(2, 3) = 0; A(2, 4) = 0; A(2, 5) = 3;
+  A(3, 0) = 0; A(3, 1) = 0; A(3, 2) = 0; A(3, 3) = 4; A(3, 4) = 0; A(3, 5) = 4;
+  A(4, 0) = 0; A(4, 1) = 0; A(4, 2) = 0; A(4, 3) = 0; A(4, 4) = 5; A(4, 5) = 5;
+  A(5, 0) = 1; A(5, 1) = 1; A(5, 2) = 1; A(5, 3) = 1; A(5, 4) = 1; A(5, 5) = 5;
+  Vector b = Vector(6);
+  b(0) = 1; b(1) = 2; b(2) = 3; b(3) = 4; b(4) = 5; b(5) = 6;
+  Vector x = Vector(6);
 
-  Vector b = Vector(4);
-  b(0) = 1; b(1) = 2; b(2) = 3; b(3) = 4;
-  Vector x = Vector(4);
-  A.solve_truncatedEigen(b, x);
-  
+  double tol = 1e-8;
+  A.solve_truncatedEigen(b, x, tol);*/
+  //opserr << "This is x:" << x << endln;
 
 }
 
@@ -170,7 +171,8 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
     Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
     sectionIntegr(0), e(6), s(0), ks(0),
     parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.),
+    gradPsi_sy_globalCentroid(num, 2), gradPsi_sz_globalCentroid(num, 2)
 {
     if (sizeFibers != 0) {
 	theMaterials = new NDMaterial *[sizeFibers];
@@ -212,6 +214,9 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
     code(4) = SECTION_RESPONSE_VZ;
     code(5) = SECTION_RESPONSE_T;
 
+    // Compute section properties
+    computeSectionProperties();
+
     //Initialize the quadrilateral mesh
     determineQuadMesh();
 
@@ -230,7 +235,8 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(compCentroid),
   sectionIntegr(0), e(6), s(0), ks(0), 
   parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.)
+    Iy(0.), Iz(0.), connectivity_matrix(num, 4), coordinate_matrix(4, 2), points(2), weights(0.),
+    gradPsi_sy_globalCentroid(num, 2), gradPsi_sz_globalCentroid(num, 2)
 {
   if (numFibers != 0) {
     theMaterials = new NDMaterial *[numFibers];
@@ -295,6 +301,9 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
   code(4) = SECTION_RESPONSE_VZ;
   code(5) = SECTION_RESPONSE_T;
 
+  // Compute section properties
+  computeSectionProperties();
+
   //Initialize the quadrilateral mesh
   determineQuadMesh();
 
@@ -313,7 +322,8 @@ NDShearFiberSection3d::NDShearFiberSection3d():
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   sectionIntegr(0), e(6), s(0), ks(0),
   parameterID(0), dedh(6),
-    Iy(0.), Iz(0.), connectivity_matrix(numFibers, 4), coordinate_matrix(4, 2), points(2), weights(0.)
+    Iy(0.), Iz(0.), connectivity_matrix(numFibers, 4), coordinate_matrix(4, 2), points(2), weights(0.),
+    gradPsi_sy_globalCentroid(numFibers, 2), gradPsi_sz_globalCentroid(numFibers, 2)
 {
   s = new Vector(sData, 6);
   ks = new Matrix(kData, 6, 6);
@@ -429,8 +439,8 @@ NDShearFiberSection3d::~NDShearFiberSection3d()
 }
 
 // a = [1 -y z       0       0  0
-//      0  0 0 Psi22       0 -z
-//      0  0 0       Psi23 Psi33  y]
+//      0  0 0 (1+dPsiSYdy)       dPsiSYdz -z
+//      0  0 0       dPsiSZdy (1+dPsiSZdz)  y]
 int
 NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 {
@@ -473,56 +483,27 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
   
   static Vector eps(3);
 
-  //double rootAlpha = 1.0;
-  //if (alpha != 1.0)
-  //  rootAlpha = sqrt(alpha);
-
   for (int i = 0; i < numFibers; i++) {
     NDMaterial *theMat = theMaterials[i];
     double y = yLocs[i] - yBar;
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
-
     double y2 = y*y;
     double z2 = z*z;
     double yz = y*z;
     double tmp;
 
-    //Compute shear factors
-    double Psi22 = 0.;
-    double Psi23 = 0.;
-    double Psi32 = 0.;
-    double Psi33 = 0.;
-    //if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
-    //{
-    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
-    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
-    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
-    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
-    //}
-    //else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
-    //{
-    //    Psi22 = 0.;
-    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
-    //    Psi32 = 0.;
-    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
-    //}
-    //else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
-    //{
-    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
-    //    Psi23 = 0.;
-    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
-    //    Psi33 = 0.;
-    //}
-
+    // Get derivatives of shear warping function
+    double dPsiSYdy = gradPsi_sy_globalCentroid(i, 0);
+    double dPsiSYdz = gradPsi_sy_globalCentroid(i, 1);
+    double dPsiSZdy = gradPsi_sz_globalCentroid(i, 0);
+    double dPsiSZdz = gradPsi_sz_globalCentroid(i, 1);
 
     // determine material strain and set it
     eps(0) = d0 - y*d1 + z*d2;
-    /*eps(1) = rootAlpha*d3 - z*d5;
-    eps(2) = rootAlpha*d4 + y*d5;*/
-    eps(1) = Psi22 * d3 + Psi32 * d4 - z * d5;
-    eps(2) = Psi23 * d3 + Psi33 * d4 + y * d5;
+    eps(1) = (1. + dPsiSYdy) * d3 + dPsiSYdz * d4 - z * d5;
+    eps(2) = dPsiSZdy * d3 + (1. + dPsiSZdz) * d4 + y * d5;
 
     res += theMat->setTrialStrain(eps);
     if (res==-1)
@@ -533,9 +514,7 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     }
     const Vector &stress = theMat->getStress();
     const Matrix &tangent = theMat->getTangent();
-    //const Matrix& strainIncrementDecomposition = theMat->getStrainIncrementDecomposition();
-    //opserr << "This is strainIncrementDecomposition" << strainIncrementDecomposition << endln;
-
+    
     double d00 = tangent(0,0)*A;
     double d01 = tangent(0,1)*A;
     double d02 = tangent(0,2)*A;
@@ -564,19 +543,13 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     ksi(2,1) += tmp;
     
     // Shear terms
-    /*ksi(3,3) += alpha*d11;
-    ksi(3,4) += alpha*d12;
-    ksi(4,3) += alpha*d21;
-    ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi22, 2) * d11 + pow(Psi23, 2) * d22;
-    //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
-    //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ksi(4, 4) += pow(Psi32, 2) * d11 + pow(Psi33, 2) * d22;
-    /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
-    //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    
+    ksi(3, 3) += (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1));
+    ksi(4, 4) += (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
+    ksi(3, 4) += (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
+    ksi(4, 3) += (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1));
+
     // Torsion term
-    ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
+    ksi(5, 5) += y * (d22 * y - d12 * z) - z * (d21 * y - d11 * z);
     
     // Bending-torsion coupling terms
     tmp = -z*d01 + y*d02;
@@ -588,34 +561,27 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     ksi(5,1) -= y*tmp;
     ksi(5,2) += z*tmp;
     
-    // Hit tangent terms with rootAlpha
-    /*d01 *= rootAlpha; d02 *= rootAlpha;
-    d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
-    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi22 + Psi32;
-    d22 *= Psi23 + Psi33;
-    
     // Bending-shear coupling terms
-    ksi(0,3) += d01;
-    ksi(0,4) += d02;
-    ksi(1,3) -= y*d01;
-    ksi(1,4) -= y*d02;
-    ksi(2,3) += z*d01;
-    ksi(2,4) += z*d02;
-    ksi(3,0) += d10;
-    ksi(4,0) += d20;
-    ksi(3,1) -= y*d10;
-    ksi(4,1) -= y*d20;
-    ksi(3,2) += z*d10;
-    ksi(4,2) += z*d20;
+    ksi(0, 3) += d02 * dPsiSZdy + d01 * (dPsiSYdy + 1);
+    ksi(0, 4) += d01 * dPsiSYdz + d02 * (dPsiSZdz + 1);
+    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSZdy * y;
+    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSYdz * y;
+    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSZdy * z;
+    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSYdz * z;
+    ksi(3, 0) += d20 * dPsiSZdy + d10 * (dPsiSYdy + 1);
+    ksi(3, 1) += -y * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
+    ksi(3, 2) += z * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
+    ksi(4, 0) += d10 * dPsiSYdz + d20 * (dPsiSZdz + 1);
+    ksi(4, 1) += -y * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+    ksi(4, 2) += z * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
     
     // Torsion-shear coupling terms
-    y2 =  y*d22;
-    z2 = -z*d11;
-    ksi(5,3) +=  z2 + y*d21;
-    ksi(5,4) += -z*d12 + y2;
-    ksi(3,5) +=  z2 + y*d12;
-    ksi(4,5) += -z*d21 + y2;
+    ksi(3, 5) += y * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
+    ksi(4, 5) += y * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
+    ksi(5, 3) += dPsiSZdy * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
+    ksi(5, 4) += dPsiSYdz * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
+
+
 
     double sig0 = stress(0)*A;
     double sig1 = stress(1)*A;
@@ -624,16 +590,10 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     si(0) += sig0;
     si(1) += -y*sig0;
     si(2) += z*sig0;
-    /*si(3) += rootAlpha*sig1;
-    si(4) += rootAlpha*sig2;*/
-    si(3) += Psi22 * sig1 + Psi23 * sig2;
-    si(4) += Psi32 * sig1 + Psi33 * sig2;
+    si(3) += dPsiSZdy * sig2 + sig1 * (dPsiSYdy + 1);
+    si(4) += dPsiSYdz * sig1 + sig2 * (dPsiSZdz + 1);
     si(5) += -z*sig1 + y*sig2;
   }
-
- /* if (alpha != 1.0) {
-
-  }*/
 
   //opserr << "This is ks" << *ks << endln;
 
@@ -679,6 +639,12 @@ NDShearFiberSection3d::getInitialTangent(void)
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
+    // Get derivatives of shear warping function
+    double dPsiSYdy = gradPsi_sy_globalCentroid(i, 0);
+    double dPsiSYdz = gradPsi_sy_globalCentroid(i, 1);
+    double dPsiSZdy = gradPsi_sz_globalCentroid(i, 0);
+    double dPsiSZdz = gradPsi_sz_globalCentroid(i, 1);
+
     double y2 = y*y;
     double z2 = z*z;
     double yz = y*z;
@@ -697,104 +663,58 @@ NDShearFiberSection3d::getInitialTangent(void)
     double d22 = tangent(2,2)*A;
 
     // Bending terms
-    ki(0,0) += d00;
-    ki(1,1) += y2*d00;
-    ki(2,2) += z2*d00;
-    tmp = -y*d00;
-    ki(0,1) += tmp;
-    ki(1,0) += tmp;
-    tmp = z*d00;
-    ki(0,2) += tmp;
-    ki(2,0) += tmp;
-    tmp = -yz*d00;
-    ki(1,2) += tmp;
-    ki(2,1) += tmp;
+    ki(0, 0) += d00;
+    ki(1, 1) += y2 * d00;
+    ki(2, 2) += z2 * d00;
+    tmp = -y * d00;
+    ki(0, 1) += tmp;
+    ki(1, 0) += tmp;
+    tmp = z * d00;
+    ki(0, 2) += tmp;
+    ki(2, 0) += tmp;
+    tmp = -yz * d00;
+    ki(1, 2) += tmp;
+    ki(2, 1) += tmp;
 
-    //Compute shear factors
-    double Psi22 = 0.;
-    double Psi23 = 0.;
-    double Psi32 = 0.;
-    double Psi33 = 0.;
-    //if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
-    //{
-    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
-    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
-    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
-    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
-    //}
-    //else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
-    //{
-    //    Psi22 = 0.;
-    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
-    //    Psi32 = 0.;
-    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
-    //}
-    //else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
-    //{
-    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
-    //    Psi23 = 0.;
-    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
-    //    Psi33 = 0.;
-    //}
-    
     // Shear terms
-    /*ki(3,3) += alpha*d11;
-    ki(3,4) += alpha*d12;
-    ki(4,3) += alpha*d21;
-    ki(4,4) += alpha*d22;*/
-    ki(3, 3) += pow(Psi22, 2) * d11 + pow(Psi23, 2) * d22;
-    //ki(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
-    //ki(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ki(4, 4) += pow(Psi32, 2) * d11 + pow(Psi33, 2) * d22;
-    /*ki(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
-    //ki(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    
+    ki(3, 3) += (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1));
+    ki(4, 4) += (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
+    ki(3, 4) += (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
+    ki(4, 3) += (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1));
+
     // Torsion term
-    ki(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
-    
+    ki(5, 5) += y * (d22 * y - d12 * z) - z * (d21 * y - d11 * z);
+
     // Bending-torsion coupling terms
-    tmp = -z*d01 + y*d02;
-    ki(0,5) += tmp;
-    ki(1,5) -= y*tmp;
-    ki(2,5) += z*tmp;
-    tmp = -z*d10 + y*d20;
-    ki(5,0) += tmp;
-    ki(5,1) -= y*tmp;
-    ki(5,2) += z*tmp;
-    
-    // Hit tangent terms with rootAlpha
-    /*d01 *= rootAlpha; d02 *= rootAlpha;
-    d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
-    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi22 + Psi32;
-    d22 *= Psi23 + Psi33;
-    
+    tmp = -z * d01 + y * d02;
+    ki(0, 5) += tmp;
+    ki(1, 5) -= y * tmp;
+    ki(2, 5) += z * tmp;
+    tmp = -z * d10 + y * d20;
+    ki(5, 0) += tmp;
+    ki(5, 1) -= y * tmp;
+    ki(5, 2) += z * tmp;
+
     // Bending-shear coupling terms
-    ki(0,3) += d01;
-    ki(0,4) += d02;
-    ki(1,3) -= y*d01;
-    ki(1,4) -= y*d02;
-    ki(2,3) += z*d01;
-    ki(2,4) += z*d02;
-    ki(3,0) += d10;
-    ki(4,0) += d20;
-    ki(3,1) -= y*d10;
-    ki(4,1) -= y*d20;
-    ki(3,2) += z*d10;
-    ki(4,2) += z*d20;
-    
+    ki(0, 3) += d02 * dPsiSZdy + d01 * (dPsiSYdy + 1);
+    ki(0, 4) += d01 * dPsiSYdz + d02 * (dPsiSZdz + 1);
+    ki(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSZdy * y;
+    ki(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSYdz * y;
+    ki(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSZdy * z;
+    ki(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSYdz * z;
+    ki(3, 0) += d20 * dPsiSZdy + d10 * (dPsiSYdy + 1);
+    ki(3, 1) += -y * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
+    ki(3, 2) += z * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
+    ki(4, 0) += d10 * dPsiSYdz + d20 * (dPsiSZdz + 1);
+    ki(4, 1) += -y * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+    ki(4, 2) += z * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+
     // Torsion-shear coupling terms
-    y2 =  y*d22;
-    z2 = -z*d11;
-    ki(5,3) +=  z2 + y*d21;
-    ki(5,4) += -z*d12 + y2;
-    ki(3,5) +=  z2 + y*d12;
-    ki(4,5) += -z*d21 + y2;
+    ki(3, 5) += y * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
+    ki(4, 5) += y * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
+    ki(5, 3) += dPsiSZdy * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
+    ki(5, 4) += dPsiSYdz * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
   }
-
-  /*if (alpha != 1.0) {
-
-  }*/
 
   return ki;
 }
@@ -878,6 +798,8 @@ NDShearFiberSection3d::getCopy(void)
   theCopy->coordinate_matrix = coordinate_matrix;
   theCopy->points = points;
   theCopy->weights = weights;
+  theCopy->gradPsi_sy_globalCentroid = gradPsi_sy_globalCentroid;
+  theCopy->gradPsi_sz_globalCentroid = gradPsi_sz_globalCentroid;
 
   return theCopy;
 }
@@ -939,6 +861,12 @@ NDShearFiberSection3d::revertToLastCommit(void)
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
+    // Get derivatives of shear warping function
+    double dPsiSYdy = gradPsi_sy_globalCentroid(i, 0);
+    double dPsiSYdz = gradPsi_sy_globalCentroid(i, 1);
+    double dPsiSZdy = gradPsi_sz_globalCentroid(i, 0);
+    double dPsiSZdz = gradPsi_sz_globalCentroid(i, 1);
+
     double y2 = y*y;
     double z2 = z*z;
     double yz = y*z;
@@ -965,112 +893,68 @@ NDShearFiberSection3d::revertToLastCommit(void)
     Vector &si = *s;
 
     // Bending terms
-    ksi(0,0) += d00;
-    ksi(1,1) += y2*d00;
-    ksi(2,2) += z2*d00;
-    tmp = -y*d00;
-    ksi(0,1) += tmp;
-    ksi(1,0) += tmp;
-    tmp = z*d00;
-    ksi(0,2) += tmp;
-    ksi(2,0) += tmp;
-    tmp = -yz*d00;
-    ksi(1,2) += tmp;
-    ksi(2,1) += tmp;
+    ksi(0, 0) += d00;
+    ksi(1, 1) += y2 * d00;
+    ksi(2, 2) += z2 * d00;
+    tmp = -y * d00;
+    ksi(0, 1) += tmp;
+    ksi(1, 0) += tmp;
+    tmp = z * d00;
+    ksi(0, 2) += tmp;
+    ksi(2, 0) += tmp;
+    tmp = -yz * d00;
+    ksi(1, 2) += tmp;
+    ksi(2, 1) += tmp;
 
-    //Compute shear factors
-    double Psi22 = 0.;
-    double Psi23 = 0.;
-    double Psi32 = 0.;
-    double Psi33 = 0.;
-    //if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
-    //{
-    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
-    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
-    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
-    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
-    //}
-    //else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
-    //{
-    //    Psi22 = 0.;
-    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
-    //    Psi32 = 0.;
-    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
-    //}
-    //else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
-    //{
-    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
-    //    Psi23 = 0.;
-    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
-    //    Psi33 = 0.;
-    //}
-    
     // Shear terms
-    /*ksi(3,3) += alpha*d11;
-    ksi(3,4) += alpha*d12;
-    ksi(4,3) += alpha*d21;
-    ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi22, 2) * d11 + pow(Psi23, 2) * d22;
-    //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
-    //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ksi(4, 4) += pow(Psi32, 2) * d11 + pow(Psi33, 2) * d22;
-    /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
-    //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    
+    ksi(3, 3) += (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1));
+    ksi(4, 4) += (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
+    ksi(3, 4) += (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
+    ksi(4, 3) += (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1));
+
     // Torsion term
-    ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
-    
+    ksi(5, 5) += y * (d22 * y - d12 * z) - z * (d21 * y - d11 * z);
+
     // Bending-torsion coupling terms
-    tmp = -z*d01 + y*d02;
-    ksi(0,5) += tmp;
-    ksi(1,5) -= y*tmp;
-    ksi(2,5) += z*tmp;
-    tmp = -z*d10 + y*d20;
-    ksi(5,0) += tmp;
-    ksi(5,1) -= y*tmp;
-    ksi(5,2) += z*tmp;
-    
-    // Hit tangent terms with rootAlpha
-    /*d01 *= rootAlpha; d02 *= rootAlpha;
-    d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
-    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi22 + Psi32;
-    d22 *= Psi23 + Psi33;
-    
+    tmp = -z * d01 + y * d02;
+    ksi(0, 5) += tmp;
+    ksi(1, 5) -= y * tmp;
+    ksi(2, 5) += z * tmp;
+    tmp = -z * d10 + y * d20;
+    ksi(5, 0) += tmp;
+    ksi(5, 1) -= y * tmp;
+    ksi(5, 2) += z * tmp;
+
     // Bending-shear coupling terms
-    ksi(0,3) += d01;
-    ksi(0,4) += d02;
-    ksi(1,3) -= y*d01;
-    ksi(1,4) -= y*d02;
-    ksi(2,3) += z*d01;
-    ksi(2,4) += z*d02;
-    ksi(3,0) += d10;
-    ksi(4,0) += d20;
-    ksi(3,1) -= y*d10;
-    ksi(4,1) -= y*d20;
-    ksi(3,2) += z*d10;
-    ksi(4,2) += z*d20;
-    
+    ksi(0, 3) += d02 * dPsiSZdy + d01 * (dPsiSYdy + 1);
+    ksi(0, 4) += d01 * dPsiSYdz + d02 * (dPsiSZdz + 1);
+    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSZdy * y;
+    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSYdz * y;
+    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSZdy * z;
+    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSYdz * z;
+    ksi(3, 0) += d20 * dPsiSZdy + d10 * (dPsiSYdy + 1);
+    ksi(3, 1) += -y * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
+    ksi(3, 2) += z * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
+    ksi(4, 0) += d10 * dPsiSYdz + d20 * (dPsiSZdz + 1);
+    ksi(4, 1) += -y * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+    ksi(4, 2) += z * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+
     // Torsion-shear coupling terms
-    y2 =  y*d22;
-    z2 = -z*d11;
-    ksi(5,3) +=  z2 + y*d21;
-    ksi(5,4) += -z*d12 + y2;
-    ksi(3,5) +=  z2 + y*d12;
-    ksi(4,5) += -z*d21 + y2;
+    ksi(3, 5) += y * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
+    ksi(4, 5) += y * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
+    ksi(5, 3) += dPsiSZdy * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
+    ksi(5, 4) += dPsiSYdz * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
 
     double sig0 = stress(0)*A;
     double sig1 = stress(1)*A;
     double sig2 = stress(2)*A;
 
     si(0) += sig0;
-    si(1) += -y*sig0;
-    si(2) += z*sig0;
-    /*si(3) += rootAlpha*sig1;
-    si(4) += rootAlpha*sig2;*/
-    si(3) += Psi22 * sig1 + Psi23 * sig2;
-    si(4) += Psi32 * sig1 + Psi33 * sig2;
-    si(5) += -z*sig1 + y*sig2;
+    si(1) += -y * sig0;
+    si(2) += z * sig0;
+    si(3) += dPsiSZdy * sig2 + sig1 * (dPsiSYdy + 1);
+    si(4) += dPsiSYdz * sig1 + sig2 * (dPsiSZdz + 1);
+    si(5) += -z * sig1 + y * sig2; 
   }
 
   /*if (alpha != 1.0) {
@@ -1116,6 +1000,12 @@ NDShearFiberSection3d::revertToStart(void)
     double z = zLocs[i] - zBar;
     double A = fiberArea[i];
 
+    // Get derivatives of shear warping function
+    double dPsiSYdy = gradPsi_sy_globalCentroid(i, 0);
+    double dPsiSYdz = gradPsi_sy_globalCentroid(i, 1);
+    double dPsiSZdy = gradPsi_sz_globalCentroid(i, 0);
+    double dPsiSZdz = gradPsi_sz_globalCentroid(i, 1);
+
     double y2 = y*y;
     double z2 = z*z;
     double yz = y*z;
@@ -1142,114 +1032,70 @@ NDShearFiberSection3d::revertToStart(void)
     Vector &si = *s;
 
     // Bending terms
-    ksi(0,0) += d00;
-    ksi(1,1) += y2*d00;
-    ksi(2,2) += z2*d00;
-    tmp = -y*d00;
-    ksi(0,1) += tmp;
-    ksi(1,0) += tmp;
-    tmp = z*d00;
-    ksi(0,2) += tmp;
-    ksi(2,0) += tmp;
-    tmp = -yz*d00;
-    ksi(1,2) += tmp;
-    ksi(2,1) += tmp;
+    ksi(0, 0) += d00;
+    ksi(1, 1) += y2 * d00;
+    ksi(2, 2) += z2 * d00;
+    tmp = -y * d00;
+    ksi(0, 1) += tmp;
+    ksi(1, 0) += tmp;
+    tmp = z * d00;
+    ksi(0, 2) += tmp;
+    ksi(2, 0) += tmp;
+    tmp = -yz * d00;
+    ksi(1, 2) += tmp;
+    ksi(2, 1) += tmp;
 
-    //Compute shear factors
-    /*double Psi22 = 1 / beta22 * (1 / (Iz * bWidth) * (bWidth / 2. * (pow(hHeight, 2) / 4. - pow(y, 2))));
-    double Psi33 = 1 / beta33 * (1 / (Iy * hHeight) * (hHeight / 2. * (pow(bWidth, 2) / 4. - pow(z, 2))));*/
-    double Psi22 = 0.;
-    double Psi23 = 0.;
-    double Psi32 = 0.;
-    double Psi33 = 0.;
-    //if (abs(y) > h / 2. && abs(z) > h / 2.) //corners
-    //{
-    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
-    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
-    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
-    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
-    //}
-    //else if (abs(y) > h / 2. && abs(z) < h / 2.) //flange plates
-    //{
-    //    Psi22 = 0.;
-    //    Psi23 = 1 / beta23 * (1. / (Iz * t) * (0.5 * t * z * (D - t)));
-    //    Psi32 = 0.;
-    //    Psi33 = 1 / beta33 * (1. / (Iz * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - z) * (z + 0.5 * (0.5 * (D - t) - z))));
-    //}
-    //else if (abs(y) < h / 2. && abs(z) > h / 2.) //web plates
-    //{
-    //    Psi22 = 1 / beta22 * (1. / (Iy * t) * (0.25 * t * pow((D - t), 2) + t * (0.5 * (D - t) - y) * (y + 0.5 * (0.5 * (D - t) - y))));
-    //    Psi23 = 0.;
-    //    Psi32 = 1 / beta32 * (1. / (Iy * t) * (0.5 * t * y * (D - t)));
-    //    Psi33 = 0.;
-    //}
-    
     // Shear terms
-    /*ksi(3,3) += alpha*d11;
-    ksi(3,4) += alpha*d12;
-    ksi(4,3) += alpha*d21;
-    ksi(4,4) += alpha*d22;*/
-    ksi(3, 3) += pow(Psi22, 2) * d11 + pow(Psi23, 2) * d22;
-    //ksi(3, 4) += pow(Psi22, 2) * d12; //for our cases dij=0 when i!=j
-    //ksi(3, 4) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    ksi(4, 4) += pow(Psi32, 2) * d11 + pow(Psi33, 2) * d22;
-    /*ksi(4, 4) += (pow(Psi23, 2) + pow(Psi33, 2)) * d22;*/
-    //ksi(4,3) += Psi23 * Psi33 * d22; //for our cases dij=0 when i!=j
-    
+    ksi(3, 3) += (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1));
+    ksi(4, 4) += (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
+    ksi(3, 4) += (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
+    ksi(4, 3) += (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1));
+
     // Torsion term
-    ksi(5,5) += z2*d11 - yz*(d12+d21) + y2*d22;
-    
+    ksi(5, 5) += y * (d22 * y - d12 * z) - z * (d21 * y - d11 * z);
+
     // Bending-torsion coupling terms
-    tmp = -z*d01 + y*d02;
-    ksi(0,5) += tmp;
-    ksi(1,5) -= y*tmp;
-    ksi(2,5) += z*tmp;
-    tmp = -z*d10 + y*d20;
-    ksi(5,0) += tmp;
-    ksi(5,1) -= y*tmp;
-    ksi(5,2) += z*tmp;
-    
-    // Hit tangent terms with rootAlpha
-    /*d01 *= rootAlpha; d02 *= rootAlpha;
-    d10 *= rootAlpha; d11 *= rootAlpha; d12 *= rootAlpha;
-    d20 *= rootAlpha; d21 *= rootAlpha; d22 *= rootAlpha;*/
-    d11 *= Psi22 + Psi32;
-    d22 *= Psi23 + Psi33;
-    
+    tmp = -z * d01 + y * d02;
+    ksi(0, 5) += tmp;
+    ksi(1, 5) -= y * tmp;
+    ksi(2, 5) += z * tmp;
+    tmp = -z * d10 + y * d20;
+    ksi(5, 0) += tmp;
+    ksi(5, 1) -= y * tmp;
+    ksi(5, 2) += z * tmp;
+
     // Bending-shear coupling terms
-    ksi(0,3) += d01;
-    ksi(0,4) += d02;
-    ksi(1,3) -= y*d01;
-    ksi(1,4) -= y*d02;
-    ksi(2,3) += z*d01;
-    ksi(2,4) += z*d02;
-    ksi(3,0) += d10;
-    ksi(4,0) += d20;
-    ksi(3,1) -= y*d10;
-    ksi(4,1) -= y*d20;
-    ksi(3,2) += z*d10;
-    ksi(4,2) += z*d20;
-    
+    ksi(0, 3) += d02 * dPsiSZdy + d01 * (dPsiSYdy + 1);
+    ksi(0, 4) += d01 * dPsiSYdz + d02 * (dPsiSZdz + 1);
+    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSZdy * y;
+    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSYdz * y;
+    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSZdy * z;
+    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSYdz * z;
+    ksi(3, 0) += d20 * dPsiSZdy + d10 * (dPsiSYdy + 1);
+    ksi(3, 1) += -y * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
+    ksi(3, 2) += z * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
+    ksi(4, 0) += d10 * dPsiSYdz + d20 * (dPsiSZdz + 1);
+    ksi(4, 1) += -y * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+    ksi(4, 2) += z * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+
     // Torsion-shear coupling terms
-    y2 =  y*d22;
-    z2 = -z*d11;
-    ksi(5,3) +=  z2 + y*d21;
-    ksi(5,4) += -z*d12 + y2;
-    ksi(3,5) +=  z2 + y*d12;
-    ksi(4,5) += -z*d21 + y2;
+    ksi(3, 5) += y * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
+    ksi(4, 5) += y * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
+    ksi(5, 3) += dPsiSZdy * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
+    ksi(5, 4) += dPsiSYdz * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
+
+
 
     double sig0 = stress(0)*A;
     double sig1 = stress(1)*A;
     double sig2 = stress(2)*A;
 
     si(0) += sig0;
-    si(1) += -y*sig0;
-    si(2) += z*sig0;
-    /*si(3) += rootAlpha*sig1;
-    si(4) += rootAlpha*sig2;*/
-    si(3) += Psi22 * sig1 + Psi23 * sig2;
-    si(4) += Psi32 * sig1 + Psi33 * sig2;
-    si(5) += -z*sig1 + y*sig2;
+    si(1) += -y * sig0;
+    si(2) += z * sig0;
+    si(3) += dPsiSZdy * sig2 + sig1 * (dPsiSYdy + 1);
+    si(4) += dPsiSYdz * sig1 + sig2 * (dPsiSZdz + 1);
+    si(5) += -z * sig1 + y * sig2;
   }
 
   /*if (alpha != 1.0) {
@@ -1568,6 +1414,23 @@ NDShearFiberSection3d::setResponse(const char **argv, int argc,
     }
 
   }
+  // Return the connectivity matrix
+  else if (strcmp(argv[0], "connectivity") == 0)
+    {
+    theResponse = new MaterialResponse(this, 1, Matrix(numFibers,4));
+    }
+
+    // Return the coordinate matrix
+  else if (strcmp(argv[0], "coordinate") == 0)
+    {
+    theResponse = new MaterialResponse(this, 2, Matrix(coordinate_matrix.noRows(), 2));
+    }
+
+    // Return a matrix with all stresses results for all fibers
+  else if (strcmp(argv[0], "allFiberStresses") == 0)
+    {
+    theResponse = new MaterialResponse(this, 3, Matrix(numFibers, 3));
+    }
 
   if (theResponse == 0)
     return SectionForceDeformation::setResponse(argv, argc, output);
@@ -1579,9 +1442,37 @@ NDShearFiberSection3d::setResponse(const char **argv, int argc,
 int 
 NDShearFiberSection3d::getResponse(int responseID, Information &sectInfo)
 {
+    switch (responseID)
+    {
+    case 1: // Return the connectivity matrix
+        return sectInfo.setMatrix(connectivity_matrix);
+
+    case 2:// Return the coordinate matrix
+        return sectInfo.setMatrix(coordinate_matrix);
+
+    case 3: // Return a matrix with all stresses results for all fibers
+    {
+        Matrix allFiberStresses = Matrix(numFibers, 3);
+        for (size_t iFib = 0; iFib < numFibers; iFib++)
+        {
+            NDMaterial* theMat = theMaterials[iFib];
+            const Vector& stress_iFib = theMat->getStress();
+            for (size_t i = 0; i < 3; i++)
+            {
+                allFiberStresses(iFib, i) = stress_iFib(i);
+            }
+        }
+        return sectInfo.setMatrix(allFiberStresses);
+    }
+
+    default:
+        return SectionForceDeformation::getResponse(responseID, sectInfo);
+
+    }
+
   // Just call the base class method ... don't need to define
   // this function, but keeping it here just for clarity
-  return SectionForceDeformation::getResponse(responseID, sectInfo);
+  //return SectionForceDeformation::getResponse(responseID, sectInfo);
 }
 
 
@@ -1751,12 +1642,89 @@ NDShearFiberSection3d::compute_gradPsi_FiberCenter()
     Vector Phi_sy_globalNodal = Vector(num_nodes);
     Vector Phi_sz_globalNodal = Vector(num_nodes);
 
-    compute_Phi_fibers(Phi_sy_globalNodal, Phi_sz_globalNodal);
+    // Step 1: Compute shear warping function Phi
+    compute_Phi_globalNodal(Phi_sy_globalNodal, Phi_sz_globalNodal);
+
+    // Step 2: Compute gradPhi
+    Matrix gradPhi_sy_globalCentroid = Matrix(numFibers, 2);
+    Matrix gradPhi_sz_globalCentroid = Matrix(numFibers, 2);
+    //Matrix gradf_theory_globalCentroid = Matrix(numFibers, 2);
+
+    for (int e = 0; e < numFibers; ++e) {
+        Matrix coordinate_element = Matrix(4, 2);
+        for (int i = 0; i < 4; i++)
+        {
+            coordinate_element(i, 0) = coordinate_matrix(connectivity_matrix(e, i) - 1, 0);  //   - 1 for c++ indexing
+            coordinate_element(i, 1) = coordinate_matrix(connectivity_matrix(e, i) - 1, 1);  //   - 1 for c++ indexing
+        }
+        //opserr << "This is coordinate_element:" << coordinate_element << endln;
+
+        // Compute shape functions for Q4 element
+        Vector N = Vector(4);
+        Matrix B = Matrix(2, 4);
+        double Jdet = 0.;
+        compute_NBandJdetQ4(N, B, Jdet, coordinate_element);
+        //opserr << "This is B:" << B << endln;
+
+        // Compute derivatives of Phi_sy and Phi_sz at fiber centroid
+        Vector Phi_sy_elemE = Vector(4);
+        Vector Phi_sz_elemE = Vector(4);
+        for (int i = 0; i < 4; i++)
+        {
+            Phi_sy_elemE(i) = Phi_sy_globalNodal(connectivity_matrix(e, i) - 1);//   - 1 for c++ indexing
+            Phi_sz_elemE(i) = Phi_sz_globalNodal(connectivity_matrix(e, i) - 1);//   - 1 for c++ indexing
+        }
+        //opserr << "This is Phi_sy_elemE:" << Phi_sy_elemE << endln;
+        Vector B_mult_Phi_sy_elemE = B * Phi_sy_elemE;
+        //opserr << "This is B_mult_Phi_sy_elemE:" << B_mult_Phi_sy_elemE << endln;
+        gradPhi_sy_globalCentroid(e, 0) = B_mult_Phi_sy_elemE(0);
+        gradPhi_sy_globalCentroid(e, 1) = B_mult_Phi_sy_elemE(1);
+        Vector B_mult_Phi_sz_elemE = B * Phi_sz_elemE;
+        gradPhi_sz_globalCentroid(e, 0) = B_mult_Phi_sz_elemE(0);
+        gradPhi_sz_globalCentroid(e, 1) = B_mult_Phi_sz_elemE(1);
+
+       // // Verification with analytical solution
+       // Vector f_theory_globalNodal = Vector(num_nodes);
+       //double y = matData[e * 3];
+       //double z = matData[e * 3+1];
+       //gradf_theory_globalCentroid(e,0) = -1*3.1416/300.*sin(3.1416 / 300. * (y + 300. / 2.));
+       //gradf_theory_globalCentroid(e, 1) = -1 * 3.1416 / 300. * sin(3.1416 / 300. * (z + 300. / 2.));
+    }
+    //opserr << "gradPhi_sy_globalCentroid:  " << gradPhi_sy_globalCentroid << endln;
+    //opserr << "gradPhi_sz_globalCentroid:  " << gradPhi_sz_globalCentroid << endln;
+    // Verification with analytical solution
+    /*Matrix testDiff = (gradf_theory_globalCentroid - gradPhi_sy_globalCentroid);
+    opserr << "This is testDiff:" << testDiff << endln;*/
+
+    // Step 3: Compute integral dTilda
+    double dTilda_sy = 0.;
+    double dTilda_sz = 0.;
+    for (int e = 0; e < numFibers; ++e) 
+    {
+        double A = matData[3 * e + 2];
+        dTilda_sy += A * (pow(gradPhi_sy_globalCentroid(e, 0), 2) + pow(gradPhi_sy_globalCentroid(e, 1), 2));
+        dTilda_sz += A * (pow(gradPhi_sz_globalCentroid(e, 0), 2) + pow(gradPhi_sz_globalCentroid(e, 1), 2));
+    }
+
+    // Step 4: Compute derivatives of shear function Psi
+    gradPsi_sy_globalCentroid = -Iz / dTilda_sy * gradPhi_sy_globalCentroid;
+    gradPsi_sz_globalCentroid = -Iy / dTilda_sz * gradPhi_sz_globalCentroid;
+    for (int e = 0; e < numFibers; e++)
+    {
+        gradPsi_sy_globalCentroid(e, 0) -= 1.;
+        gradPsi_sz_globalCentroid(e, 1) -= 1.;
+    }
+    //opserr << "This is connectivity_matrix:" << connectivity_matrix << endln;
+    //opserr << "This is coordinate_matrix:" << coordinate_matrix << endln;
+
+    //opserr << "gradPsi_sy_globalCentroid:  " << gradPsi_sy_globalCentroid << endln;
+    //opserr << "gradPsi_sz_globalCentroid:  " << gradPsi_sz_globalCentroid << endln;
+
 }
 
 
 void
-NDShearFiberSection3d::compute_Phi_fibers(Vector& Phi_sy_globalNodal, Vector& Phi_sz_globalNodal)
+NDShearFiberSection3d::compute_Phi_globalNodal(Vector& Phi_sy_globalNodal, Vector& Phi_sz_globalNodal)
 {
     int num_nodes = coordinate_matrix.noRows();
     Matrix K_global = Matrix(num_nodes, num_nodes);
@@ -1766,6 +1734,24 @@ NDShearFiberSection3d::compute_Phi_fibers(Vector& Phi_sy_globalNodal, Vector& Ph
     assemble_global_quantities(K_global, f_sy_global, f_sz_global);
 
     // Solve for shear function \Psi for all nodes
+    double tol = 1e-8;
+    K_global.solve_truncatedEigen(f_sy_global, Phi_sy_globalNodal, tol);
+    K_global.solve_truncatedEigen(f_sz_global, Phi_sz_globalNodal, tol);
+    //opserr << "This is Phi_sy_globalNodal:" << Phi_sy_globalNodal << endln;
+
+    //// Verification with analytical solution
+    //Vector f_theory_globalNodal = Vector(num_nodes);
+    //for (int i = 0; i < num_nodes; i++)
+    //{
+    //    double y = coordinate_matrix(i, 0);
+    //    double z = coordinate_matrix(i, 1);
+    //    f_theory_globalNodal(i) = cos(3.1416 / 300. * (z + 300. / 2.)) + cos(3.1416 / 300. * (y + 300. / 2.));
+    //}
+   //opserr << "This is f_theory_globalNodal:" << f_theory_globalNodal << endln;
+    /*Vector testDiff = Phi_sy_globalNodal - f_theory_globalNodal;
+    double testDiffNorm = testDiff.Norm()/f_theory_globalNodal.Norm()*100.;*/
+    //opserr << "This is testDiff:" << testDiff<< endln;
+
 }
 
 
@@ -1780,6 +1766,8 @@ NDShearFiberSection3d::assemble_global_quantities(Matrix& K_global, Vector& f_sy
         {
             dof(i) = connectivity_matrix(e, i) - 1;  //   - 1 for c++ indexing
         }
+        //opserr << "This is connectivity_matrix:   " << connectivity_matrix << endln;
+        //opserr << "This is coordinate_matrix:   " << coordinate_matrix << endln;
 
         //Retrieve nodes of element e
         Vector connectivity_element = dof + 1;
@@ -1808,7 +1796,9 @@ NDShearFiberSection3d::assemble_global_quantities(Matrix& K_global, Vector& f_sy
                 K_global(dof(i), dof(j)) += K_element(i, j);
             }
         } 
-    }
+    } // end loop to go over all elements
+    //opserr << "This is K_global" << K_global << endln;
+    //opserr << "This is f_sy_global" << f_sy_global << endln;
 }
 
 
@@ -1827,6 +1817,7 @@ NDShearFiberSection3d::compute_element_quantities(Matrix coordinate_element, Vec
     /*opserr << "This is B" << B << endln;
     opserr << "This is BtB:" << BtB << endln;*/
     K_element = weights * BtB * Jdet;
+    //opserr << "This is K_element" << K_element << endln;
 
     // Compute element force vector
     Vector yCoords_elements = Vector(4);
@@ -1840,6 +1831,20 @@ NDShearFiberSection3d::compute_element_quantities(Matrix coordinate_element, Vec
     opserr << "This is N" << N << endln;
     opserr << "This is yCoords_elements:" << yCoords_elements << endln;
     opserr << "This is N ^ yCoords_elements:" << test << endln;*/
+
+//Test for known solution
+    //double y = 0.;
+    //double z = 0.;
+    //for (int i = 0; i < 4; i++)
+    //{
+    //    y += coordinate_element(i, 0)/4.;
+    //    z += coordinate_element(i, 1) / 4.;
+    //}
+    //f_sy_element = -1 * weights * -1 * (pow(3.1416, 2) / pow(300, 2)) * (cos(3.1416 / 300. * (z + 300. / 2.)) + cos(3.1416 / 300. * (y + 300. / 2.))) * N * Jdet;  //Here - sign because of formulation of weak form
+    //f_sz_element = f_sy_element;
+    //opserr << "This is f_sy_element" << f_sy_element << endln;
+
+    // Element load vector for shear warping function
     f_sy_element = -weights * (N ^ yCoords_elements) * N * Jdet;
     f_sz_element = -weights * (N ^ zCoords_elements) * N * Jdet;
 }
@@ -1881,69 +1886,6 @@ NDShearFiberSection3d::compute_NBandJdetQ4(Vector& N, Matrix& B, double& Jdet, M
     
 }
 
-
-void
-NDShearFiberSection3d::solve_systemSVD(Matrix& A, Vector& b)
-{
-
-}
-
-
-//int
-//NDShearFiberSection3d::compute_SVD_decomposition(Matrix& A, Matrix& U, Matrix& S, Matrix& Vt)
-//{
-//    // Matrix sizes
-//    int m = A.noRows();
-//    int n = A.noCols();
-//    // Check if matrix is square
-//    if (m != n) {
-//        opserr << "Matrix::Solve(b,x) - the matrix of dimensions "
-//            << m << ", " << n << " is not square " << endln;
-//        return -1;
-//    }
-//
-//    // Copy the data to array format
-//    const int dataSize = m * n;
-//    std::vector<double> A_copy(dataSize);
-//    std::vector<double> U_copy(m*m);
-//    std::vector<double> S_copy(std::min(m,n));
-//    std::vector<double> Vt_copy(n*n);
-//    for (int i = 0; i < m; i++)
-//    {
-//        for (int j = 0; j < n; j++)
-//        {
-//            A_copy[i * m + j] = A(i, j);
-//        }
-//    }
-//
-//    Matrix X = Matrix(4, 4);
-//    X.Solve(A, A);
-//
-//
-//    // Call the DGESVD function from Lapack
-//    char JOBU = 'A'; // Compute all left singular vectors
-//    char JOBVT = 'A'; // Compute all right singular vectors
-//    int LWORK = std::max(1, std::max(3 * std::min(m, n) + std::max(m, n), 5 * std::min(m, n)));
-//    int info;
-//    std::vector<double> WORK(LWORK);
-//#ifdef _WIN32
-//    //DGESVD(&JOBU,&JOBVT,&m,&n,A_copy.data(),&m,S_copy.data(),U_copy.data(),&m,Vt_copy.data(),&n,WORK.data(),&LWORK,&info);
-//    //DGESV(&n, &n, A_copy.data(), &n, &n, A_copy.data(), &n, &info);
-//#else
-//    dgesvd_(&JOBU, &JOBVT, &m, &n, A_copy.data(), &m, S_copy.data(), U_copy.data(), &m, Vt_copy.data(), &n, WORK.data(), &LWORK, &info);
-//#endif
-//}
-
-
-//#ifdef _WIN32
-//extern "C" int DGESVD(char* JOBU, char* JOBVT, int* M, int* N, double* A,
-//    int* LDA, double* S, double* U, int* LDU, double* VT,
-//    int* LDVT, double* WORK, int* LWORK, int* INFO);
-//#else
-//extern "C" void dgesvd_(char* JOBU, char* JOBVT, int* M, int* N, double* A,
-//    int* LDA, double* S, double* U, int* LDU, double* VT,
-//    int* LDVT, double* WORK, int* LWORK, int* INFO);
-//#endif
 
 
 

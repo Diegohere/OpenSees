@@ -69,19 +69,7 @@ class NDShearFiberSection3d : public SectionForceDeformation
     int commitSensitivity(const Vector& sectionDeformationGradient,
 			  int gradIndex, int numGrads);
     // AddingSensitivity:END ///////////////////////////////////////////
-
-    ////Get extreme fibers indices 
-    //void getIndexExtremeFibers();
-
-    //// Get increment section deformation decomposition
-    //Matrix& getIncrementSectionDeformationsDecomposition();
-
-    //// Get section deformation decomposition
-    //Matrix& getSectionDeformationsDecomposition();
-
-    //// Get total section deformations
-    //Vector& getTotalSectionDeformations();
-
+    // 
     //Get the total area of the cross section
     double getSectionArea();
 
@@ -102,7 +90,7 @@ class NDShearFiberSection3d : public SectionForceDeformation
     void compute_gradPsi_FiberCenter();
 
     // Solve the equation for the shear functions Phi_s [Phi_sy_globalNodal, Phi_sz_globalNodal]
-    void compute_Phi_fibers(Vector& Phi_sy_globalNodal, Vector& Phi_sz_globalNodal);
+    void compute_Phi_globalNodal(Vector& Phi_sy_globalNodal, Vector& Phi_sz_globalNodal);
 
     //Assemble global stiffness matrixand global force vector
     void assemble_global_quantities(Matrix& K_global, Vector& f_sy_global, Vector& f_sz_global);
@@ -115,12 +103,6 @@ class NDShearFiberSection3d : public SectionForceDeformation
 
     // Compute the inverse of a 2x2 matrix
     void matinv2(Matrix& A, Matrix& Ainv, double& detA);
-
-    //Solve Ax=b using (truncated) SVD decomposition of matrix A
-    void solve_systemSVD(Matrix& A, Vector& b);
-
-    //// Compute the (truncated) SVD decomposition of matrix A
-    //int compute_SVD_decomposition(Matrix& A, Matrix& U, Matrix& S, Matrix& Vt);
 
   protected:
     
@@ -157,6 +139,10 @@ class NDShearFiberSection3d : public SectionForceDeformation
     // Variables for quadrature rule for quad elements
     Vector points;
     double weights;
+
+    // Variables for shear warping function
+    Matrix gradPsi_sy_globalCentroid;
+    Matrix gradPsi_sz_globalCentroid;
 
 // AddingSensitivity:BEGIN //////////////////////////////////////////
     int parameterID;

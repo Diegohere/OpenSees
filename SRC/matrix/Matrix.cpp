@@ -837,7 +837,7 @@ Matrix::compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv)
 
 // Added by Diego Heredia 16.06.2024
 int
-Matrix::solve_truncatedEigen(const Vector& b, Vector& x)
+Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
 {
     // Check if matrix is square
     if (numRows != numCols) {
@@ -905,7 +905,6 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x)
         delete[] wi;
         delete[] vl;
         delete[] work;
-        delete[] iPIV;
         return -abs(info);
     }
 #endif
@@ -989,7 +988,10 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x)
     for (int i = 0; i < numCols; ++i) {
         Qinv_b[i] = 0.0;
         for (int k = 0; k < numCols; ++k) {
-            Qinv_b[i] += Qinv_data[k * numCols + i] * b[k] / Lambda_theData[i];
+            if (abs(Lambda_theData[i])>tol) // truncate values 
+            {
+                Qinv_b[i] += Qinv_data[k * numCols + i] * b[k] / Lambda_theData[i];
+            }
         }
     }
     //opserr << "This is Qinv_b:" << Qinv_b << endln;
@@ -1002,7 +1004,7 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x)
         }
     }
 
-    opserr << "This is x:" << x << endln;
+    //opserr << "This is x:" << x << endln;
 
     // Free dynamically alocated memory
     delete[] A_copy;
@@ -1015,8 +1017,6 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x)
     delete[] vl;
     delete[] work;
     delete[] iPIV;
-
-    opserr << "This is x:" << x << endln;
 
     return 1;
 }

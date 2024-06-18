@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_testShear_general_WF;			# name of output folder
+	set dataDir results_testShear_general_rectangle;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -14,7 +14,7 @@
 ###################################################################################################
 	
 # define wide flange section
-	set bf  200.0;										# total flange width
+	set bf  300.0;										# rectangle side
 	set tf  20.00;										# flange thickness
 	set d 400.0;										# section depth
 	set tw 10.0;										# web thickness
@@ -68,9 +68,9 @@
 	nDMaterial ElasticIsotropic 1 $E $nu
 	#nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 37300000000.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $h $b 800000000000.0 1.0;
 	
-	set NFlange_yDir 2;
-	set NFlange_zDir 4;
-	set NWeb_yDir 20;
+	set NFlange_yDir 5;
+	set NFlange_zDir 5;
+	set NWeb_yDir 10;
 	set NWeb_zDir 2;
 	set NIntersection_yDir [expr $NFlange_yDir]
 	set NIntersection_zDir [expr $NWeb_zDir]
@@ -82,13 +82,7 @@
 		# patch rect 1 $nflange_yDir $nflange_zDir [expr ($d/2-$tf)]             [expr -$bf/2]                    [expr $d/2]             [expr $bf/2];		#top flange
 	# }
 	section NDFiberShear 1 -GJ $GJ {;	
-		patch rect 1 $NFlange_yDir $NFlange_zDir [expr -$d/2]               [expr -$bf/2]                    [expr -($d/2-$tf)]             [expr -$tw/2];	#left part bottom flange
-		patch rect 1 $NIntersection_yDir $NIntersection_zDir [expr -$d/2]               [expr -$tw/2]                    [expr -($d/2-$tf)]             [expr $tw/2];	#intersection bottom flange/web
-		patch rect 1 $NFlange_yDir $NFlange_zDir [expr -$d/2]               [expr $tw/2]                    [expr -($d/2-$tf)]             [expr $bf/2];	#right part bottom flange
-		patch rect 1 $NWeb_yDir $NWeb_zDir            [expr -($d/2-$tf)] [expr -$tw/2] [expr ($d/2-$tf)] [expr $tw/2];									#web
-		patch rect 1 $NFlange_yDir $NFlange_zDir [expr ($d/2-$tf)]             [expr -$bf/2]                    [expr $d/2]             [expr -$tw/2];		#left part top flange
-		patch rect 1 $NIntersection_yDir $NIntersection_zDir [expr ($d/2-$tf)]             [expr -$tw/2]                    [expr $d/2]             [expr $tw/2];		#intersection top flange/web
-		patch rect 1 $NFlange_yDir $NFlange_zDir [expr ($d/2-$tf)]             [expr $tw/2]                    [expr $d/2]             [expr $bf/2];		#right part top flange
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr -$bf/2]               [expr -$bf/2]                    [expr $bf/2]             [expr $bf/2];	
 	}
 
 	
@@ -114,15 +108,8 @@ puts "Recorders ..."
 	#recorder Node -file $dataDir/testShear4Rectangle_RBase.txt -node 1 -dof 1 2 6 reaction;
 	
 # Record stress and strains for fibers
-# recorder Element -file $dataDir/testShear4WF_stressFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 stress; 
-# recorder Element -file $dataDir/testShear4WF_strainFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 strain; 
-
-# Record section connectivity and coordinate matrices
-recorder Element -file $dataDir/testShear4WF_connectivityMatrix.txt -ele 12 section 1 connectivity; 
-recorder Element -file $dataDir/testShear4WF_coordinateMatrix.txt -ele 12 section 1 coordinate; 
-
-# Record all fiber stresses
-recorder Element -file $dataDir/testShear4WF_allFiberStresses.txt -ele 12 section 1 allFiberStresses; 
+#recorder Element -file $dataDir/B1_Cravero2020_lc10bfLcSurDx2_stressFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 stress; 
+#recorder Element -file $dataDir/B1_Cravero2020_lc10bfLcSurDx2_strainFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 strain; 
 
 
 
@@ -143,7 +130,7 @@ set tStart [clock seconds]
 
 # define LATERAL LOAD -------------------------------------------------------------
 pattern Plain 1 Linear {
-   load 2 -200000 0 0 0 0 0
+   load 2 100000 0 0 0 0 0
 
 }
 
