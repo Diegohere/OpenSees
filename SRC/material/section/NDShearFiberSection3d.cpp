@@ -439,8 +439,8 @@ NDShearFiberSection3d::~NDShearFiberSection3d()
 }
 
 // a = [1 -y z       0       0  0
-//      0  0 0 (1+dPsiSYdy)       dPsiSYdz -z
-//      0  0 0       dPsiSZdy (1+dPsiSZdz)  y]
+//      0  0 0 (1+dPsiSYdy)       dPsiSZdy -z
+//      0  0 0       dPsiSYdz (1+dPsiSZdz)  y]
 int
 NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 {
@@ -502,8 +502,8 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 
     // determine material strain and set it
     eps(0) = d0 - y*d1 + z*d2;
-    eps(1) = (1. + dPsiSYdy) * d3 + dPsiSYdz * d4 - z * d5;
-    eps(2) = dPsiSZdy * d3 + (1. + dPsiSZdz) * d4 + y * d5;
+    eps(1) = (1. + dPsiSYdy) * d3 + dPsiSZdy * d4 - z * d5;
+    eps(2) = dPsiSYdz * d3 + (1. + dPsiSZdz) * d4 + y * d5;
 
     res += theMat->setTrialStrain(eps);
     if (res==-1)
@@ -543,10 +543,10 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     ksi(2,1) += tmp;
     
     // Shear terms
-    ksi(3, 3) += (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1));
-    ksi(4, 4) += (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
-    ksi(3, 4) += (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
-    ksi(4, 3) += (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1));
+    ksi(3, 3) += (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSYdz * (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1));
+    ksi(4, 4) += (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSZdy * (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1));
+    ksi(3, 4) += (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSZdy * (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1));
+    ksi(4, 3) += (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSYdz * (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1));
 
     // Torsion term
     ksi(5, 5) += y * (d22 * y - d12 * z) - z * (d21 * y - d11 * z);
@@ -562,24 +562,24 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     ksi(5,2) += z*tmp;
     
     // Bending-shear coupling terms
-    ksi(0, 3) += d02 * dPsiSZdy + d01 * (dPsiSYdy + 1);
-    ksi(0, 4) += d01 * dPsiSYdz + d02 * (dPsiSZdz + 1);
-    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSZdy * y;
-    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSYdz * y;
-    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSZdy * z;
-    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSYdz * z;
-    ksi(3, 0) += d20 * dPsiSZdy + d10 * (dPsiSYdy + 1);
-    ksi(3, 1) += -y * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
-    ksi(3, 2) += z * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
-    ksi(4, 0) += d10 * dPsiSYdz + d20 * (dPsiSZdz + 1);
-    ksi(4, 1) += -y * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
-    ksi(4, 2) += z * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+    ksi(0, 3) += d02 * dPsiSYdz + d01 * (dPsiSYdy + 1);
+    ksi(0, 4) += d01 * dPsiSZdy + d02 * (dPsiSZdz + 1);
+    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSYdz * y;
+    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSZdy * y;
+    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSYdz * z;
+    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSZdy * z;
+    ksi(3, 0) += d20 * dPsiSYdz + d10 * (dPsiSYdy + 1);
+    ksi(3, 1) += -y * (d20 * dPsiSYdz + d10 * (dPsiSYdy + 1));
+    ksi(3, 2) += z * (d20 * dPsiSYdz + d10 * (dPsiSYdy + 1));
+    ksi(4, 0) += d10 * dPsiSZdy + d20 * (dPsiSZdz + 1);
+    ksi(4, 1) += -y * (d10 * dPsiSZdy + d20 * (dPsiSZdz + 1));
+    ksi(4, 2) += z * (d10 * dPsiSZdy + d20 * (dPsiSZdz + 1));
     
     // Torsion-shear coupling terms
-    ksi(3, 5) += y * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
-    ksi(4, 5) += y * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
-    ksi(5, 3) += dPsiSZdy * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
-    ksi(5, 4) += dPsiSYdz * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
+    ksi(3, 5) += y * (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1));
+    ksi(4, 5) += y * (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1));
+    ksi(5, 3) += dPsiSYdz * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
+    ksi(5, 4) += dPsiSZdy * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
 
 
 
@@ -590,8 +590,8 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     si(0) += sig0;
     si(1) += -y*sig0;
     si(2) += z*sig0;
-    si(3) += dPsiSZdy * sig2 + sig1 * (dPsiSYdy + 1);
-    si(4) += dPsiSYdz * sig1 + sig2 * (dPsiSZdz + 1);
+    si(3) += dPsiSYdz * sig2 + sig1 * (dPsiSYdy + 1);
+    si(4) += dPsiSZdy * sig1 + sig2 * (dPsiSZdz + 1);
     si(5) += -z*sig1 + y*sig2;
   }
 
@@ -677,10 +677,10 @@ NDShearFiberSection3d::getInitialTangent(void)
     ki(2, 1) += tmp;
 
     // Shear terms
-    ki(3, 3) += (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1));
-    ki(4, 4) += (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
-    ki(3, 4) += (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
-    ki(4, 3) += (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1));
+    ki(3, 3) += (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSYdz * (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1));
+    ki(4, 4) += (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSZdy * (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1));
+    ki(3, 4) += (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSZdy * (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1));
+    ki(4, 3) += (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSYdz * (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1));
 
     // Torsion term
     ki(5, 5) += y * (d22 * y - d12 * z) - z * (d21 * y - d11 * z);
@@ -696,24 +696,24 @@ NDShearFiberSection3d::getInitialTangent(void)
     ki(5, 2) += z * tmp;
 
     // Bending-shear coupling terms
-    ki(0, 3) += d02 * dPsiSZdy + d01 * (dPsiSYdy + 1);
-    ki(0, 4) += d01 * dPsiSYdz + d02 * (dPsiSZdz + 1);
-    ki(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSZdy * y;
-    ki(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSYdz * y;
-    ki(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSZdy * z;
-    ki(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSYdz * z;
-    ki(3, 0) += d20 * dPsiSZdy + d10 * (dPsiSYdy + 1);
-    ki(3, 1) += -y * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
-    ki(3, 2) += z * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
-    ki(4, 0) += d10 * dPsiSYdz + d20 * (dPsiSZdz + 1);
-    ki(4, 1) += -y * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
-    ki(4, 2) += z * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+    ki(0, 3) += d02 * dPsiSYdz + d01 * (dPsiSYdy + 1);
+    ki(0, 4) += d01 * dPsiSZdy + d02 * (dPsiSZdz + 1);
+    ki(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSYdz * y;
+    ki(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSZdy * y;
+    ki(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSYdz * z;
+    ki(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSZdy * z;
+    ki(3, 0) += d20 * dPsiSYdz + d10 * (dPsiSYdy + 1);
+    ki(3, 1) += -y * (d20 * dPsiSYdz + d10 * (dPsiSYdy + 1));
+    ki(3, 2) += z * (d20 * dPsiSYdz + d10 * (dPsiSYdy + 1));
+    ki(4, 0) += d10 * dPsiSZdy + d20 * (dPsiSZdz + 1);
+    ki(4, 1) += -y * (d10 * dPsiSZdy + d20 * (dPsiSZdz + 1));
+    ki(4, 2) += z * (d10 * dPsiSZdy + d20 * (dPsiSZdz + 1));
 
     // Torsion-shear coupling terms
-    ki(3, 5) += y * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
-    ki(4, 5) += y * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
-    ki(5, 3) += dPsiSZdy * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
-    ki(5, 4) += dPsiSYdz * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
+    ki(3, 5) += y * (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1));
+    ki(4, 5) += y * (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1));
+    ki(5, 3) += dPsiSYdz * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
+    ki(5, 4) += dPsiSZdy * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
   }
 
   return ki;
@@ -907,10 +907,10 @@ NDShearFiberSection3d::revertToLastCommit(void)
     ksi(2, 1) += tmp;
 
     // Shear terms
-    ksi(3, 3) += (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1));
-    ksi(4, 4) += (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
-    ksi(3, 4) += (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
-    ksi(4, 3) += (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1));
+    ksi(3, 3) += (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSYdz * (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1));
+    ksi(4, 4) += (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSZdy * (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1));
+    ksi(3, 4) += (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSZdy * (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1));
+    ksi(4, 3) += (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSYdz * (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1));
 
     // Torsion term
     ksi(5, 5) += y * (d22 * y - d12 * z) - z * (d21 * y - d11 * z);
@@ -926,24 +926,24 @@ NDShearFiberSection3d::revertToLastCommit(void)
     ksi(5, 2) += z * tmp;
 
     // Bending-shear coupling terms
-    ksi(0, 3) += d02 * dPsiSZdy + d01 * (dPsiSYdy + 1);
-    ksi(0, 4) += d01 * dPsiSYdz + d02 * (dPsiSZdz + 1);
-    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSZdy * y;
-    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSYdz * y;
-    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSZdy * z;
-    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSYdz * z;
-    ksi(3, 0) += d20 * dPsiSZdy + d10 * (dPsiSYdy + 1);
-    ksi(3, 1) += -y * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
-    ksi(3, 2) += z * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
-    ksi(4, 0) += d10 * dPsiSYdz + d20 * (dPsiSZdz + 1);
-    ksi(4, 1) += -y * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
-    ksi(4, 2) += z * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+    ksi(0, 3) += d02 * dPsiSYdz + d01 * (dPsiSYdy + 1);
+    ksi(0, 4) += d01 * dPsiSZdy + d02 * (dPsiSZdz + 1);
+    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSYdz * y;
+    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSZdy * y;
+    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSYdz * z;
+    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSZdy * z;
+    ksi(3, 0) += d20 * dPsiSYdz + d10 * (dPsiSYdy + 1);
+    ksi(3, 1) += -y * (d20 * dPsiSYdz + d10 * (dPsiSYdy + 1));
+    ksi(3, 2) += z * (d20 * dPsiSYdz + d10 * (dPsiSYdy + 1));
+    ksi(4, 0) += d10 * dPsiSZdy + d20 * (dPsiSZdz + 1);
+    ksi(4, 1) += -y * (d10 * dPsiSZdy + d20 * (dPsiSZdz + 1));
+    ksi(4, 2) += z * (d10 * dPsiSZdy + d20 * (dPsiSZdz + 1));
 
     // Torsion-shear coupling terms
-    ksi(3, 5) += y * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
-    ksi(4, 5) += y * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
-    ksi(5, 3) += dPsiSZdy * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
-    ksi(5, 4) += dPsiSYdz * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
+    ksi(3, 5) += y * (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1));
+    ksi(4, 5) += y * (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1));
+    ksi(5, 3) += dPsiSYdz * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
+    ksi(5, 4) += dPsiSZdy * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
 
     double sig0 = stress(0)*A;
     double sig1 = stress(1)*A;
@@ -952,8 +952,8 @@ NDShearFiberSection3d::revertToLastCommit(void)
     si(0) += sig0;
     si(1) += -y * sig0;
     si(2) += z * sig0;
-    si(3) += dPsiSZdy * sig2 + sig1 * (dPsiSYdy + 1);
-    si(4) += dPsiSYdz * sig1 + sig2 * (dPsiSZdz + 1);
+    si(3) += dPsiSYdz * sig2 + sig1 * (dPsiSYdy + 1);
+    si(4) += dPsiSZdy * sig1 + sig2 * (dPsiSZdz + 1);
     si(5) += -z * sig1 + y * sig2; 
   }
 
@@ -1046,10 +1046,10 @@ NDShearFiberSection3d::revertToStart(void)
     ksi(2, 1) += tmp;
 
     // Shear terms
-    ksi(3, 3) += (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1));
-    ksi(4, 4) += (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
-    ksi(3, 4) += (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSYdz * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
-    ksi(4, 3) += (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSZdy * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1));
+    ksi(3, 3) += (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1)) * (dPsiSYdy + 1) + dPsiSYdz * (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1));
+    ksi(4, 4) += (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1)) * (dPsiSZdz + 1) + dPsiSZdy * (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1));
+    ksi(3, 4) += (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1)) * (dPsiSZdz + 1) + dPsiSZdy * (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1));
+    ksi(4, 3) += (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1)) * (dPsiSYdy + 1) + dPsiSYdz * (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1));
 
     // Torsion term
     ksi(5, 5) += y * (d22 * y - d12 * z) - z * (d21 * y - d11 * z);
@@ -1065,24 +1065,24 @@ NDShearFiberSection3d::revertToStart(void)
     ksi(5, 2) += z * tmp;
 
     // Bending-shear coupling terms
-    ksi(0, 3) += d02 * dPsiSZdy + d01 * (dPsiSYdy + 1);
-    ksi(0, 4) += d01 * dPsiSYdz + d02 * (dPsiSZdz + 1);
-    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSZdy * y;
-    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSYdz * y;
-    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSZdy * z;
-    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSYdz * z;
-    ksi(3, 0) += d20 * dPsiSZdy + d10 * (dPsiSYdy + 1);
-    ksi(3, 1) += -y * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
-    ksi(3, 2) += z * (d20 * dPsiSZdy + d10 * (dPsiSYdy + 1));
-    ksi(4, 0) += d10 * dPsiSYdz + d20 * (dPsiSZdz + 1);
-    ksi(4, 1) += -y * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
-    ksi(4, 2) += z * (d10 * dPsiSYdz + d20 * (dPsiSZdz + 1));
+    ksi(0, 3) += d02 * dPsiSYdz + d01 * (dPsiSYdy + 1);
+    ksi(0, 4) += d01 * dPsiSZdy + d02 * (dPsiSZdz + 1);
+    ksi(1, 3) += -d01 * y * (dPsiSYdy + 1) - d02 * dPsiSYdz * y;
+    ksi(1, 4) += -d02 * y * (dPsiSZdz + 1) - d01 * dPsiSZdy * y;
+    ksi(2, 3) += d01 * z * (dPsiSYdy + 1) + d02 * dPsiSYdz * z;
+    ksi(2, 4) += d02 * z * (dPsiSZdz + 1) + d01 * dPsiSZdy * z;
+    ksi(3, 0) += d20 * dPsiSYdz + d10 * (dPsiSYdy + 1);
+    ksi(3, 1) += -y * (d20 * dPsiSYdz + d10 * (dPsiSYdy + 1));
+    ksi(3, 2) += z * (d20 * dPsiSYdz + d10 * (dPsiSYdy + 1));
+    ksi(4, 0) += d10 * dPsiSZdy + d20 * (dPsiSZdz + 1);
+    ksi(4, 1) += -y * (d10 * dPsiSZdy + d20 * (dPsiSZdz + 1));
+    ksi(4, 2) += z * (d10 * dPsiSZdy + d20 * (dPsiSZdz + 1));
 
     // Torsion-shear coupling terms
-    ksi(3, 5) += y * (d22 * dPsiSZdy + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSZdy + d11 * (dPsiSYdy + 1));
-    ksi(4, 5) += y * (d12 * dPsiSYdz + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSYdz + d21 * (dPsiSZdz + 1));
-    ksi(5, 3) += dPsiSZdy * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
-    ksi(5, 4) += dPsiSYdz * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
+    ksi(3, 5) += y * (d22 * dPsiSYdz + d12 * (dPsiSYdy + 1)) - z * (d21 * dPsiSYdz + d11 * (dPsiSYdy + 1));
+    ksi(4, 5) += y * (d12 * dPsiSZdy + d22 * (dPsiSZdz + 1)) - z * (d11 * dPsiSZdy + d21 * (dPsiSZdz + 1));
+    ksi(5, 3) += dPsiSYdz * (d22 * y - d12 * z) + (dPsiSYdy + 1) * (d21 * y - d11 * z);
+    ksi(5, 4) += dPsiSZdy * (d21 * y - d11 * z) + (dPsiSZdz + 1) * (d22 * y - d12 * z);
 
 
 
@@ -1093,8 +1093,8 @@ NDShearFiberSection3d::revertToStart(void)
     si(0) += sig0;
     si(1) += -y * sig0;
     si(2) += z * sig0;
-    si(3) += dPsiSZdy * sig2 + sig1 * (dPsiSYdy + 1);
-    si(4) += dPsiSYdz * sig1 + sig2 * (dPsiSZdz + 1);
+    si(3) += dPsiSYdz * sig2 + sig1 * (dPsiSYdy + 1);
+    si(4) += dPsiSZdy * sig1 + sig2 * (dPsiSZdz + 1);
     si(5) += -z * sig1 + y * sig2;
   }
 
