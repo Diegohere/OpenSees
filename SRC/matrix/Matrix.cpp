@@ -865,7 +865,7 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
     char jobvl = 'N'; // Do notCompute the left eigen vectors
     char jobvr = 'V'; //  Compute the right eigen vectors
     double wkopt;
-    double* work;
+    double* work1;
     int lwork = -1;
     int info;
 #ifdef _WIN32
@@ -873,11 +873,11 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
     DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda_theData, wi, vl, &ldvl, Q_data, &ldvr,
         &wkopt, &lwork, &info);
     lwork = (int)wkopt;
-    work = new (nothrow) double[lwork];
+    work1 = new (nothrow) double[lwork];
 
     // Solve the eigen problem
     DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda_theData, wi, vl, &ldvl, Q_data, &ldvr,
-        work, &lwork, &info);
+        work1, &lwork, &info);
 
     if (info != 0)
     {
@@ -885,18 +885,20 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
         delete[] A_copy;
         delete[] wi;
         delete[] vl;
-        delete[] work;
+        delete[] work1;
+        delete[] Q_data;          
+        delete[] Lambda_theData;  
         return -abs(info);
     }
 #else
     dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda_theData, wi, vl, &ldvl, Q_data, &ldvr,
         &wkopt, &lwork, &info);
     lwork = (int)wkopt;
-    work = new (nothrow) double[lwork];
+    work1 = new (nothrow) double[lwork];
 
     // Solve the eigen problem
     dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda_theData, wi, vl, &ldvl, Q_data, &ldvr,
-        work, &lwork, &info);
+        work1, &lwork, &info);
 
     if (info != 0)
     {
@@ -904,7 +906,9 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
         delete[] A_copy;
         delete[] wi;
         delete[] vl;
-        delete[] work;
+        delete[] work1;
+        delete[] Q_data;
+        delete[] Lambda_theData;
         return -abs(info);
     }
 #endif
@@ -916,6 +920,7 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
         Qinv_data[i] = Q_data[i];
     }
     int* iPIV = new (nothrow) int[numCols];
+    double* work2;
 
 #ifdef _WIN32
 
@@ -927,17 +932,20 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
         delete[] A_copy;
         delete[] wi;
         delete[] vl;
-        delete[] work;
         delete[] iPIV;
+        delete[] Q_data;
+        delete[] Lambda_theData;
+        delete[] work1;
         return -abs(info);
     }
 
     lwork = -1;
-    DGETRI(&numCols, Qinv_data, &lda, iPIV, work, &lwork, &info);
+    double* work2_size;
+    DGETRI(&numCols, Qinv_data, &lda, iPIV, work2_size, &lwork, &info);
 
-    lwork = (int)wkopt;
-    work = new (nothrow) double[lwork];
-    DGETRI(&numCols, Qinv_data, &lda, iPIV, work, &lwork, &info);
+    lwork = work2_size[0];
+    work2 = new (nothrow) double[lwork];
+    DGETRI(&numCols, Qinv_data, &lda, iPIV, work2, &lwork, &info);
 
 #else
     dgetrf_(&numCols, &numCols, Qinv_data, &lda, iPIV, &info);
@@ -948,17 +956,21 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
         delete[] A_copy;
         delete[] wi;
         delete[] vl;
-        delete[] work;
         delete[] iPIV;
+        delete[] Q_data;
+        delete[] Lambda_theData;
+        delete[] work1;
+        delete[] work2;
         return -abs(info);
     }
 
     lwork = -1;
-    dgetri_(&numCols, Qinv_data, &lda, iPIV, work, &lwork, &info);
+    double* work2_size;
+    dgetri_(&numCols, Qinv_data, &lda, iPIV, work2_size, &lwork, &info);
 
-    lwork = (int)wkopt;
-    work = new (nothrow) double[lwork];
-    dgetri_(&numCols, Qinv_data, &lda, iPIV, work, &lwork, &info);
+    lwork = work2_size[0];
+    work2 = new (nothrow) double[lwork];
+    dgetri_(&numCols, Qinv_data, &lda, iPIV, work2, &lwork, &info);
 
 #endif
 
@@ -1015,7 +1027,8 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
 
     delete[] wi;
     delete[] vl;
-    delete[] work;
+    delete[] work1;
+    delete[] work2;
     delete[] iPIV;
 
     return 1;
