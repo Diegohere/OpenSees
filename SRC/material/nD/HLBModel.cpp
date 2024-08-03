@@ -2379,7 +2379,15 @@ Matrix& HLBModel::getStrainDecomposition() {
 
 	return strainDecomposition;
 }
+
 /* ----------------------------------------------------------------------------------------------------------------- */
+
+Vector& HLBModel::getPlasticStrains() {
+	return strainPlasticTrial;
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
 
 const Matrix& HLBModel::getInitialTangent() {
 

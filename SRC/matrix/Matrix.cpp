@@ -940,10 +940,10 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
     }
 
     lwork = -1;
-    double* work2_size;
-    DGETRI(&numCols, Qinv_data, &lda, iPIV, work2_size, &lwork, &info);
+    double work2_size;
+    DGETRI(&numCols, Qinv_data, &lda, iPIV, &work2_size, &lwork, &info);
 
-    lwork = work2_size[0];
+    lwork = (int)work2_size;
     work2 = new (nothrow) double[lwork];
     DGETRI(&numCols, Qinv_data, &lda, iPIV, work2, &lwork, &info);
 

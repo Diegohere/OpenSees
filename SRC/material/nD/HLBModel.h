@@ -121,6 +121,9 @@ public:
 	// Return strain decomposition Vector(epsiE, epsiP, epsiPb)
 	Matrix& getStrainDecomposition(void);
 
+	// Return plastic strain components (11,12,13)
+	Vector& getPlasticStrains(void);
+
 private:
 	// Determines the trial stress for the given strain increment and which return mapping could be needed
 	int timeIntegration();

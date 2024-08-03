@@ -253,6 +253,14 @@ NDMaterial::getStrainDecomposition()
     opserr << "NDMaterial::getStrainDecomposition -- subclass responsibility\n";
     return errMatrix;
 }
+
+Vector&
+NDMaterial::getPlasticStrains()
+{
+    opserr << "NDMaterial::getPlasticStrains -- subclass responsibility\n";
+    return errVector;
+}
+
 // End addition by Diego Heredia 
 
 
@@ -342,6 +350,14 @@ NDMaterial::setResponse (const char **argv, int argc, OPS_Stream &output)
   }
   // End addition by Diego Heredia 13.01.2023
 
+  // Start addition by Diego Heredia 02.08.2024
+  else if (strcmp(argv[0], "plasticStrain") == 0) {
+      //Vector vec = this->getPlasticStrains();
+      theResponse = new MaterialResponse(this, 7, this->getPlasticStrains());
+      output.tag("ResponseType", "plasticStrain");
+  }
+  // End addition by Diego Heredia 02.08.2024
+
   output.endTag(); // NdMaterialOutput
 
   return theResponse;
@@ -361,6 +377,11 @@ NDMaterial::getResponse (int responseID, Information &matInfo)
   case 6:
       return matInfo.setDouble(this->getYieldStress());
    // End addition by Diego Heredia 13.01.2023
+
+    // Start addition by Diego Heredia 02.08.2024
+  case 7:
+      return matInfo.setVector(this->getPlasticStrains());
+      // End addition by Diego Heredia 02.08.2024
     
   default:
     return -1;
