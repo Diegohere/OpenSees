@@ -762,7 +762,8 @@ TestNonlocalElement3dDH::update(void)
 								s_Tot[i](ii) = xL1 * qTrial(1) + xL * qTrial(2);
 								break;
 							case SECTION_RESPONSE_VY:
-								s_Tot[i](ii) = oneOverL * (qTrial(1) + qTrial(2));
+								/*s_Tot[i](ii) = oneOverL * (qTrial(1) + qTrial(2));*/
+								s_Tot[i](ii) = -oneOverL * (qTrial(1) + qTrial(2)); // Diego Heredia 09.08.2024
 								break;
 							case SECTION_RESPONSE_MY:
 								s_Tot[i](ii) = xL1 * qTrial(3) + xL * qTrial(4);
@@ -796,7 +797,8 @@ TestNonlocalElement3dDH::update(void)
 								ds(ii) = xL1 * dq(1) + xL * dq(2);
 								break;
 							case SECTION_RESPONSE_VY:
-								ds(ii) = oneOverL * (dq(1) + dq(2));
+								/*ds(ii) = oneOverL * (dq(1) + dq(2));*/
+								ds(ii) = -oneOverL * (dq(1) + dq(2)); // Diego Heredia 09.08.2024
 								break;
 							case SECTION_RESPONSE_MY:
 								ds(ii) = xL1 * dq(3) + xL * dq(4);
@@ -1064,7 +1066,8 @@ TestNonlocalElement3dDH::update(void)
 								vu(2) += xL * dei;
 								break;
 							case SECTION_RESPONSE_VY:
-								tmp = oneOverL * dei;
+								/*tmp = oneOverL * dei;*/
+								tmp = -oneOverL * dei; // Diego Heredia 09.08.2024
 								vu(1) += tmp;
 								vu(2) += tmp;
 								break;
@@ -1249,7 +1252,8 @@ void TestNonlocalElement3dDH::getForceInterpolatMatrix(double xi, Matrix& b, con
 			b(i, 0) = 1.0;
 			break;
 		case SECTION_RESPONSE_VY:		// Shear, Vy, interpolation
-			b(i, 1) = b(i, 2) = 1.0 / L;
+			/*b(i, 1) = b(i, 2) = 1.0 / L;*/
+			b(i, 1) = b(i, 2) = -1.0 / L; // Diego Heredia 09.08.2024
 			break;
 		case SECTION_RESPONSE_MY:              // Moment, My, interpolation
 			b(i, 3) = xi - 1.0;
@@ -1643,7 +1647,8 @@ TestNonlocalElement3dDH::getInitialFlexibility(Matrix& Fe)
 				break;
 			case SECTION_RESPONSE_VY:
 				for (jj = 0; jj < order; jj++) {
-					tmp = oneOverL * FSec(jj, ii) * wtL;
+					/*tmp = oneOverL * FSec(jj, ii) * wtL;*/
+					tmp = -oneOverL * FSec(jj, ii) * wtL; // Diego Heredia 09.08.2024
 					Fb(jj, 1) += tmp;
 					Fb(jj, 2) += tmp;
 				}
@@ -1685,7 +1690,8 @@ TestNonlocalElement3dDH::getInitialFlexibility(Matrix& Fe)
 				break;
 			case SECTION_RESPONSE_VY:
 				for (jj = 0; jj < NEBD; jj++) {
-					tmp = oneOverL * Fb(ii, jj);
+					/*tmp = oneOverL * Fb(ii, jj);*/
+					tmp = -oneOverL * Fb(ii, jj); // Diego Heredia 09.08.2024
 					Fe(1, jj) += tmp;
 					Fe(2, jj) += tmp;
 				}
