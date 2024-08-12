@@ -18,6 +18,9 @@
 	set tf  20.00;										# flange thickness
 	set d 400.0;										# section depth
 	set tw 10.0;										# web thickness
+	
+	set bPlate [expr $bf/2];
+	set tPlate $tf;
 
 	
 ###################################################################################################
@@ -66,7 +69,8 @@
 	set J   [expr 1.0/3.0*(2*$bf*$tf**3.0 + $do*$tw**3.0)]; 		# torsional constant   
 	set GJ 	[expr $G*$J];  			# torsional stiffness 
 	
-	nDMaterial ElasticIsotropic 1 $E $nu
+	#nDMaterial ElasticIsotropic 1 $E $nu
+	nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 37300000000.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate 800000000000.0 1.0;
 	#nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 37300000000.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $h $b 800000000000.0 1.0;
 	
 	set NFlange_yDir 10;
@@ -147,7 +151,7 @@ set tStart [clock seconds]
 
 # define LATERAL LOAD -------------------------------------------------------------
 pattern Plain 1 Linear {
-   load 2 -200000 0 0 0 0 0
+   load 2 200000 0 0 0 0 0
 
 }
 

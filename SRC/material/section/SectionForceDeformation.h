@@ -112,6 +112,7 @@ class SectionForceDeformation : public Material
   //--- Adding Thermal Functions:[END]   by UoE OpenSees Group ----//
 
   virtual double getSectionArea(); // added by Diego Heredia
+  virtual int setTrialSectionDeformation(const Vector&, const double d2ThetaZDX2, const double d2ThetaYDX2);// added by Diego Heredia 12.08.2024
 
   virtual const Vector& getThermalElong(void);
   virtual double getEnergy() const { return 0; };		//by SAJalali

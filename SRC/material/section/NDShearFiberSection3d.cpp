@@ -442,7 +442,7 @@ NDShearFiberSection3d::~NDShearFiberSection3d()
 //      0  0 0 (1+dPsiSYdy)       dPsiSZdy -z
 //      0  0 0       dPsiSYdz (1+dPsiSZdz)  y]
 int
-NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
+NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const double d2ThetaZDX2_input, const double d2ThetaYDX2_input)
 {
   int res = 0;
 
@@ -463,6 +463,21 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
   static double yLocs[10000];
   static double zLocs[10000];
   static double fiberArea[10000];
+
+  // TODO: Add check to determine inelasticFlag
+  if (abs(d1)>0. || abs(d2)>0.)
+  {
+      inelasticFlag = 1;
+  }
+
+  // Determine quantities for inelastic shear problem
+  if (inelasticFlag==1)
+  {
+      d2ThetaZDX2 = d2ThetaZDX2_input;
+      d2ThetaYDX2 = d2ThetaYDX2_input;
+
+      compute_gradPsi_FiberCenter();
+  }
 
   if (sectionIntegr != 0) {
     sectionIntegr->getFiberLocations(numFibers, yLocs, zLocs);
@@ -1696,19 +1711,30 @@ NDShearFiberSection3d::compute_gradPsi_FiberCenter()
     /*Matrix testDiff = (gradf_theory_globalCentroid - gradPhi_sy_globalCentroid);
     opserr << "This is testDiff:" << testDiff << endln;*/
 
-    // Step 3: Compute integral dTilda
-    double dTilda_sy = 0.;
-    double dTilda_sz = 0.;
-    for (int e = 0; e < numFibers; ++e) 
+    if (inelasticFlag == 0)// if fiber-based element is completely elastic
     {
-        double A = matData[3 * e + 2];
-        dTilda_sy += A * (pow(gradPhi_sy_globalCentroid(e, 0), 2) + pow(gradPhi_sy_globalCentroid(e, 1), 2));
-        dTilda_sz += A * (pow(gradPhi_sz_globalCentroid(e, 0), 2) + pow(gradPhi_sz_globalCentroid(e, 1), 2));
+        // Step 3: Compute integral dTilda
+        double dTilda_sy = 0.;
+        double dTilda_sz = 0.;
+        for (int e = 0; e < numFibers; ++e)
+        {
+            double A = matData[3 * e + 2];
+            dTilda_sy += A * (pow(gradPhi_sy_globalCentroid(e, 0), 2) + pow(gradPhi_sy_globalCentroid(e, 1), 2));
+            dTilda_sz += A * (pow(gradPhi_sz_globalCentroid(e, 0), 2) + pow(gradPhi_sz_globalCentroid(e, 1), 2));
+        }
+
+        // Step 4: Compute derivatives of shear function Psi
+        gradPsi_sy_globalCentroid = -Iz / dTilda_sy * gradPhi_sy_globalCentroid;
+        gradPsi_sz_globalCentroid = -Iy / dTilda_sz * gradPhi_sz_globalCentroid;
+    }
+    else
+    {
+        // Step 4: Compute derivatives of shear function Psi
+        gradPsi_sy_globalCentroid = gradPhi_sy_globalCentroid;
+        gradPsi_sz_globalCentroid = gradPhi_sz_globalCentroid;
     }
 
-    // Step 4: Compute derivatives of shear function Psi
-    gradPsi_sy_globalCentroid = -Iz / dTilda_sy * gradPhi_sy_globalCentroid;
-    gradPsi_sz_globalCentroid = -Iy / dTilda_sz * gradPhi_sz_globalCentroid;
+
     for (int e = 0; e < numFibers; e++)
     {
         gradPsi_sy_globalCentroid(e, 0) -= 1.;
@@ -1783,7 +1809,7 @@ NDShearFiberSection3d::assemble_global_quantities(Matrix& K_global, Vector& f_sy
         Matrix K_element = Matrix(4, 4);
         Vector f_sy_element = Vector(4);
         Vector f_sz_element = Vector(4);
-        compute_element_quantities(coordinate_element, connectivity_element, K_element, f_sy_element, f_sz_element);
+        compute_element_quantities(e, coordinate_element, connectivity_element, K_element, f_sy_element, f_sz_element);
 
         // Assemble
         for (int i = 0; i < 4; i++)
@@ -1803,7 +1829,7 @@ NDShearFiberSection3d::assemble_global_quantities(Matrix& K_global, Vector& f_sy
 
 
 void
-NDShearFiberSection3d::compute_element_quantities(Matrix coordinate_element, Vector connectivity_element, Matrix& K_element, Vector& f_sy_element, Vector& f_sz_element)
+NDShearFiberSection3d::compute_element_quantities(const int elem, Matrix coordinate_element, Vector connectivity_element, Matrix& K_element, Vector& f_sy_element, Vector& f_sz_element)
 {
     // No need for loop Integrate numerically using Gauss quadrature because use 1 Gauss quadrature point
     Vector N = Vector(4);
@@ -1845,8 +1871,41 @@ NDShearFiberSection3d::compute_element_quantities(Matrix coordinate_element, Vec
     //opserr << "This is f_sy_element" << f_sy_element << endln;
 
     // Element load vector for shear warping function
-    f_sy_element = -weights * (N ^ yCoords_elements) * N * Jdet;
-    f_sz_element = -weights * (N ^ zCoords_elements) * N * Jdet;
+    if (inelasticFlag==0) // if fiber-based element is completely elastic
+    {
+        // Use elastic shear distribution
+        f_sy_element = -weights * (N ^ yCoords_elements) * N * Jdet;
+        f_sz_element = -weights * (N ^ zCoords_elements) * N * Jdet;
+    }
+    else
+    {
+        // Use inelastic shear distribution
+        NDMaterial* theMat = theMaterials[elem];
+
+        Matrix& strainDecomposition = theMat->getStrainDecomposition();
+        Vector inelasticStrain_termY(2);
+        inelasticStrain_termY(0) = (strainDecomposition(1, 1) + strainDecomposition(1, 2)) / e(3);
+        inelasticStrain_termY(1) = (strainDecomposition(2, 1) + strainDecomposition(2, 2)) / e(3);
+        Vector inelasticStrain_termZ(2);
+        inelasticStrain_termZ(0) = (strainDecomposition(1, 1) + strainDecomposition(1, 2)) / e(4);
+        inelasticStrain_termZ(1) = (strainDecomposition(2, 1) + strainDecomposition(2, 2)) / e(4);
+
+        const Matrix& consistentTangentModulus = theMat->getTangent();
+
+        const Matrix& initialTangentModulus = theMat->getInitialTangent();
+
+        double y = N ^ yCoords_elements;
+        double z = N ^ zCoords_elements;
+
+        Matrix Bt = Matrix(4, 2);
+        Bt.addMatrixTranspose(0., B, 1.0);
+
+        f_sy_element = weights * (Bt * inelasticStrain_termY - N * (consistentTangentModulus(0, 0) * y * d2ThetaZDX2 / (initialTangentModulus(1, 1) * e(3)))) * Jdet;
+        f_sz_element = weights * (Bt * inelasticStrain_termZ + N * (consistentTangentModulus(0, 0) * z * d2ThetaYDX2 / (initialTangentModulus(1, 1) * e(4)))) * Jdet;
+        //opserr << "This is f_sy_element" << f_sy_element << endln;
+
+    }
+    
 }
 
 

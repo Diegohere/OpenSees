@@ -526,3 +526,10 @@ double SectionForceDeformation::getSectionArea() // added by Diego Heredia
     opserr << "SectionForceDeformation::getSectionArea: Only works with nonlocal element" << endln;
     return -1;
 }
+
+
+int SectionForceDeformation::setTrialSectionDeformation(const Vector&, const double deriv1, const double deriv2) // added by Diego Heredia12.08.2024
+{
+    opserr << "SectionForceDeformation::setTrialSectionDeformation(const Vector&, const double deriv1, const double deriv2): Only works with nonlocal element" << endln;
+    return -1;
+}

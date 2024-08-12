@@ -32,7 +32,7 @@ class NDShearFiberSection3d : public SectionForceDeformation
 
     const char *getClassType(void) const {return "NDShearFiberSection3d";};
 
-    int   setTrialSectionDeformation(const Vector &deforms); 
+    int   setTrialSectionDeformation(const Vector &deforms, const double d2ThetaZDX2, const double d2ThetaYDX2);
     const Vector &getSectionDeformation(void);
 
     const Vector &getStressResultant(void);
@@ -96,7 +96,7 @@ class NDShearFiberSection3d : public SectionForceDeformation
     void assemble_global_quantities(Matrix& K_global, Vector& f_sy_global, Vector& f_sz_global);
 
     //Calculate local stiffness matrix and force vector of element e
-    void compute_element_quantities(Matrix coordinate_element, Vector connectivity_element, Matrix& K_element, Vector& f_sy_element , Vector& f_sz_element);
+    void compute_element_quantities(const int e, Matrix coordinate_element, Vector connectivity_element, Matrix& K_element, Vector& f_sy_element , Vector& f_sz_element);
 
     // Compute N B and Jdet for Q4 elements
     void compute_NBandJdetQ4(Vector& N, Matrix& B, double& Jdet, Matrix coordinate_element);
@@ -143,6 +143,15 @@ class NDShearFiberSection3d : public SectionForceDeformation
     // Variables for shear warping function
     Matrix gradPsi_sy_globalCentroid;
     Matrix gradPsi_sz_globalCentroid;
+
+    // Variables for inelastic shear distribution 
+    int inelasticFlag = 0;
+    double d2ThetaZDX2;
+    double d2ThetaYDX2;
+    /*Vector allFibers_gammaIN_xy;
+    Vector allFibers_gammaIN_xz;
+    Vector allFibers_C11;
+    Vector allFibers_G;*/
 
 // AddingSensitivity:BEGIN //////////////////////////////////////////
     int parameterID;
