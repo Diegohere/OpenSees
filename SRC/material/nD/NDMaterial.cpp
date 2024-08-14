@@ -261,6 +261,13 @@ NDMaterial::getPlasticStrains()
     return errVector;
 }
 
+const Matrix&
+NDMaterial::getConvergedTangent()
+{
+    opserr << "NDMaterial::getTangentCommited -- subclass responsibility\n";
+    return errMatrix;
+}
+
 // End addition by Diego Heredia 
 
 

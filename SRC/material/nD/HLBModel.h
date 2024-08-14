@@ -124,6 +124,9 @@ public:
 	// Return plastic strain components (11,12,13)
 	Vector& getPlasticStrains(void);
 
+	// Returns the commited elastoplastic tangent modulus
+	const Matrix& getConvergedTangent(void);
+
 private:
 	// Determines the trial stress for the given strain increment and which return mapping could be needed
 	int timeIntegration();

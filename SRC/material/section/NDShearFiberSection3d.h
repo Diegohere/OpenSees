@@ -32,7 +32,7 @@ class NDShearFiberSection3d : public SectionForceDeformation
 
     const char *getClassType(void) const {return "NDShearFiberSection3d";};
 
-    int   setTrialSectionDeformation(const Vector &deforms, const double d2ThetaZDX2, const double d2ThetaYDX2);
+    int   setTrialSectionDeformation(const Vector &deforms, const double d2ThetaZDX2, const double d2ThetaYDX2, const Vector& deformsCommited);
     const Vector &getSectionDeformation(void);
 
     const Vector &getStressResultant(void);
@@ -148,6 +148,8 @@ class NDShearFiberSection3d : public SectionForceDeformation
     int inelasticFlag = 0;
     double d2ThetaZDX2;
     double d2ThetaYDX2;
+    double tol = 1e-6;
+    Vector eCommited;
     /*Vector allFibers_gammaIN_xy;
     Vector allFibers_gammaIN_xz;
     Vector allFibers_C11;

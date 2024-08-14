@@ -2365,9 +2365,12 @@ Matrix& HLBModel::getStrainIncrementDecomposition() {
 Matrix& HLBModel::getStrainDecomposition() {
 
 	//Compute each increment
-	Vector epsiP = strainPlasticTrial;
+	/*Vector epsiP = strainPlasticTrial;
 	Vector epsiPb = strainPostBucklingTrial;
-	Vector epsiE = strainTrial - epsiP - epsiPb;
+	Vector epsiE = strainTrial - epsiP - epsiPb;*/
+	Vector epsiP = strainPlasticConverged;
+	Vector epsiPb = strainPostBucklingConverged;
+	Vector epsiE = strainConverged - epsiP - epsiPb;
 
 	// Put everything in the matrix
 	for (int i = 0; i < 2; i++)
@@ -2393,6 +2396,13 @@ const Matrix& HLBModel::getInitialTangent() {
 
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable
 	return stiffnessInitial;
+}
+
+/* ----------------------------------------------------------------------------------------------------------------- */
+
+
+const Matrix& HLBModel::getConvergedTangent() {
+	return stiffnessConverged;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
