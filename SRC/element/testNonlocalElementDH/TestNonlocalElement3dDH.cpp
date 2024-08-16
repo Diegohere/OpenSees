@@ -937,7 +937,7 @@ TestNonlocalElement3dDH::update(void)
 						//eu_local_interm.Zero();
 
 						//Set the section deformations for section state determination
-						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i], d2ThetaZDX2(i), d2ThetaYDX2(i), eNonlocalCommit[i]) < 0)
+						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i], d2ThetaZDX2(i), d2ThetaYDX2(i), eNonlocalCommit[i],srCommit[i]) < 0)
 						{
 							opserr << "TestNonlocalElement3dDH::update() - section failed in setTrial\n";
 							opserr << "This is element: " << this->getTag() << endln;

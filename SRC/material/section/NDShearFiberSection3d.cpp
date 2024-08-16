@@ -1,5 +1,7 @@
 //Added by Diego Heredia 07.06.2024 for shear stress distribution
 
+#include <fstream>  // For file stream operations
+
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -442,7 +444,7 @@ NDShearFiberSection3d::~NDShearFiberSection3d()
 //      0  0 0 (1+dPsiSYdy)       dPsiSZdy -z
 //      0  0 0       dPsiSYdz (1+dPsiSZdz)  y]
 int
-NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const double d2ThetaZDX2_input, const double d2ThetaYDX2_input, const Vector& deformsCommited)
+NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const double d2ThetaZDX2_input, const double d2ThetaYDX2_input, const Vector& deformsCommited, const Vector& sCommited)
 {
   int res = 0;
 
@@ -491,10 +493,38 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const 
   // Determine quantities for inelastic shear problem
   if (inelasticFlag==1)
   {
-      d2ThetaZDX2 = d2ThetaZDX2_input;
-      d2ThetaYDX2 = d2ThetaYDX2_input;
+      /*d2ThetaZDX2 = d2ThetaZDX2_input;
+      d2ThetaYDX2 = d2ThetaYDX2_input;*/
 
       eCommited = deformsCommited;
+      
+      //sCommited = forceCommited;
+
+      double denomZ = 0.;
+      double denomY = 0.;
+      for (int i = 0; i < numFibers; i++)
+      {
+          double y = matData[3 * i];
+          double z = matData[3 * i + 1];
+          double A = matData[3 * i + 2];
+
+          NDMaterial* theMat = theMaterials[i];
+          const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
+
+          denomZ += A * (pow(y, 2) * convergedConsistentTangentModulus(0, 0));
+          denomY += A * (pow(z, 2) * convergedConsistentTangentModulus(0, 0));
+      }
+
+      /*double d2ThetaZDX2_test = -sCommited(3) / denomZ;
+      double d2ThetaYDX2_test = sCommited(4) / denomY;*/
+
+      /*double verif_z = abs(d2ThetaZDX2_test - d2ThetaZDX2) / d2ThetaZDX2;
+      double verif_y = abs(d2ThetaYDX2_test - d2ThetaYDX2) / d2ThetaYDX2;*/
+
+      d2ThetaZDX2 = -sCommited(3) / denomZ;
+      d2ThetaYDX2 = sCommited(4) / denomY;
+
+      //opserr << "This is verif_z: " << verif_z << endln;
 
       compute_gradPsi_FiberCenter();
   }
@@ -1787,6 +1817,41 @@ NDShearFiberSection3d::compute_gradPsi_FiberCenter()
     /*opserr << "gradPsi_sy_globalCentroid:  " << gradPsi_sy_globalCentroid << endln;
     opserr << "gradPsi_sz_globalCentroid:  " << gradPsi_sz_globalCentroid << endln;*/
 
+    //if (print2File==1)
+    //{
+    //    // Create an ofstream object
+    //    std::ofstream outputFile;
+
+    //    // Open the file (it will be created if it doesn't exist)
+    //    outputFile.open("gradPsi_sy_globalCentroid_plasticStep1.txt");
+
+    //    // Write to the file using the insertion operator <<
+    //    for (int elem = 0; elem < numFibers; elem++)
+    //    {
+    //        outputFile << gradPsi_sy_globalCentroid(elem,0) << " " << gradPsi_sy_globalCentroid(elem, 1) << std::endl;
+    //    }
+
+    //    // Close the file
+    //    outputFile.close();
+    //}
+    //else if (print2File==0)
+    //{
+    //    // Create an ofstream object
+    //    std::ofstream outputFile;
+
+    //    // Open the file (it will be created if it doesn't exist)
+    //    outputFile.open("gradPsi_sy_globalCentroid_elastic.txt");
+
+    //    // Write to the file using the insertion operator <<
+    //    for (int elem = 0; elem < numFibers; elem++)
+    //    {
+    //        outputFile << gradPsi_sy_globalCentroid(elem, 0) << " " << gradPsi_sy_globalCentroid(elem, 1) << std::endl;
+    //    }
+
+    //    // Close the file
+    //    outputFile.close();
+    //}
+
 }
 
 
@@ -1802,6 +1867,7 @@ NDShearFiberSection3d::compute_Phi_globalNodal(Vector& Phi_sy_globalNodal, Vecto
 
     // Solve for shear function \Psi for all nodes
     double tol = 1e-8;
+    //double tol = 0;
     K_global.solve_truncatedEigen(f_sy_global, Phi_sy_globalNodal, tol);
     K_global.solve_truncatedEigen(f_sz_global, Phi_sz_globalNodal, tol);
     //opserr << "This is Phi_sy_globalNodal:" << Phi_sy_globalNodal << endln;
@@ -1935,11 +2001,25 @@ NDShearFiberSection3d::compute_element_quantities(const int elem, Matrix coordin
 
         const Matrix& initialTangentModulus = theMat->getInitialTangent();
 
+        if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0,0) < 0.8)
+        {
+            print2File = 1;
+        }
+
         double y = N ^ yCoords_elements;
         double z = N ^ zCoords_elements;
 
         Matrix Bt = Matrix(4, 2);
         Bt.addMatrixTranspose(0., B, 1.0);
+
+        /*if (print2File==1)
+        {
+            Vector term1 = Bt * inelasticStrain_termY;
+            Vector term2 = N * (convergedConsistentTangentModulus(0, 0) * y * d2ThetaZDX2 / (initialTangentModulus(1, 1) * eCommited(3)));
+
+            opserr << "This is term1: " << term1 << endln;
+            opserr << "This is term2: " << term2 << endln;
+        }*/
 
         f_sy_element = weights * (Bt * inelasticStrain_termY - N * (convergedConsistentTangentModulus(0, 0) * y * d2ThetaZDX2 / (initialTangentModulus(1, 1) * eCommited(3)))) * Jdet;
         f_sz_element = weights * (Bt * inelasticStrain_termZ + N * (convergedConsistentTangentModulus(0, 0) * z * d2ThetaYDX2 / (initialTangentModulus(1, 1) * eCommited(4)))) * Jdet;
