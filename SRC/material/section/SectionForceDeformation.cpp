@@ -521,6 +521,8 @@ const Vector& SectionForceDeformation::getThermalElong(void)
 }
 
 
+// Start addition by Diego Heredia
+
 double SectionForceDeformation::getSectionArea() // added by Diego Heredia
 {
     opserr << "SectionForceDeformation::getSectionArea: Only works with nonlocal element" << endln;
@@ -533,3 +535,13 @@ int SectionForceDeformation::setTrialSectionDeformation(const Vector&, const dou
     opserr << "SectionForceDeformation::setTrialSectionDeformation(const Vector&, const double deriv1, const double deriv2): Only works with nonlocal element" << endln;
     return -1;
 }
+
+
+const Vector& SectionForceDeformation::getAllFibersSigma11()
+{
+    opserr << "SectionForceDeformation::getAllFibersSigma11(): Only works with shear element" << endln;
+    return errRes;
+}
+
+
+// End addition by Diego Heredia

@@ -75,6 +75,7 @@ class NDMaterial : public Material
     virtual Matrix& getStrainDecomposition(void);
     virtual Vector& getPlasticStrains(void);
     virtual const Matrix& getConvergedTangent(void);
+    virtual const Vector& getConvergedStress(void);
     // End addition by Diego Heredia 
 
     virtual const Vector &getStress(void);

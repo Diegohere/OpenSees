@@ -268,6 +268,13 @@ NDMaterial::getConvergedTangent()
     return errMatrix;
 }
 
+const Vector& 
+NDMaterial::getConvergedStress()
+{
+    opserr << "NDMaterial::getConvergedStress -- subclass responsibility\n";
+    return errVector;
+}
+
 // End addition by Diego Heredia 
 
 

@@ -2065,6 +2065,22 @@ NDShearFiberSection3d::compute_NBandJdetQ4(Vector& N, Matrix& B, double& Jdet, M
 }
 
 
+const Vector&
+NDShearFiberSection3d::getAllFibersSigma11()
+{
+    allFibersSigma11.resize(numFibers);
+
+    for (int i = 0; i < numFibers; i++)
+    {
+        NDMaterial* theMat = theMaterials[i];
+        const Vector& stressVector_fibI = theMat->getConvergedStress();
+
+        allFibersSigma11(i) = stressVector_fibI(0);
+    }
+    return allFibersSigma11;
+}
+
+
 
 
 void

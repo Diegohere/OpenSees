@@ -125,7 +125,8 @@ Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 
 FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
 numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
 WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
-isTorsion(false)
+isTorsion(false),
+allSectionFibersSigma11(0)
 // complete
 {
 	// Set Node Pointers to 0
@@ -144,7 +145,9 @@ TestNonlocalElement3dDH::TestNonlocalElement3dDH(int tag, int nodeI, int nodeJ, 
 	FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
 	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
 	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
-	isTorsion(false)
+	isTorsion(false),
+	allSectionFibersSigma11(0)
+
 	// complete
 {
 	// Pointers to Nodes and Their IDs
@@ -235,6 +238,8 @@ TestNonlocalElement3dDH::~TestNonlocalElement3dDH()
 
 	if (KelementInitial != 0)
 		delete KelementInitial;
+
+	delete[] allSectionFibersSigma11;
 }
 
 int
@@ -337,6 +342,9 @@ TestNonlocalElement3dDH::setDomain(Domain* theDomain)
 		////Determination of matrix H_inv
 		//H_inv.Zero();
 		//this->computeMatrixH_inv();
+
+		// Initialize values for numerical derivative
+		initCoeffsFirstOrderDeriv();
 	}
 }
 
@@ -918,7 +926,7 @@ TestNonlocalElement3dDH::update(void)
 						}
 					}*/
 
-					// Compute derivative of curvatures along element length using central difference
+					//// Compute derivative of curvatures along element length using central difference
 					Vector d2ThetaZDX2(numSections);
 					Vector d2ThetaYDX2(numSections);
 					d2ThetaZDX2(0) = (eNonlocalCommit[1](1) - eNonlocalCommit[0](1)) / ((xi[1] - xi[0]) * L);
@@ -930,6 +938,13 @@ TestNonlocalElement3dDH::update(void)
 					}
 					d2ThetaZDX2(numSections - 1) = (eNonlocalCommit[numSections - 1](1) - eNonlocalCommit[numSections - 2](1)) / ((xi[numSections - 1] - xi[numSections - 2]) * L);
 					d2ThetaYDX2(numSections - 1) = (eNonlocalCommit[numSections - 1](2) - eNonlocalCommit[numSections - 2](2)) / ((xi[numSections - 1] - xi[numSections - 2]) * L);
+
+					// Compute derivative of allSectionFibersSigma11 along element length
+					for (int i = 0; i < numSections; i++)
+					{
+						allSectionFibersSigma11[i]=sections[i]->getAllFibersSigma11();
+						opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
+					}
 
 					for (i = 0; i < numSections; i++)
 					{
@@ -2151,7 +2166,12 @@ TestNonlocalElement3dDH::setSectionPointers(int numSec, SectionForceDeformation*
 
 	eLocalCommit = new Vector[numSections];
 	if (eLocalCommit == 0) {
-		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate vscommit array";
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate eLocalCommit array";
+	}
+
+	allSectionFibersSigma11 = new Vector[numSections];
+	if (allSectionFibersSigma11 == 0) {
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate allSectionFibersSigma11 array";
 	}
 
 }
@@ -2608,3 +2628,146 @@ TestNonlocalElement3dDH::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 //	testFunction(eNonLocalSubdivide, s_Tot);
 //	opserr << "This is s_Tot[0] after function:" << s_Tot[0] << endln;
 //}
+
+
+// Method to initialize values for numerical derivative
+void
+TestNonlocalElement3dDH::initCoeffsFirstOrderDeriv()
+{	
+	if (nPts_4Deriv>numSections)
+	{
+		opserr << "WARNING:: TestNonlocalElement3dDH::initCoeffsFirstOrderDeriv: nPts_4Deriv > numSections " << endln;
+		opserr << "This is nPts_4Deriv: " << nPts_4Deriv << endln;
+		opserr << "This is numSections: " << numSections << endln;
+		opserr << "Will use nPts_4Deriv = numSections = " << numSections << endln;
+
+		nPts_4Deriv = numSections;
+	}
+
+	Matrix pts4Deriv = Matrix(nPts_4Deriv, numSections);
+	initPts4Deriv(pts4Deriv);
+	//opserr << "This is pts4Deriv: " << pts4Deriv << endln;
+
+	//get info on integration quadrature rule
+	double L = crdTransf->getInitialLength();
+	double xi[maxNumSections];
+	beamIntegr->getSectionLocations(numSections, L, xi); // between 0 and 1
+	Vector x_quadrature = Vector(numSections);
+	for (int i = 0; i < numSections; i++)
+	{
+		x_quadrature(i) = xi[i] * L; // between 0 and L
+	}
+	
+	int m_max = 1; //maximum order of derivative
+
+	coeffs_firstOrderDeriv.resize(numSections, numSections);
+	coeffs_firstOrderDeriv.Zero();
+	// Each column is quadrature point and each column is which quadrature section to use for derivative
+	for (int i = 0; i < numSections; i++)
+	{
+		Vector delta4Deriv = Vector(nPts_4Deriv);
+		Vector x_quadrature_selected = Vector(nPts_4Deriv);
+		for (int j = 0; j < nPts_4Deriv; j++)
+		{
+			x_quadrature_selected(j) = x_quadrature(pts4Deriv(j, i));
+		}
+		//opserr << "This is x_quadrature_selected: " << x_quadrature_selected << endln;
+		
+		computeFornberg(delta4Deriv, m_max, nPts_4Deriv, x_quadrature(i), x_quadrature_selected);
+		
+		// STOPPED HERE 21.08.2024
+		//TODO: STORE ARRAY IN MATRIX
+		for (int j = 0; j < nPts_4Deriv; j++)
+		{
+			coeffs_firstOrderDeriv(pts4Deriv(j, i),i) = delta4Deriv(j);
+		}
+	}
+	//opserr << "This is coeffs_firstOrderDeriv: " << coeffs_firstOrderDeriv << endln;
+	int test = 1;
+}
+
+
+// Method to determine the sections used for numerical derivative
+void
+TestNonlocalElement3dDH::initPts4Deriv(Matrix& pts4Deriv)
+{
+	for (int i = 0; i < numSections; i++)
+	{
+		// For left boundary points:
+		if (i < ceil(nPts_4Deriv / 2.0)) {
+			for (int j = 0; j < nPts_4Deriv; ++j) {
+				pts4Deriv(j, i) = j;
+			}
+		}
+		// For right boundary points:
+		else if (i >= numSections - ceil(nPts_4Deriv / 2.0)) {
+			for (int j = 0; j < nPts_4Deriv; ++j) {
+				pts4Deriv(j, i) = numSections - nPts_4Deriv + j;
+			}
+		}
+		// For interior points (centered stencil):
+		else {
+			for (int j = 0; j < nPts_4Deriv; ++j) {
+				pts4Deriv(j, i) = i - floor(nPts_4Deriv / 2.0) + j;
+			}
+		}
+	}
+}
+
+
+// Method to compute the Fornberg algorithm from Fornberg 1988
+void
+TestNonlocalElement3dDH::computeFornberg(Vector& delta4Deriv, int m_max, int n, double x0, Vector alphaVector)
+{
+	// Initilization
+	Matrix* allOrder_delta4Deriv;
+	allOrder_delta4Deriv = new Matrix[m_max + 1];
+	for (int m = 0; m < m_max+1; m++)
+	{
+		allOrder_delta4Deriv[m] = Matrix(n, n);
+	}
+	allOrder_delta4Deriv[0](0, 0) = 1;
+	double c1 = 1;
+
+	// Algorithm
+	for (int p = 1; p < n; ++p) {
+		double c2 = 1.0;
+
+		for (int q = 0; q < p; ++q) {
+			double c3 = alphaVector[p] - alphaVector[q];
+			c2 *= c3;
+
+			for (int m = 0; m <= std::min(p, m_max); ++m) {
+				if (m == 0) {
+					allOrder_delta4Deriv[m](p,q) = (alphaVector[p] - x0) / c3 * allOrder_delta4Deriv[m](p-1, q);
+				}
+				else {
+					allOrder_delta4Deriv[m](p, q) = (alphaVector[p] - x0) / c3 * allOrder_delta4Deriv[m](p-1, q) - m / c3 * allOrder_delta4Deriv[m - 1](p - 1, q);
+				}
+			}
+		}
+
+		for (int m = 0; m <= std::min(p, m_max); ++m) {
+			if (m == 0) {
+				allOrder_delta4Deriv[m](p, p) = c1 / c2 * (-(alphaVector[p - 1] - x0) * allOrder_delta4Deriv[m](p - 1, p - 1));
+			}
+			else {
+				allOrder_delta4Deriv[m](p, p) = c1 / c2 * (m * allOrder_delta4Deriv[m - 1](p - 1, p - 1) - (alphaVector[p - 1] - x0) * allOrder_delta4Deriv[m](p - 1, p - 1));
+			}
+		}
+
+		c1 = c2;
+	}
+
+	// Only need the coefficients for 1st order derivative
+	for (int i = 0; i < n; i++)
+	{
+		delta4Deriv(i) = allOrder_delta4Deriv[m_max](n-1, i);
+	}
+	/*opserr << "This isallOrder_delta4Deriv[m_max]: " << allOrder_delta4Deriv[m_max] << endln;
+	opserr << "This is delta4Deriv: " << delta4Deriv << endln;*/
+
+	//Free dynamically alocated memory
+	delete[] allOrder_delta4Deriv;
+}
+

@@ -127,6 +127,9 @@ public:
 	// Returns the commited elastoplastic tangent modulus
 	const Matrix& getConvergedTangent(void);
 
+	// Returns the commited stress vector
+	const Vector& getConvergedStress(void);
+
 private:
 	// Determines the trial stress for the given strain increment and which return mapping could be needed
 	int timeIntegration();

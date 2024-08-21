@@ -105,6 +105,10 @@ private:
 	void initCoefficientMatrixH();
 	void computeCoefficientMatrixH();
 
+	void initPts4Deriv(Matrix& pts4Deriv);
+	void initCoeffsFirstOrderDeriv();
+	void computeFornberg(Vector& delta4Deriv, int m_max, int n, double x0, Vector alphaVector);
+
 
 	//void testFunction(Vector eNonLocalSubdivide[], Vector sTot[]);
 
@@ -183,6 +187,10 @@ private:
 	double Bc4MatrixHTheory;
 	double Ac4MatrixH;
 	double Bc4MatrixH;
+
+	Vector* allSectionFibersSigma11; // Array containing allSectionFibersSigma11
+	int nPts_4Deriv = 5; //Number of points used to compute derivative at each quadrature point
+	Matrix coeffs_firstOrderDeriv;
 
 	bool isTorsion;
 

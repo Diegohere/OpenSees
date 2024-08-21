@@ -104,6 +104,9 @@ class NDShearFiberSection3d : public SectionForceDeformation
     // Compute the inverse of a 2x2 matrix
     void matinv2(Matrix& A, Matrix& Ainv, double& detA);
 
+    // Returns the vector with the stress in axial direction of all fibers
+    const Vector& getAllFibersSigma11();
+
   protected:
     
     //  private:
@@ -151,6 +154,7 @@ class NDShearFiberSection3d : public SectionForceDeformation
     double tol = 1e-6;
     Vector eCommited;
     int print2File=0;
+    Vector allFibersSigma11;
     /*Vector allFibers_gammaIN_xy;
     Vector allFibers_gammaIN_xz;
     Vector allFibers_C11;
