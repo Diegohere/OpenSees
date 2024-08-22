@@ -126,7 +126,7 @@ FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0)
 numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
 WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
 isTorsion(false),
-allSectionFibersSigma11(0)
+allSectionFibersSigma11(0), allSectionFibersDSigma11Dx(0)
 // complete
 {
 	// Set Node Pointers to 0
@@ -146,7 +146,7 @@ TestNonlocalElement3dDH::TestNonlocalElement3dDH(int tag, int nodeI, int nodeJ, 
 	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
 	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
 	isTorsion(false),
-	allSectionFibersSigma11(0)
+	allSectionFibersSigma11(0), allSectionFibersDSigma11Dx(0)
 
 	// complete
 {
@@ -240,6 +240,8 @@ TestNonlocalElement3dDH::~TestNonlocalElement3dDH()
 		delete KelementInitial;
 
 	delete[] allSectionFibersSigma11;
+
+	delete[] allSectionFibersDSigma11Dx;
 }
 
 int
@@ -943,8 +945,14 @@ TestNonlocalElement3dDH::update(void)
 					for (int i = 0; i < numSections; i++)
 					{
 						allSectionFibersSigma11[i]=sections[i]->getAllFibersSigma11();
-						opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
+						//opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
 					}
+					computeNumericalDerivativesDx(allSectionFibersSigma11, allSectionFibersDSigma11Dx);
+					/*for (int i = 0; i < numSections; i++)
+					{
+						opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
+						opserr << "This is allSectionFibersDSigma11Dx[i]: " << allSectionFibersDSigma11Dx[i] << endln;
+					}*/
 
 					for (i = 0; i < numSections; i++)
 					{
@@ -2174,6 +2182,11 @@ TestNonlocalElement3dDH::setSectionPointers(int numSec, SectionForceDeformation*
 		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate allSectionFibersSigma11 array";
 	}
 
+	allSectionFibersDSigma11Dx = new Vector[numSections];
+	if (allSectionFibersDSigma11Dx == 0) {
+		opserr << "TestNonlocalElement3dDH::setSectionPointers -- failed to allocate allSectionFibersDSigma11Dx array";
+	}
+
 }
 
 // Method to compute theroy values Ac and Bc for matrix H
@@ -2683,7 +2696,7 @@ TestNonlocalElement3dDH::initCoeffsFirstOrderDeriv()
 		}
 	}
 	//opserr << "This is coeffs_firstOrderDeriv: " << coeffs_firstOrderDeriv << endln;
-	int test = 1;
+	//int test = 1;
 }
 
 
@@ -2769,5 +2782,23 @@ TestNonlocalElement3dDH::computeFornberg(Vector& delta4Deriv, int m_max, int n, 
 
 	//Free dynamically alocated memory
 	delete[] allOrder_delta4Deriv;
+}
+
+
+// Method to compute the numerical derivatives Dx
+void
+TestNonlocalElement3dDH::computeNumericalDerivativesDx(Vector allSectionValues[], Vector allSectionDerivativesValues[])
+{
+	for (int i = 0; i < numSections; i++)
+	{
+		allSectionDerivativesValues[i]= allSectionValues[i];
+		allSectionDerivativesValues[i].Zero();
+		/*opserr << "This is allSectionValues[i]: " << allSectionValues[i] << endln;
+		opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;*/
+		for (int j = 0; j < numSections; j++)
+		{
+			allSectionDerivativesValues[i] += coeffs_firstOrderDeriv(j, i) * allSectionValues[j];
+		}
+	}
 }
 
