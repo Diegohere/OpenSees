@@ -113,7 +113,7 @@ class SectionForceDeformation : public Material
 
   // Start addition by Diego Heredia
   virtual double getSectionArea(); // added by Diego Heredia
-  virtual int setTrialSectionDeformation(const Vector&, const double d2ThetaZDX2, const double d2ThetaYDX2, const Vector&, const Vector&);// added by Diego Heredia 12.08.2024
+  virtual int setTrialSectionDeformation(const Vector&, const Vector&, const Vector&);// added by Diego Heredia 12.08.2024
   virtual const Vector& getAllFibersSigma11();// added by Diego Heredia 21.08.2024
   // End addition by Diego Heredia
 

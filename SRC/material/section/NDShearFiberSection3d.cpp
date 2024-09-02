@@ -444,7 +444,7 @@ NDShearFiberSection3d::~NDShearFiberSection3d()
 //      0  0 0 (1+dPsiSYdy)       dPsiSZdy -z
 //      0  0 0       dPsiSYdz (1+dPsiSZdz)  y]
 int
-NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const double d2ThetaZDX2_input, const double d2ThetaYDX2_input, const Vector& deformsCommited, const Vector& sCommited)
+NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const Vector& deformsCommited, const Vector& sectionFibersDSigma11Dx)
 {
   int res = 0;
 
@@ -467,7 +467,7 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const 
   static double fiberArea[10000];
 
   // Check to determine inelasticFlag
-  if (abs(d1)>0. || abs(d2)>0.)
+  if (abs(deformsCommited(1))>0. || abs(deformsCommited(2))>0.)
   {
       inelasticFlag = 1;
   }
@@ -497,6 +497,8 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const 
       d2ThetaYDX2 = d2ThetaYDX2_input;*/
 
       eCommited = deformsCommited;
+
+      sectionFibersDSigma11DxCommited = sectionFibersDSigma11Dx;
       
       //sCommited = forceCommited;
 
@@ -521,8 +523,8 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const 
       /*double verif_z = abs(d2ThetaZDX2_test - d2ThetaZDX2) / d2ThetaZDX2;
       double verif_y = abs(d2ThetaYDX2_test - d2ThetaYDX2) / d2ThetaYDX2;*/
 
-      d2ThetaZDX2 = -sCommited(3) / denomZ;
-      d2ThetaYDX2 = sCommited(4) / denomY;
+      /*d2ThetaZDX2 = -sCommited(3) / denomZ;
+      d2ThetaYDX2 = sCommited(4) / denomY;*/
 
       //opserr << "This is verif_z: " << verif_z << endln;
 
@@ -1997,17 +1999,17 @@ NDShearFiberSection3d::compute_element_quantities(const int elem, Matrix coordin
         inelasticStrain_termZ(0) = (strainDecomposition(1, 1) + strainDecomposition(1, 2)) / eCommited(4);
         inelasticStrain_termZ(1) = (strainDecomposition(2, 1) + strainDecomposition(2, 2)) / eCommited(4);
 
-        const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
+        //const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
 
         const Matrix& initialTangentModulus = theMat->getInitialTangent();
 
-        if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0,0) < 0.8)
+        /*if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0,0) < 0.8)
         {
             print2File = 1;
-        }
+        }*/
 
-        double y = N ^ yCoords_elements;
-        double z = N ^ zCoords_elements;
+        /*double y = N ^ yCoords_elements;
+        double z = N ^ zCoords_elements;*/
 
         Matrix Bt = Matrix(4, 2);
         Bt.addMatrixTranspose(0., B, 1.0);
@@ -2021,8 +2023,8 @@ NDShearFiberSection3d::compute_element_quantities(const int elem, Matrix coordin
             opserr << "This is term2: " << term2 << endln;
         }*/
 
-        f_sy_element = weights * (Bt * inelasticStrain_termY - N * (convergedConsistentTangentModulus(0, 0) * y * d2ThetaZDX2 / (initialTangentModulus(1, 1) * eCommited(3)))) * Jdet;
-        f_sz_element = weights * (Bt * inelasticStrain_termZ + N * (convergedConsistentTangentModulus(0, 0) * z * d2ThetaYDX2 / (initialTangentModulus(1, 1) * eCommited(4)))) * Jdet;
+        f_sy_element = weights * (Bt * inelasticStrain_termY + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)))) * Jdet;
+        f_sz_element = weights * (Bt * inelasticStrain_termZ + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(4)))) * Jdet;
     }
     
 }

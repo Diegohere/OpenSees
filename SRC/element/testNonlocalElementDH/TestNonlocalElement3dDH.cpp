@@ -929,17 +929,17 @@ TestNonlocalElement3dDH::update(void)
 					}*/
 
 					//// Compute derivative of curvatures along element length using central difference
-					Vector d2ThetaZDX2(numSections);
-					Vector d2ThetaYDX2(numSections);
-					d2ThetaZDX2(0) = (eNonlocalCommit[1](1) - eNonlocalCommit[0](1)) / ((xi[1] - xi[0]) * L);
-					d2ThetaYDX2(0) = (eNonlocalCommit[1](2) - eNonlocalCommit[0](2)) / ((xi[1] - xi[0]) * L);
-					for (int i = 1; i < numSections-1; i++)
-					{
-						d2ThetaZDX2(i) = (eNonlocalCommit[i + 1](1) - eNonlocalCommit[i - 1](1)) / ((xi[i + 1] - xi[i - 1]) * L);
-						d2ThetaYDX2(i) = (eNonlocalCommit[i + 1](2) - eNonlocalCommit[i - 1](2)) / ((xi[i + 1] - xi[i - 1]) * L);
-					}
-					d2ThetaZDX2(numSections - 1) = (eNonlocalCommit[numSections - 1](1) - eNonlocalCommit[numSections - 2](1)) / ((xi[numSections - 1] - xi[numSections - 2]) * L);
-					d2ThetaYDX2(numSections - 1) = (eNonlocalCommit[numSections - 1](2) - eNonlocalCommit[numSections - 2](2)) / ((xi[numSections - 1] - xi[numSections - 2]) * L);
+					//Vector d2ThetaZDX2(numSections);
+					//Vector d2ThetaYDX2(numSections);
+					//d2ThetaZDX2(0) = (eNonlocalCommit[1](1) - eNonlocalCommit[0](1)) / ((xi[1] - xi[0]) * L);
+					//d2ThetaYDX2(0) = (eNonlocalCommit[1](2) - eNonlocalCommit[0](2)) / ((xi[1] - xi[0]) * L);
+					//for (int i = 1; i < numSections-1; i++)
+					//{
+					//	d2ThetaZDX2(i) = (eNonlocalCommit[i + 1](1) - eNonlocalCommit[i - 1](1)) / ((xi[i + 1] - xi[i - 1]) * L);
+					//	d2ThetaYDX2(i) = (eNonlocalCommit[i + 1](2) - eNonlocalCommit[i - 1](2)) / ((xi[i + 1] - xi[i - 1]) * L);
+					//}
+					//d2ThetaZDX2(numSections - 1) = (eNonlocalCommit[numSections - 1](1) - eNonlocalCommit[numSections - 2](1)) / ((xi[numSections - 1] - xi[numSections - 2]) * L);
+					//d2ThetaYDX2(numSections - 1) = (eNonlocalCommit[numSections - 1](2) - eNonlocalCommit[numSections - 2](2)) / ((xi[numSections - 1] - xi[numSections - 2]) * L);
 
 					// Compute derivative of allSectionFibersSigma11 along element length
 					for (int i = 0; i < numSections; i++)
@@ -960,7 +960,7 @@ TestNonlocalElement3dDH::update(void)
 						//eu_local_interm.Zero();
 
 						//Set the section deformations for section state determination
-						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i], d2ThetaZDX2(i), d2ThetaYDX2(i), eNonlocalCommit[i],srCommit[i]) < 0)
+						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i], eNonlocalCommit[i], allSectionFibersDSigma11Dx[i]) < 0)
 						{
 							opserr << "TestNonlocalElement3dDH::update() - section failed in setTrial\n";
 							opserr << "This is element: " << this->getTag() << endln;
