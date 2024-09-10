@@ -578,6 +578,8 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const 
         opserr << "This fiber did not converge!" << endln;
         opserr << "This is coordY: " << y << "      This is coordZ: " << z << endln;
         //opserr << "This is coordZ: " << z << endln;
+
+        break;
     }
     const Vector &stress = theMat->getStress();
     const Matrix &tangent = theMat->getTangent();
@@ -1499,6 +1501,12 @@ NDShearFiberSection3d::setResponse(const char **argv, int argc,
     theResponse = new MaterialResponse(this, 3, Matrix(numFibers, 3));
     }
 
+    // Return a matrix with all gradPsi_sy_globalCentroid and gradPsi_sz_globalCentroid
+  else if (strcmp(argv[0], "gradPsiShear") == 0)
+    {
+    theResponse = new MaterialResponse(this, 4, Matrix(numFibers, 4));
+    }
+
   if (theResponse == 0)
     return SectionForceDeformation::setResponse(argv, argc, output);
 
@@ -1530,6 +1538,19 @@ NDShearFiberSection3d::getResponse(int responseID, Information &sectInfo)
             }
         }
         return sectInfo.setMatrix(allFiberStresses);
+    }
+    case 4: // Return a matrix with all gradPsi_sy_globalCentroid and gradPsi_sz_globalCentroid
+    {
+        Matrix gradPsiShear = Matrix(numFibers, 4);
+        for (size_t iFib = 0; iFib < numFibers; iFib++)
+        {
+            gradPsiShear(iFib, 0) = gradPsi_sy_globalCentroid(iFib, 0);
+            gradPsiShear(iFib, 1) = gradPsi_sy_globalCentroid(iFib, 1);
+            gradPsiShear(iFib, 2) = gradPsi_sz_globalCentroid(iFib, 0);
+            gradPsiShear(iFib, 3) = gradPsi_sz_globalCentroid(iFib, 1);
+        }
+        //opserr << "This is gradPsiShear:" << gradPsiShear << endln;
+        return sectInfo.setMatrix(gradPsiShear);
     }
 
     default:
@@ -2013,15 +2034,6 @@ NDShearFiberSection3d::compute_element_quantities(const int elem, Matrix coordin
 
         Matrix Bt = Matrix(4, 2);
         Bt.addMatrixTranspose(0., B, 1.0);
-
-        /*if (print2File==1)
-        {
-            Vector term1 = Bt * inelasticStrain_termY;
-            Vector term2 = N * (convergedConsistentTangentModulus(0, 0) * y * d2ThetaZDX2 / (initialTangentModulus(1, 1) * eCommited(3)));
-
-            opserr << "This is term1: " << term1 << endln;
-            opserr << "This is term2: " << term2 << endln;
-        }*/
 
         f_sy_element = weights * (Bt * inelasticStrain_termY + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)))) * Jdet;
         f_sz_element = weights * (Bt * inelasticStrain_termZ + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(4)))) * Jdet;

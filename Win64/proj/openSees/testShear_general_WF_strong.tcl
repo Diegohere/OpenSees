@@ -108,7 +108,7 @@
 	#element gradientForceBeamColumn 12 1 2 $ColTransfTag Simpson 1 9  20 1e-6 $lc
 	
 	set lc [expr 0.0*$bf];
-	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 11  20 1e-6 $lc 
+	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 5  20 1e-6 $lc 
 	
 ############################################################################
 #              Recorders					                			   
@@ -117,10 +117,10 @@
 puts "Recorders ..."
 
 # Record displacements 
-	recorder Node -file $dataDir/testShear4WF_strongAxis_Disp_IP11.txt -node 2 -dof 1 2 3 4 5 6 disp;
+	recorder Node -file $dataDir/testShear4WF_strongAxis_Disp_IP5.txt -node 2 -dof 1 2 3 4 5 6 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/testShear4WF_strongAxis_RBase_IP11.txt -node 1 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/testShear4WF_strongAxis_RBase_IP5.txt -node 1 -dof 1 2 3 4 5 6 reaction;
 	
 # Record stress and strains for fibers
 # recorder Element -file $dataDir/testShear4WF_stressFiberY202Z33.txt -ele 12 section 1 fiber 202.40 33.00 stress; 
@@ -131,7 +131,10 @@ recorder Element -file $dataDir/testShear4WF_strongAxis_connectivityMatrix.txt -
 recorder Element -file $dataDir/testShear4WF_strongAxis_coordinateMatrix.txt -ele 12 section 1 coordinate; 
 
 # Record all fiber stresses
-recorder Element -file $dataDir/testShear4WF_strongAxis_allFiberStresses_IP11.txt -ele 12 section 1 allFiberStresses; 
+recorder Element -file $dataDir/testShear4WF_strongAxis_allFiberStresses_IP5.txt -ele 12 section 1 allFiberStresses; 
+
+# Record all fiber gradPsiShear
+recorder Element -file $dataDir/testShear4WF_strongAxis_gradPsiShear_sec1_IP5.txt -ele 12 section 1 gradPsiShear; 
 
 # Record PEXX 
 set nSections 23
