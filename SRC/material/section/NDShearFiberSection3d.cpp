@@ -2020,20 +2020,23 @@ NDShearFiberSection3d::compute_element_quantities(const int elem, Matrix coordin
         inelasticStrain_termZ(0) = (strainDecomposition(1, 1) + strainDecomposition(1, 2)) / eCommited(4);
         inelasticStrain_termZ(1) = (strainDecomposition(2, 1) + strainDecomposition(2, 2)) / eCommited(4);
 
-        //const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
-
         const Matrix& initialTangentModulus = theMat->getInitialTangent();
-
-        /*if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0,0) < 0.8)
-        {
-            print2File = 1;
-        }*/
 
         /*double y = N ^ yCoords_elements;
         double z = N ^ zCoords_elements;*/
 
         Matrix Bt = Matrix(4, 2);
         Bt.addMatrixTranspose(0., B, 1.0);
+
+        const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
+        if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0, 0) < 0.99)
+        {
+            /*Vector firstTerm = Bt * inelasticStrain_termY;
+            Vector secondTerm = N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)));*/
+            /*opserr << "This is firstTerm" << firstTerm << endln;
+            opserr << "This is secondTerm" << secondTerm << endln;*/
+            int test = 1;
+        }
 
         f_sy_element = weights * (Bt * inelasticStrain_termY + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)))) * Jdet;
         f_sz_element = weights * (Bt * inelasticStrain_termZ + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(4)))) * Jdet;
@@ -2075,6 +2078,7 @@ NDShearFiberSection3d::compute_NBandJdetQ4(Vector& N, Matrix& B, double& Jdet, M
     Matrix Jinv = Matrix(2, 2);
     matinv2(J, Jinv, Jdet);
     B = Jinv * DN;
+    //opserr << "This is B" << B << endln;
     
 }
 

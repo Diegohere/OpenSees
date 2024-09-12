@@ -929,18 +929,47 @@ TestNonlocalElement3dDH::update(void)
 						}
 					}*/
 
-					//// Compute derivative of curvatures along element length using central difference
-					//Vector d2ThetaZDX2(numSections);
-					//Vector d2ThetaYDX2(numSections);
-					//d2ThetaZDX2(0) = (eNonlocalCommit[1](1) - eNonlocalCommit[0](1)) / ((xi[1] - xi[0]) * L);
-					//d2ThetaYDX2(0) = (eNonlocalCommit[1](2) - eNonlocalCommit[0](2)) / ((xi[1] - xi[0]) * L);
-					//for (int i = 1; i < numSections-1; i++)
-					//{
-					//	d2ThetaZDX2(i) = (eNonlocalCommit[i + 1](1) - eNonlocalCommit[i - 1](1)) / ((xi[i + 1] - xi[i - 1]) * L);
-					//	d2ThetaYDX2(i) = (eNonlocalCommit[i + 1](2) - eNonlocalCommit[i - 1](2)) / ((xi[i + 1] - xi[i - 1]) * L);
+					//// Test numerical derivative with function f(x)=-x^4
+					//Vector* x_quadrature = new Vector[numSections];
+					//Vector* y_quadrature = new Vector[numSections];
+					//Vector* dyDx_quadrature_true = new Vector[numSections];
+					//Vector* dyDx_quadrature_numerical = new Vector[numSections];
+					//int m = 10;
+					//for (size_t i = 0; i < numSections; i++) {
+					//	// Initialize each Vector with size m
+					//	x_quadrature[i] = Vector(m);
+					//	y_quadrature[i] = Vector(m);
+					//	dyDx_quadrature_true[i] = Vector(m);
+					//	dyDx_quadrature_numerical[i] = Vector(m);
+
+					//	// Fill each Vector with m copies of the respective value
+					//	double x_val = xi[i] * L;
+					//	double y_val = -pow(x_val, 4);
+					//	double dyDx_val = -4.0 * pow(x_val, 3);
+
+					//	for (size_t j = 0; j < m; j++) {
+					//		x_quadrature[i](j) = x_val;
+					//		y_quadrature[i](j) = y_val;
+					//		dyDx_quadrature_true[i](j) = dyDx_val;
+					//	}
 					//}
-					//d2ThetaZDX2(numSections - 1) = (eNonlocalCommit[numSections - 1](1) - eNonlocalCommit[numSections - 2](1)) / ((xi[numSections - 1] - xi[numSections - 2]) * L);
-					//d2ThetaYDX2(numSections - 1) = (eNonlocalCommit[numSections - 1](2) - eNonlocalCommit[numSections - 2](2)) / ((xi[numSections - 1] - xi[numSections - 2]) * L);
+					//computeNumericalDerivativesDx(y_quadrature, dyDx_quadrature_numerical);
+					//Vector y_quadrature_4Output = Vector(numSections);
+					//Vector dyDx_quadrature_true_4Output = Vector(numSections);
+					//Vector dyDx_quadrature_numerical_4Output = Vector(numSections);
+					//for (size_t i = 0; i < numSections; i++)
+					//{
+					//	y_quadrature_4Output[i] = y_quadrature[i](0);
+					//	dyDx_quadrature_numerical_4Output[i] = dyDx_quadrature_numerical[i](0);
+					//	dyDx_quadrature_true_4Output[i] = dyDx_quadrature_true[i](0);
+					//}
+					//opserr << "This is y_quadrature_4Output: " << y_quadrature_4Output << endln;
+					//opserr << "This is dyDx_quadrature_true_4Output: " << dyDx_quadrature_true_4Output << endln;
+					//opserr << "This is dyDx_quadrature_numerical_4Output: " << dyDx_quadrature_numerical_4Output << endln;
+					//Vector verif = dyDx_quadrature_numerical_4Output - dyDx_quadrature_true_4Output;
+					//double verifNorm = verif.Norm() / dyDx_quadrature_true_4Output.Norm();
+					//opserr << "This is verifNorm: " << verifNorm << endln;
+					
 
 					// Compute derivative of allSectionFibersSigma11 along element length
 					for (int i = 0; i < numSections; i++)
@@ -953,6 +982,19 @@ TestNonlocalElement3dDH::update(void)
 					{
 						opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
 						opserr << "This is allSectionFibersDSigma11Dx[i]: " << allSectionFibersDSigma11Dx[i] << endln;
+					}*/
+					/*Vector allSectionFibersSigma11_fib0_4Output = Vector(numSections);
+					Vector allSectionFibersDSigma11Dx_fib0_4Output = Vector(numSections);
+					for (size_t i = 0; i < numSections; i++)
+					{
+						allSectionFibersSigma11_fib0_4Output[i] = allSectionFibersSigma11[i](0);
+						allSectionFibersDSigma11Dx_fib0_4Output[i] = allSectionFibersDSigma11Dx[i](0);
+					}
+					if (abs(allSectionFibersSigma11_fib0_4Output(0))>370.0)
+					{
+						opserr << "allSectionFibersSigma11_fib0_4Output: " << allSectionFibersSigma11_fib0_4Output << endln;
+						opserr << "allSectionFibersDSigma11Dx_fib0_4Output: " << allSectionFibersDSigma11Dx_fib0_4Output << endln;
+						int test = 1;
 					}*/
 
 					for (i = 0; i < numSections; i++)
@@ -2707,25 +2749,68 @@ TestNonlocalElement3dDH::initPts4Deriv(Matrix& pts4Deriv)
 {
 	for (int i = 0; i < numSections; i++)
 	{
-		// For left boundary points:
-		if (i < ceil(nPts_4Deriv / 2.0)) {
-			for (int j = 0; j < nPts_4Deriv; ++j) {
-				pts4Deriv(j, i) = j;
+		////Only Fornberg
+		//// For left boundary points:
+		//if (i < ceil(nPts_4Deriv / 2.0)) {
+		//	for (int j = 0; j < nPts_4Deriv; ++j) {
+		//		pts4Deriv(j, i) = j;
+		//	}
+		//}
+		//// For right boundary points:
+		//else if (i >= numSections - ceil(nPts_4Deriv / 2.0)) {
+		//	for (int j = 0; j < nPts_4Deriv; ++j) {
+		//		pts4Deriv(j, i) = numSections - nPts_4Deriv + j;
+		//	}
+		//}
+		//// For interior points (centered stencil):
+		//else {
+		//	for (int j = 0; j < nPts_4Deriv; ++j) {
+		//		pts4Deriv(j, i) = i - floor(nPts_4Deriv / 2.0) + j;
+		//	}
+		//}
+		if (nPts_4Deriv == 2) {
+			// For central finite difference:
+			if (i > 0 && i < numSections - 1) {
+				pts4Deriv(0, i) = i - 1; // Previous point
+				pts4Deriv(1, i) = i + 1; // Next point
+			}
+			else {
+				// Handle boundary cases:
+				// For left boundary points:
+				if (i == 0) {
+					pts4Deriv(0, i) = 0; // First point
+					pts4Deriv(1, i) = 1; // Next point
+				}
+				// For right boundary points:
+				else if (i == numSections - 1) {
+					pts4Deriv(0, i) = numSections - 2; // Previous point
+					pts4Deriv(1, i) = numSections - 1; // Last point
+				}
 			}
 		}
-		// For right boundary points:
-		else if (i >= numSections - ceil(nPts_4Deriv / 2.0)) {
-			for (int j = 0; j < nPts_4Deriv; ++j) {
-				pts4Deriv(j, i) = numSections - nPts_4Deriv + j;
-			}
-		}
-		// For interior points (centered stencil):
 		else {
-			for (int j = 0; j < nPts_4Deriv; ++j) {
-				pts4Deriv(j, i) = i - floor(nPts_4Deriv / 2.0) + j;
+			// For cases where nPts_4Deriv > 2:
+			// For left boundary points:
+			if (i < ceil(nPts_4Deriv / 2.0)) {
+				for (int j = 0; j < nPts_4Deriv; ++j) {
+					pts4Deriv(j, i) = j;
+				}
+			}
+			// For right boundary points:
+			else if (i >= numSections - ceil(nPts_4Deriv / 2.0)) {
+				for (int j = 0; j < nPts_4Deriv; ++j) {
+					pts4Deriv(j, i) = numSections - nPts_4Deriv + j;
+				}
+			}
+			// For interior points (centered stencil):
+			else {
+				for (int j = 0; j < nPts_4Deriv; ++j) {
+					pts4Deriv(j, i) = i - floor(nPts_4Deriv / 2.0) + j;
+				}
 			}
 		}
 	}
+	//opserr << "This is pts4Deriv: " << pts4Deriv << endln;
 }
 
 
@@ -2790,16 +2875,42 @@ TestNonlocalElement3dDH::computeFornberg(Vector& delta4Deriv, int m_max, int n, 
 void
 TestNonlocalElement3dDH::computeNumericalDerivativesDx(Vector allSectionValues[], Vector allSectionDerivativesValues[])
 {
+	//opserr << "This is coeffs_firstOrderDeriv: " << coeffs_firstOrderDeriv << endln;
 	for (int i = 0; i < numSections; i++)
 	{
 		allSectionDerivativesValues[i]= allSectionValues[i];
 		allSectionDerivativesValues[i].Zero();
 		/*opserr << "This is allSectionValues[i]: " << allSectionValues[i] << endln;
-		opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;*/
+		opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;
+		opserr << "Enter loop " << endln;*/
 		for (int j = 0; j < numSections; j++)
 		{
 			allSectionDerivativesValues[i] += coeffs_firstOrderDeriv(j, i) * allSectionValues[j];
+			/*opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;
+			opserr << "This is allSectionValues[j]: " << allSectionValues[j] << endln;*/
 		}
+		//opserr << "End loop " << endln;
 	}
 }
+
+
+//// Method to compute the numerical derivatives Dx
+//void
+//TestNonlocalElement3dDH::computeNumericalDerivativesDx(Vector allSectionValues, Vector &allSectionDerivativesValues)
+//{
+//	for (int i = 0; i < numSections; i++)
+//	{
+//		allSectionDerivativesValues[i] = 0.;
+//		/*opserr << "This is allSectionValues[i]: " << allSectionValues[i] << endln;
+//		opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;
+//		opserr << "Enter loop "  << endln;*/
+//		for (int j = 0; j < numSections; j++)
+//		{
+//			allSectionDerivativesValues[i] += coeffs_firstOrderDeriv(j, i) * allSectionValues[j];
+//			/*opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;
+//			opserr << "This is allSectionValues[j]: " << allSectionValues[j] << endln;*/
+//		}
+//		//opserr << "End loop " << endln;
+//	}
+//}
 

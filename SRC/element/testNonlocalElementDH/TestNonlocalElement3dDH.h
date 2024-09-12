@@ -109,6 +109,7 @@ private:
 	void initCoeffsFirstOrderDeriv();
 	void computeFornberg(Vector& delta4Deriv, int m_max, int n, double x0, Vector alphaVector);
 	void computeNumericalDerivativesDx(Vector allSectionValues[], Vector allSectionDerivativesValues[]);
+	void computeNumericalDerivativesDx(Vector allSectionValues, Vector &allSectionDerivativesValues);
 
 
 	//void testFunction(Vector eNonLocalSubdivide[], Vector sTot[]);
@@ -190,7 +191,7 @@ private:
 	double Bc4MatrixH;
 
 	Vector* allSectionFibersSigma11; // Array containing allSectionFibersSigma11
-	int nPts_4Deriv = 5; //Number of points used to compute derivative at each quadrature point
+	int nPts_4Deriv = 2; //Number of points used to compute derivative at each quadrature point
 	Matrix coeffs_firstOrderDeriv; // Coefficients for numerical derivative
 	Vector* allSectionFibersDSigma11Dx; // Array containing derivatives of allSectionFibersSigma11
 
