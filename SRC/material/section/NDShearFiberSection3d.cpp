@@ -471,6 +471,7 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const 
   {
       inelasticFlag = 1;
   }
+
   //if (inelasticFlag==0)
   //{
   //    double sum_abs_inelasticStrain; // contains the sum of all inelastic strains componentns

@@ -983,7 +983,7 @@ TestNonlocalElement3dDH::update(void)
 						opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
 						opserr << "This is allSectionFibersDSigma11Dx[i]: " << allSectionFibersDSigma11Dx[i] << endln;
 					}*/
-					/*Vector allSectionFibersSigma11_fib0_4Output = Vector(numSections);
+					Vector allSectionFibersSigma11_fib0_4Output = Vector(numSections);
 					Vector allSectionFibersDSigma11Dx_fib0_4Output = Vector(numSections);
 					for (size_t i = 0; i < numSections; i++)
 					{
@@ -995,7 +995,7 @@ TestNonlocalElement3dDH::update(void)
 						opserr << "allSectionFibersSigma11_fib0_4Output: " << allSectionFibersSigma11_fib0_4Output << endln;
 						opserr << "allSectionFibersDSigma11Dx_fib0_4Output: " << allSectionFibersDSigma11Dx_fib0_4Output << endln;
 						int test = 1;
-					}*/
+					}
 
 					for (i = 0; i < numSections; i++)
 					{
