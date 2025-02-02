@@ -990,12 +990,6 @@ TestNonlocalElement3dDH::update(void)
 						allSectionFibersSigma11_fib0_4Output[i] = allSectionFibersSigma11[i](0);
 						allSectionFibersDSigma11Dx_fib0_4Output[i] = allSectionFibersDSigma11Dx[i](0);
 					}
-					if (abs(allSectionFibersSigma11_fib0_4Output(0))>370.0)
-					{
-						opserr << "allSectionFibersSigma11_fib0_4Output: " << allSectionFibersSigma11_fib0_4Output << endln;
-						opserr << "allSectionFibersDSigma11Dx_fib0_4Output: " << allSectionFibersDSigma11Dx_fib0_4Output << endln;
-						int test = 1;
-					}
 
 					for (i = 0; i < numSections; i++)
 					{

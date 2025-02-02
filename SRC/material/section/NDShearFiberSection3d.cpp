@@ -319,7 +319,7 @@ NDShearFiberSection3d::NDShearFiberSection3d(int tag, MatrixContainer allCellsVe
 // constructor for blank object that recvSelf needs to be invoked upon
 NDShearFiberSection3d::NDShearFiberSection3d():
   SectionForceDeformation(0, SEC_TAG_NDShearFiberSection3d),
-  allCellsVertices(0.),
+  allCellsVertices(),
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
   Abar(0.0), QyBar(0.0), QzBar(0.0), yBar(0.0), zBar(0.0), computeCentroid(true),
   sectionIntegr(0), e(6), s(0), ks(0),
@@ -1508,6 +1508,12 @@ NDShearFiberSection3d::setResponse(const char **argv, int argc,
     theResponse = new MaterialResponse(this, 4, Matrix(numFibers, 4));
     }
 
+    // Return a matrix with all strains results for all fibers
+  else if (strcmp(argv[0], "allFiberStrains") == 0)
+    {
+    theResponse = new MaterialResponse(this, 5, Matrix(numFibers, 3));
+    }
+
   if (theResponse == 0)
     return SectionForceDeformation::setResponse(argv, argc, output);
 
@@ -1529,11 +1535,11 @@ NDShearFiberSection3d::getResponse(int responseID, Information &sectInfo)
     case 3: // Return a matrix with all stresses results for all fibers
     {
         Matrix allFiberStresses = Matrix(numFibers, 3);
-        for (size_t iFib = 0; iFib < numFibers; iFib++)
+        for (int iFib = 0; iFib < numFibers; iFib++)
         {
             NDMaterial* theMat = theMaterials[iFib];
             const Vector& stress_iFib = theMat->getStress();
-            for (size_t i = 0; i < 3; i++)
+            for (int i = 0; i < 3; i++)
             {
                 allFiberStresses(iFib, i) = stress_iFib(i);
             }
@@ -1543,7 +1549,7 @@ NDShearFiberSection3d::getResponse(int responseID, Information &sectInfo)
     case 4: // Return a matrix with all gradPsi_sy_globalCentroid and gradPsi_sz_globalCentroid
     {
         Matrix gradPsiShear = Matrix(numFibers, 4);
-        for (size_t iFib = 0; iFib < numFibers; iFib++)
+        for (int iFib = 0; iFib < numFibers; iFib++)
         {
             gradPsiShear(iFib, 0) = gradPsi_sy_globalCentroid(iFib, 0);
             gradPsiShear(iFib, 1) = gradPsi_sy_globalCentroid(iFib, 1);
@@ -1552,6 +1558,21 @@ NDShearFiberSection3d::getResponse(int responseID, Information &sectInfo)
         }
         //opserr << "This is gradPsiShear:" << gradPsiShear << endln;
         return sectInfo.setMatrix(gradPsiShear);
+    }
+
+    case 5: // Return a matrix with all strains results for all fibers
+    {
+        Matrix allFiberStrains = Matrix(numFibers, 3);
+        for (int iFib = 0; iFib < numFibers; iFib++)
+        {
+            NDMaterial* theMat = theMaterials[iFib];
+            const Vector& strain_iFib = theMat->getStrain();
+            for (int i = 0; i < 3; i++)
+            {
+                allFiberStrains(iFib, i) = strain_iFib(i);
+            }
+        }
+        return sectInfo.setMatrix(allFiberStrains);
     }
 
     default:
@@ -1612,7 +1633,7 @@ NDShearFiberSection3d::determineQuadMesh()
     // Iterate over each element in MatrixContainer
     for (const auto& element : allCellsVertices) {
         // Add nodes to the connectivity_matrix matrix
-        for (size_t i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; ++i) {
             double y = std::round(element(i, 0) / 1e-6) * 1e-6;
             double z = std::round(element(i, 1) / 1e-6) * 1e-6;
             std::array<double, 2> node = { y, z };
@@ -1624,22 +1645,22 @@ NDShearFiberSection3d::determineQuadMesh()
             }
         }
     }
-    /*for (size_t i = 0; i < uniqueNodes.size(); i++)
+    /*for (int i = 0; i < uniqueNodes.size(); i++)
     {
         opserr << "This is uniqueNodes:" << uniqueNodes[i][0] << " and " << uniqueNodes[i][1] << endln;
     }*/
     
     // Initialize the coordinate_matrix matrix
     coordinate_matrix.resize(uniqueNodes.size(), 2);
-    for (size_t i = 0; i < uniqueNodes.size(); ++i) {
+    for (int i = 0; i < uniqueNodes.size(); ++i) {
         coordinate_matrix(i, 0) = uniqueNodes[i][0];
         coordinate_matrix(i, 1) = uniqueNodes[i][1];
     }
    //opserr << "This is coordinate_matrix:" << coordinate_matrix  << endln;
 
-    for (size_t elemIndex = 0; elemIndex < allCellsVertices.size(); ++elemIndex) {
+    for (int elemIndex = 0; elemIndex < allCellsVertices.size(); ++elemIndex) {
         const auto& element = allCellsVertices[elemIndex];
-        for (size_t i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; ++i) {
             double y = std::round(element(i, 0) / 1e-6) * 1e-6;
             double z = std::round(element(i, 1) / 1e-6) * 1e-6;
             std::array<double, 2> node = { y, z };
@@ -2030,10 +2051,12 @@ NDShearFiberSection3d::compute_element_quantities(const int elem, Matrix coordin
         Bt.addMatrixTranspose(0., B, 1.0);
 
         const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
-        if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0, 0) < 0.99)
+        //if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0, 0) < 0.99)
+        /*if (abs(inelasticStrain_termY(0)) >1.0 || abs(inelasticStrain_termY(1)) > 1.0)*/
+        if (abs(eCommited(3)) > 1e-2 && abs((strainDecomposition(1, 1) + strainDecomposition(1, 2)))>0. )
         {
-            /*Vector firstTerm = Bt * inelasticStrain_termY;
-            Vector secondTerm = N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)));*/
+            Vector firstTerm = Bt * inelasticStrain_termY;
+            Vector secondTerm = N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)));
             /*opserr << "This is firstTerm" << firstTerm << endln;
             opserr << "This is secondTerm" << secondTerm << endln;*/
             int test = 1;
