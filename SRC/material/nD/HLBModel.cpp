@@ -783,7 +783,7 @@ HLBModel::~HLBModel() {
 *
 * @return 0 if successful
 */
-#pragma optimize("", off)  // Disable optimization for this function
+//#pragma optimize("", off)  // Disable optimization for this function
 int HLBModel::timeIntegration() {
 	// Initialize the variables for loading stage selection
 	elasticLoading = 0;
@@ -820,9 +820,9 @@ int HLBModel::timeIntegration() {
 	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 
-	if (strainConverged(0) <= -0.000308844 && strainConverged(0) > -0.000308846 && strainTrial(0) <= -0.000209417 && strainTrial(0) > -0.000209419) {
+	/*if (strainConverged(0) <= -0.000308844 && strainConverged(0) > -0.000308846 && strainTrial(0) <= -0.000209417 && strainTrial(0) > -0.000209419) {
 		double testBreak = 0.;
-	}
+	}*/
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
