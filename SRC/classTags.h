@@ -289,7 +289,7 @@
 #define ND_TAG_ExternalNDMaterial 999901
 #define MAT_TAG_ExternalUniaxialMaterial 999901
 
-#define MAT_TAG_LocalBucklingWebPlateUniaxial 228 // Diego Heredia
+#define MAT_TAG_HLBModelUniaxial 228 // Diego Heredia
 #define MAT_TAG_CFSTsteel 229 // Diego Heredia
 
 
