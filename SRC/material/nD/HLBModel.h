@@ -276,7 +276,7 @@ private:
 	const unsigned int N_PARAM_PER_BACK = 2;
 	const double RETURN_MAP_TOL = 1.0e-8;
 	const double SMALL_NUMBER = 1.0e-6;
-	//const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 5000;
+	//const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 1000;
 	const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 10000;
 	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 500;
 	const unsigned int N_DIRECT = 1;

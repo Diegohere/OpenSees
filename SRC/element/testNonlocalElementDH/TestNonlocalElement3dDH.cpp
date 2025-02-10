@@ -393,8 +393,8 @@ TestNonlocalElement3dDH::revertToLastCommit(void)
 		eNonlocal[i] = eNonlocalCommit[i];
 		eLocal[i] = eLocalCommit[i];
 
-		//sections[i]->setTrialSectionDeformation(eNonlocal[i]);
-		sections[i]->setTrialSectionDeformation(eNonlocal[i], eNonlocalCommit[i], allSectionFibersDSigma11Dx[i]);
+		sections[i]->setTrialSectionDeformation(eNonlocal[i]);
+		//sections[i]->setTrialSectionDeformation(eNonlocal[i], eNonlocalCommit[i], allSectionFibersDSigma11Dx[i]);
 		//sr[i] = sections[i]->getStressResultant();
 		sr[i] = srCommit[i];
 		FSection[i] = sections[i]->getSectionFlexibility();
@@ -972,24 +972,24 @@ TestNonlocalElement3dDH::update(void)
 					
 
 					// Compute derivative of allSectionFibersSigma11 along element length
-					for (int i = 0; i < numSections; i++)
-					{
-						allSectionFibersSigma11[i]=sections[i]->getAllFibersSigma11();
-						//opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
-					}
-					computeNumericalDerivativesDx(allSectionFibersSigma11, allSectionFibersDSigma11Dx);
+					//for (int i = 0; i < numSections; i++)
+					//{
+					//	allSectionFibersSigma11[i]=sections[i]->getAllFibersSigma11();
+					//	//opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
+					//}
+					//computeNumericalDerivativesDx(allSectionFibersSigma11, allSectionFibersDSigma11Dx);
 					/*for (int i = 0; i < numSections; i++)
 					{
 						opserr << "This is allSectionFibersSigma11[i]: " << allSectionFibersSigma11[i] << endln;
 						opserr << "This is allSectionFibersDSigma11Dx[i]: " << allSectionFibersDSigma11Dx[i] << endln;
 					}*/
-					Vector allSectionFibersSigma11_fib0_4Output = Vector(numSections);
+					/*Vector allSectionFibersSigma11_fib0_4Output = Vector(numSections);
 					Vector allSectionFibersDSigma11Dx_fib0_4Output = Vector(numSections);
 					for (size_t i = 0; i < numSections; i++)
 					{
 						allSectionFibersSigma11_fib0_4Output[i] = allSectionFibersSigma11[i](0);
 						allSectionFibersDSigma11Dx_fib0_4Output[i] = allSectionFibersDSigma11Dx[i](0);
-					}
+					}*/
 
 					for (i = 0; i < numSections; i++)
 					{
@@ -997,7 +997,8 @@ TestNonlocalElement3dDH::update(void)
 						//eu_local_interm.Zero();
 
 						//Set the section deformations for section state determination
-						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i], eNonlocalCommit[i], allSectionFibersDSigma11Dx[i]) < 0)
+						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
+						//if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i], eNonlocalCommit[i], allSectionFibersDSigma11Dx[i]) < 0)
 						{
 							opserr << "TestNonlocalElement3dDH::update() - section failed in setTrial\n";
 							opserr << "This is element: " << this->getTag() << endln;

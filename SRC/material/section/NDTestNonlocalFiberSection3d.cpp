@@ -381,6 +381,7 @@ NDTestNonlocalFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
   static double zLocs[10000];
   static double fiberArea[10000];
 
+  //double testI = 0.;
   if (sectionIntegr != 0) {
     sectionIntegr->getFiberLocations(numFibers, yLocs, zLocs);
     sectionIntegr->getFiberWeights(numFibers, fiberArea);
@@ -390,6 +391,7 @@ NDTestNonlocalFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
       yLocs[i] = matData[3*i];
       zLocs[i] = matData[3*i+1];
       fiberArea[i] = matData[3*i+2];
+      //testI += pow(yLocs[i], 2) * fiberArea[i];
     }
   }
 

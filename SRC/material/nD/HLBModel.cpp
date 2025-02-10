@@ -783,6 +783,7 @@ HLBModel::~HLBModel() {
 *
 * @return 0 if successful
 */
+#pragma optimize("", off)  // Disable optimization for this function
 int HLBModel::timeIntegration() {
 	// Initialize the variables for loading stage selection
 	elasticLoading = 0;
@@ -819,15 +820,16 @@ int HLBModel::timeIntegration() {
 	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 
-	/*if (strainConverged(0) <= -0.06879 && strainConverged(0) > -0.06880 && strainTrial(0) >= -0.06987 && strainTrial(0) < -0.06986) {
+	if (strainConverged(0) <= -0.000308844 && strainConverged(0) > -0.000308846 && strainTrial(0) <= -0.000209417 && strainTrial(0) > -0.000209419) {
 		double testBreak = 0.;
-	}*/
+	}
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		iterationNumber_timeIntegration++;
 
 		if (isnan(strainTrial(0) + strainTrial(1) + strainTrial(2)))
+		//if (isnan(strainTrial(0) + strainTrial(1) + strainTrial(2) + stressTrial(0) + stressTrial(1) + stressTrial(2)))
 		{
 			iterationNumber_timeIntegration = MAXIMUM_ITERATIONS_TIMEINTEGRATION + 1;
 		}
@@ -1049,6 +1051,12 @@ int HLBModel::timeIntegration() {
 				}
 				else { // the capping point has been passed
 					deltaStrain_trial = deltaStrain_trial / 2.;
+					//Try solving issue with high shear strains 05.02.2025
+					if (iterationNumber_timeIntegration >= 0.2 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
+					{
+						//sigmaCTrial = yieldStressTot;
+						sigmaCTrial = sqrt(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)));
+					}
 				}
 			}
 			else { // if not elastic
@@ -1614,6 +1622,12 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		retVal = -1;
 	}
 
+	//// Try fix issue with nan 05.02.2025
+	//if (isnan(phiTens))
+	//{
+	//	retVal = -1;
+	//}
+
 	return retVal;
 }
 
@@ -1667,7 +1681,9 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
 		iterationNumber_ReturnMapping++;
 
-		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
+		//etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
+		// Try solve issue with positive strainPostBucklingTrial(0) giving wrong etaTangent 05.02.2025
+		etaTangent = 1.;
 		LambdaC_nPlus1Diag = etaTangent * lambdaC;
 
 		// Isotropic hardening parameters
@@ -1714,7 +1730,9 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 		betaPrime = betaPrime * sqrt(2. / 3.) * fBar;
 		alphaTildePrime = alphaTildePrime * sqrt(2. / 3.) * fBar;
 
-		dEtaTangentdEpsiPb11 = -calculateDEtaTangentdEpsiPb11();
+		//dEtaTangentdEpsiPb11 = -calculateDEtaTangentdEpsiPb11();
+		// Try solve issue with positive strainPostBucklingTrial(0) giving wrong etaTangent 05.02.2025
+		dEtaTangentdEpsiPb11 = 0.;
 		dCdLambdaP(0) = dEtaTangentdEpsiPb11 * 2 / 3 * relativeStressNPlus1(0) * elasticMatrix(0, 0);
 		dCdLambdaP(1) = dEtaTangentdEpsiPb11 * 2 / 3 * relativeStressNPlus1(0) * elasticMatrix(1, 1);
 		dCdLambdaP(2) = dEtaTangentdEpsiPb11 * 2 / 3 * relativeStressNPlus1(0) * elasticMatrix(2, 2);
