@@ -322,6 +322,7 @@
     <ClCompile Include="..\..\..\SRC\material\uniaxial\GNGMaterial.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\HardeningMaterial.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\HardeningMaterial2.cpp" />
+    <ClCompile Include="..\..\..\SRC\material\uniaxial\HLBModelUniaxial.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\HookGap.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\HyperbolicGapMaterial.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\HystereticMaterial.cpp" />
@@ -334,7 +335,6 @@
     <ClCompile Include="..\..\..\SRC\material\uniaxial\InitStressMaterial.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\KikuchiAikenHDR.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\KikuchiAikenLRB.cpp" />
-    <ClCompile Include="..\..\..\SRC\material\uniaxial\LocalBucklingWebPlateUniaxial.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\Masonry.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\Masonryt.cpp" />
     <ClCompile Include="..\..\..\SRC\material\uniaxial\MaterialState.cpp" />
@@ -758,6 +758,7 @@
     <ClInclude Include="..\..\..\SRC\material\uniaxial\GNGMaterial.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\HardeningMaterial.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\HardeningMaterial2.h" />
+    <ClInclude Include="..\..\..\SRC\material\uniaxial\HLBModelUniaxial.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\HookGap.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\HyperbolicGapMaterial.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\HystereticMaterial.h" />
@@ -769,7 +770,6 @@
     <ClInclude Include="..\..\..\SRC\material\uniaxial\InitStressMaterial.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\KikuchiAikenHDR.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\KikuchiAikenLRB.h" />
-    <ClInclude Include="..\..\..\SRC\material\uniaxial\LocalBucklingWebPlateUniaxial.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\MaterialState.h" />
     <ClInclude Include="..\..\..\SRC\material\uniaxial\Maxwell.h" />
     <ClInclude Include="..\..\..\Src\material\uniaxial\MinMaxMaterial.h" />

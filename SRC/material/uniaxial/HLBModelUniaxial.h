@@ -58,12 +58,12 @@ public:
 	const char* getClassType(void) const { return "HLBModelUniaxial"; };
 
 	// Calculates the trial strain and stress, provided the total strain
-	int setTrialStrain(const Vector& v);
-	int setTrialStrain(const Vector& v, const Vector& r);
+	int setTrialStrain(double v);
+	int setTrialStrain(double v, double r);
 
 	// Calculates the trial strain and stress, provided the strain increment
-	int setTrialStrainIncr(const Vector& v);
-	int setTrialStrainIncr(const Vector& v, const Vector& r);
+	int setTrialStrainIncr(double v);
+	int setTrialStrainIncr(double v, double r);
 
 	// Returns the trial strain
 	double getStrain(void);
@@ -141,7 +141,8 @@ private:
 	void calculateConsistentTangentModulusElastic(double etaTangent);
 
 	// Sets the elastoplastic tangent modulus for hardening stage
-	void calculateConsistentTangentModulusHardening(void);
+	void calculateConsistentTangentModulusHardening(double consistParam, double fBar,
+		double stressRelative);
 
 	// Sets the consistent tangent modulus for softening stage
 	void calculateConsistentTangentModulusSoftening(double strain_nPlus1, double backstressTot, double relativeStressNPlus1, double stressTrial, double consistParam);

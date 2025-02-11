@@ -1122,16 +1122,13 @@ int HLBModelUniaxial::timeIntegration() {
 	return retVal;
 }
 
-
-//Stopped here 10.02.2025
-
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 /**
 *
 * @return 0 if successful
 */
-int HLBModelUniaxial::returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vector etaTrial) {
+int HLBModelUniaxial::returnMappingHardening(double strain_nPlus1, double alphaTot, double etaTrial) {
 	// Initialize all the variables
 	int retVal = 0;
 	bool convergedReturnMapping = false;
@@ -1140,24 +1137,24 @@ int HLBModelUniaxial::returnMappingHardening(Vector strain_nPlus1, Vector alphaT
 	double yieldStressTot = 0.;
 	double isotropicModulus = 0.;
 	double beta = 0.;
-	Vector alphaTilde = Vector(N_DIMS);
+	double alphaTilde = 0.;
 	double eK = 0.;
-	Vector gammaDiag = Vector(N_DIMS);
+	double gammaDiag = 0.;
 	double consistParam_plastic = 0.;
-	Vector etaTilde = Vector(N_DIMS);
-	Vector eta = Vector(N_DIMS);
+	double etaTilde = 0.;
+	double eta = 0.;
 	double f2bar = 0.;
 	double fBar = 0.;
 	double betaPrime = 0.;
-	Vector alphaTildePrime = Vector(N_DIMS);
-	Vector gammaDiagPrime = Vector(N_DIMS);
+	double alphaTildePrime = 0.;
+	double gammaDiagPrime = 0.;
 	double consistDenom = 0.;
 	double phiVM = 0.;
-	Vector stressRelative = Vector(N_DIMS);
-	std::vector<Vector> alpha12Tot_Vector;
+	double stressRelative = 0.;
+	std::vector<double> alpha12Tot_Vector;
 	double etaTangent = 0.;
 
-	etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingIntermed(0));
+	etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingIntermed);
 
 	// Fill alphaTot_Vector with the two vector
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
@@ -1176,7 +1173,7 @@ int HLBModelUniaxial::returnMappingHardening(Vector strain_nPlus1, Vector alphaT
 		isotropicModulus = calculateIsotropicModulus(strainPEqTrial);
 		// Kinematic hardening parameters
 		beta = 0.;
-		alphaTilde.Zero();
+		alphaTilde=0.;
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
 			/*eK = calculateEk(i);*/
 			eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed));
@@ -1189,18 +1186,16 @@ int HLBModelUniaxial::returnMappingHardening(Vector strain_nPlus1, Vector alphaT
 		/*etaTangent = calculateEtaTangentReduce();*/
 
 		// Update the relative stress and eta
-		gammaDiag(0) = 1. / (beta + consistParam_plastic * 2. / 3. * etaTangent * elasticModulus);
-		gammaDiag(1) = 1. / (beta + consistParam_plastic * 2. * etaTangent * shearModulus);
-		gammaDiag(2) = gammaDiag(1);
+		gammaDiag = 1. / (beta + consistParam_plastic * 2. / 3. * etaTangent * elasticModulus);
 
-		etaTilde = etaTrial + qMatT * alphaTilde;
-		eta = vecMult3(etaTilde, gammaDiag);
-		f2bar = 2. / 3. * pow(eta(0), 2) + 2. * pow(eta(1), 2) + 2. * pow(eta(2), 2);
+		etaTilde = etaTrial + alphaTilde;
+		eta = etaTilde * gammaDiag;
+		f2bar = 2. / 3. * pow(eta, 2);
 		fBar = sqrt(f2bar);
 
 		// Calculate Newton denominator
 		betaPrime = 0.;
-		alphaTildePrime.Zero();
+		alphaTildePrime = 0.;
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
 			/*eK = calculateEk(i);*/
 			eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed));
@@ -1210,11 +1205,9 @@ int HLBModelUniaxial::returnMappingHardening(Vector strain_nPlus1, Vector alphaT
 		}
 		betaPrime = betaPrime * sqrt(2. / 3.) * fBar;
 		alphaTildePrime = alphaTildePrime * sqrt(2. / 3.) * fBar;
-		for (unsigned int i = 0; i < N_DIMS; ++i)
-			gammaDiagPrime(i) = -pow(gammaDiag(i), 2) * (betaPrime + lambdaP(i) * etaTangent * lambdaC(i));
+		gammaDiagPrime = -pow(gammaDiag, 2) * (betaPrime + 2./3. * etaTangent * elasticTangent);
 
-		consistDenom = dotprod3(vecMult3(lambdaP, eta),
-			vecMult3(gammaDiagPrime, etaTilde) + vecMult3(gammaDiag, qMatT * alphaTildePrime))
+		consistDenom = 2./.3* eta*(	gammaDiagPrime* etaTilde + gammaDiag*alphaTildePrime)
 			- sqrt(2. / 3.) * 2. / 3. * yieldStressTot * isotropicModulus * fBar;
 
 		// Newton step
@@ -1230,9 +1223,9 @@ int HLBModelUniaxial::returnMappingHardening(Vector strain_nPlus1, Vector alphaT
 	}
 
 	// Update the variables
-	etaTilde = etaTrial + qMatT * alphaTilde;
-	eta = vecMult3(gammaDiag, etaTilde);
-	stressRelative = qMat * eta;
+	etaTilde = etaTrial + alphaTilde;
+	eta = gammaDiag* etaTilde;
+	stressRelative = eta;
 	yieldStressP = calculateYieldStressPlastic(strainPEqTrial);
 	yieldStressTot = yieldStressP + yieldStressPBTrial;
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
@@ -1243,10 +1236,10 @@ int HLBModelUniaxial::returnMappingHardening(Vector strain_nPlus1, Vector alphaT
 		alphaPKTrial[i] = alpha12Tot_Vector[i] - alphaPBKIntermed[i];
 	}
 	/*strainPlasticTrial = strainPlasticConverged + consistParam_plastic * PMat * stressRelative;*/
-	strainPlasticTrial = strainPlasticIntermed + consistParam_plastic * PMat * stressRelative;
+	strainPlasticTrial = strainPlasticIntermed + consistParam_plastic * 2./3. * stressRelative;
 
 	/*etaTangent = calculateEtaTangentReduce();*/
-	stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingIntermed);
+	stressTrial = (etaTangent * elasticTangent) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingIntermed);
 
 	// Calculate the consistent tangent modulus for hardening stage
 	calculateConsistentTangentModulusHardening(consistParam_plastic, fBar, stressRelative);
@@ -1270,32 +1263,32 @@ int HLBModelUniaxial::returnMappingHardening(Vector strain_nPlus1, Vector alphaT
 *
 * @return 0 if successful
 */
-int HLBModelUniaxial::returnMappingSoftening(Vector strain_nPlus1, Vector relativeStressTrial, Vector backstressTot, double yieldStressTot) {
+int HLBModelUniaxial::returnMappingSoftening(double strain_nPlus1, double relativeStressTrial, double backstressTot, double yieldStressTot) {
 	// Initialize all the variables
 	int retVal = 0;
 	bool convergedReturnMapping = false;
 	unsigned int iterationNumber_ReturnMapping = 0;
-	Vector gammaDiag = Vector(N_DIMS);
+	double gammaDiag = 0.;
 	double consistParam_postBuckling = 0.;
 	double chi1c = 0.;
 	double sigmaSurSigmaY = 0.;
-	Vector relativeStressNPlus1 = Vector(N_DIMS);
+	double relativeStressNPlus1 = 0.;
 	double phiComp = 0.;
 	double psi = 0.;
 	double dSigmaSurSigmaYdEpsilonPB11 = 0.;
 	double dChi1cDLambdaPB = 0.;
-	Vector gammaDiagPrime = Vector(N_DIMS);
-	Vector dXidLambda = Vector(N_DIMS);
+	double gammaDiagPrime = 0.;
+	double dXidLambda = 0.;
 	double dPhiCompdLambdaPB = 0.;
-	Vector dPhiCompdXi = Vector(N_DIMS);
+	double dPhiCompdXi = 0.;
 	double etaTangent = 0.;
-	Vector LambdaC_nPlus1Diag = Vector(N_DIMS);
-	Vector dCdLambdaPB = Vector(N_DIMS);
+	double LambdaC_nPlus1Diag = 0.;
+	double dCdLambdaPB = 0.;
 
 	strainPostBucklingTrial = strainPostBucklingIntermed;
 
-	chi1c = calculateChi1c(strainPostBucklingTrial(0));
-	sigmaSurSigmaY = (this->*calculateSigmaSurSigmaY)(strainPostBucklingTrial(0));
+	chi1c = calculateChi1c(strainPostBucklingTrial);
+	sigmaSurSigmaY = (this->*calculateSigmaSurSigmaY)(strainPostBucklingTrial);
 	//(obj.*funcPtr)()
 	//calculateSigmaSurSigmaY(strainPostBucklingTrial(0));
 
@@ -1303,42 +1296,32 @@ int HLBModelUniaxial::returnMappingSoftening(Vector strain_nPlus1, Vector relati
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING) {
 		iterationNumber_ReturnMapping++;
 
-		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
-		LambdaC_nPlus1Diag = etaTangent * lambdaC;
+		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial);
+		LambdaC_nPlus1Diag = etaTangent * elasticTangent;
 
-		gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_postBuckling * (2. + 2. * chi1c));
-		gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_postBuckling * 6.);
-		gammaDiag(2) = gammaDiag(1);
+		gammaDiag = 1. / (1. / LambdaC_nPlus1Diag + consistParam_postBuckling * (2. + 2. * chi1c));
 
-		relativeStressNPlus1(0) = gammaDiag(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - gammaDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
-		relativeStressNPlus1(1) = gammaDiag(1) * (strain_nPlus1(1) - strainPlasticIntermed(1) - strainPostBucklingIntermed(1)) - gammaDiag(1) / LambdaC_nPlus1Diag(1) * backstressTot(1);
-		relativeStressNPlus1(2) = gammaDiag(2) * (strain_nPlus1(2) - strainPlasticIntermed(2) - strainPostBucklingIntermed(2)) - gammaDiag(2) / LambdaC_nPlus1Diag(2) * backstressTot(2);
+		relativeStressNPlus1 = gammaDiag * (strain_nPlus1 - strainPlasticIntermed - strainPostBucklingIntermed - 2. * chi1c * consistParam_postBuckling * backstressTot) - gammaDiag / LambdaC_nPlus1Diag * backstressTot;
 		stressTrial = relativeStressNPlus1 + backstressTot;
 
-		phiComp = 3. / 2. * (2. / 3. * pow(relativeStressNPlus1(0), 2) + 2. * pow(relativeStressNPlus1(1), 2) + 2. * pow(relativeStressNPlus1(2), 2)) + chi1c * pow(stressTrial(0), 2) - pow(yieldStressTot, 2);
+		phiComp = pow(relativeStressNPlus1, 2) + chi1c * pow(stressTrial, 2) - pow(yieldStressTot, 2);
 
-		psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1c, 2) * pow(stressTrial(0), 2)), 0.5);
-		dPhiCompdXi(0) = 2. * (relativeStressNPlus1(0) + chi1c * stressTrial(0));
-		dPhiCompdXi(1) = 6. * relativeStressNPlus1(1);
-		dPhiCompdXi(2) = 6. * relativeStressNPlus1(2);
+		psi = pow((4. * pow(relativeStressNPlus1, 2) + 8. * pow(chi1c, 2) * pow(stressTrial, 2)), 0.5);
+		dPhiCompdXi = 2. * (relativeStressNPlus1 + chi1c * stressTrial);
 
 		//dSigmaSurSigmaYdEpsilonPB11 = calculateDSigmaSurSigmaYdEpsilonPB11();
 		dSigmaSurSigmaYdEpsilonPB11 = (this->*calculateDSigmaSurSigmaYdEpsilonPB11)();
 
-		dChi1cDLambdaPB = dPhiCompdXi(0) * 2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
+		dChi1cDLambdaPB = dPhiCompdXi * 2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
 		//dChi1cDLambdaPB = -dPhiCompdXi(0) * 2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
 
-		dCdLambdaPB = calculateDCdLambdaPB(etaTangent, dPhiCompdXi(0));
+		dCdLambdaPB = calculateDCdLambdaPB(etaTangent, dPhiCompdXi);
 
-		gammaDiagPrime(0) = -pow(gammaDiag(0), 2) * (dCdLambdaPB(0) + 2. * (1. + chi1c) + 2. * consistParam_postBuckling * dChi1cDLambdaPB);
-		gammaDiagPrime(1) = -pow(gammaDiag(1), 2) * (dCdLambdaPB(1) + 6.);
-		gammaDiagPrime(2) = -pow(gammaDiag(2), 2) * (dCdLambdaPB(2) + 6.);
+		gammaDiagPrime = -pow(gammaDiag, 2) * (dCdLambdaPB + 2. * (1. + chi1c) + 2. * consistParam_postBuckling * dChi1cDLambdaPB);
 
-		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - 2 * chi1c * gammaDiag(0) * backstressTot(0) - 2 * consistParam_postBuckling * gammaDiag(0) * backstressTot(0) * dChi1cDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * backstressTot(0) - gammaDiag(0) * dCdLambdaPB(0) * backstressTot(0);
-		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticIntermed(1) - strainPostBucklingIntermed(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * backstressTot(1) - gammaDiag(1) * dCdLambdaPB(1) * backstressTot(1);
-		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticIntermed(2) - strainPostBucklingIntermed(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * backstressTot(2) - gammaDiag(2) * dCdLambdaPB(2) * backstressTot(2);
+		dXidLambda = gammaDiagPrime * (strain_nPlus1 - strainPlasticIntermed - strainPostBucklingIntermed - 2. * chi1c * consistParam_postBuckling * backstressTot) - 2 * chi1c * gammaDiag * backstressTot - 2 * consistParam_postBuckling * gammaDiag * backstressTot * dChi1cDLambdaPB - gammaDiagPrime / LambdaC_nPlus1Diag * backstressTot - gammaDiag * dCdLambdaPB * backstressTot;
 
-		dPhiCompdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2) * dChi1cDLambdaPB;
+		dPhiCompdLambdaPB = 2. * dXidLambda * (relativeStressNPlus1 + chi1c * stressTrial) + pow(stressTrial, 2) * dChi1cDLambdaPB;
 
 		// Do the Newton Step
 		consistParam_postBuckling = consistParam_postBuckling - phiComp / dPhiCompdLambdaPB;
@@ -1351,8 +1334,8 @@ int HLBModelUniaxial::returnMappingSoftening(Vector strain_nPlus1, Vector relati
 		//}
 
 		//sigmaSurSigmaY = calculateSigmaSurSigmaY(strainPostBucklingTrial(0));
-		sigmaSurSigmaY = (this->*calculateSigmaSurSigmaY)(strainPostBucklingTrial(0));
-		chi1c = calculateChi1c(strainPostBucklingTrial(0));
+		sigmaSurSigmaY = (this->*calculateSigmaSurSigmaY)(strainPostBucklingTrial);
+		chi1c = calculateChi1c(strainPostBucklingTrial);
 
 		// Check convergence
 		if (fabs(phiComp / (2. / 3. * pow(initialYield, 2))) < RETURN_MAP_TOL) {
@@ -1378,26 +1361,26 @@ int HLBModelUniaxial::returnMappingSoftening(Vector strain_nPlus1, Vector relati
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-int HLBModelUniaxial::returnMappingPlRecovStage(Vector strain_nPlus1) {
+int HLBModelUniaxial::returnMappingPlRecovStage(double strain_nPlus1) {
 	// Initialize all the variables
 	int retVal = 0;
 	bool convergedReturnMapping = false;
 	unsigned int iterationNumber_ReturnMapping = 0;
 	double yieldStressP = 0.;
-	Vector backstressPTot = Vector(N_DIMS);
-	Vector backstressPBTot = Vector(N_DIMS);
-	Vector backstressTot = Vector(N_DIMS);
+	double backstressPTot = 0.;
+	double backstressPBTot = 0.;
+	double backstressTot = 0.;
 	double backstress11Pb_nPlus1 = 0.;
 	double consistParam_plRecov = 0.;
 	double chi1t = 0.;
 	double f1t = 0.;
 	double etaTangent = 0.;
-	Vector LambdaC_nPlus1Diag = Vector(N_DIMS);
-	Vector gammaDiag = Vector(N_DIMS);
-	Vector relativeStressNPlus1 = Vector(N_DIMS);
+	double LambdaC_nPlus1Diag = 0.;
+	double gammaDiag = 0.;
+	double relativeStressNPlus1 = 0.;
 	double phiTens = 0.;
 	double psi = 0.;
-	Vector dPhiTensdXi = Vector(N_DIMS);
+	double dPhiTensdXi = 0.;
 	double tBezier = 0.;
 	double sigmaBezier = 0.;
 	double dSigmaBezierDtBezier = 0.;
@@ -1406,9 +1389,9 @@ int HLBModelUniaxial::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	double dSigmaBezierDLambdaPb = 0.;
 	double dFchi1tdLambdaPb = 0.;
 	double dChi1tDLambdaPB = 0.;
-	Vector dCdLambdaPB = Vector(N_DIMS);
-	Vector gammaDiagPrime = Vector(N_DIMS);
-	Vector dXidLambda = Vector(N_DIMS);
+	double dCdLambdaPB = 0.;
+	double gammaDiagPrime = 0.;
+	double dXidLambda = 0.;
 	double dPhiTensdLambdaPB = 0.;
 	double yieldStressTot = 0.;
 	double dSigmaYieldTotDLambdaPb = 0.;
@@ -1445,11 +1428,11 @@ int HLBModelUniaxial::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 	strainPostBucklingTrial = strainPostBucklingIntermed;
 
-	tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial(0));
+	tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial);
 	sigmaBezier = pow((1. - tBezier), 3) * sigmaPrBezierTrial + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) + pow(tBezier, 3) * sigmaYrBezierTrial;
-	yieldStressTot = computeYieldStressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
-	backstressTot = computeBackstressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
-	f1t = calculateF1t(yieldStressTot, backstressTot(0), alphaRegularization * strainPostBucklingTrial(0));
+	yieldStressTot = computeYieldStressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial);
+	backstressTot = computeBackstressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial);
+	f1t = calculateF1t(yieldStressTot, backstressTot, alphaRegularization * strainPostBucklingTrial);
 	chi1t = b_1tTrial * (1 - f1t);
 
 	// Do the return mapping algorithm for plastic recovery stage
@@ -1457,63 +1440,53 @@ int HLBModelUniaxial::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	{
 		iterationNumber_ReturnMapping++;
 
-		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
-		LambdaC_nPlus1Diag = etaTangent * lambdaC;
+		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial);
+		LambdaC_nPlus1Diag = etaTangent * elasticTangent;
 
-		gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_plRecov * (2. + 2. * chi1t));
-		gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_plRecov * 6.);
-		gammaDiag(2) = gammaDiag(1);
+		gammaDiag = 1. / (1. / LambdaC_nPlus1Diag + consistParam_plRecov * (2. + 2. * chi1t));
 
-		relativeStressNPlus1(0) = gammaDiag(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0) - 2. * chi1t * consistParam_plRecov * backstressTot(0)) - gammaDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
-		relativeStressNPlus1(1) = gammaDiag(1) * (strain_nPlus1(1) - strainPlasticIntermed(1) - strainPostBucklingIntermed(1)) - gammaDiag(1) / LambdaC_nPlus1Diag(1) * backstressTot(1);
-		relativeStressNPlus1(2) = gammaDiag(2) * (strain_nPlus1(2) - strainPlasticIntermed(2) - strainPostBucklingIntermed(2)) - gammaDiag(2) / LambdaC_nPlus1Diag(2) * backstressTot(2);
+		relativeStressNPlus1 = gammaDiag * (strain_nPlus1 - strainPlasticIntermed - strainPostBucklingIntermed - 2. * chi1t * consistParam_plRecov * backstressTot) - gammaDiag / LambdaC_nPlus1Diag * backstressTot;
 		stressTrial = relativeStressNPlus1 + backstressTot;
 
-		phiTens = 3. / 2. * (2. / 3. * pow(relativeStressNPlus1(0), 2) + 2. * pow(relativeStressNPlus1(1), 2) + 2. * pow(relativeStressNPlus1(2), 2)) + chi1t * pow(stressTrial(0), 2) - pow(yieldStressTot, 2);
+		phiTens = pow(relativeStressNPlus1, 2) + chi1t * pow(stressTrial, 2) - pow(yieldStressTot, 2);
 
-		psi = pow((4. * pow(relativeStressNPlus1(0), 2) + 12. * pow(relativeStressNPlus1(1), 2) + 12. * pow(relativeStressNPlus1(2), 2) + 8. * pow(chi1t, 2) * pow(stressTrial(0), 2)), 0.5);
-		dPhiTensdXi(0) = 2. * (relativeStressNPlus1(0) + chi1t * stressTrial(0));
-		dPhiTensdXi(1) = 6. * relativeStressNPlus1(1);
-		dPhiTensdXi(2) = 6. * relativeStressNPlus1(2);
+		psi = pow((4. * pow(relativeStressNPlus1, 2) + 8. * pow(chi1t, 2) * pow(stressTrial, 2)), 0.5);
+		dPhiTensdXi = 2. * (relativeStressNPlus1 + chi1t * stressTrial);
 
 		dSigmaBezierDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierTrial + 3. * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierTrial;
 		dEpsiBezierdtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11UnloadTrial) + 3. * (abs(epsilonPB11UnloadTrial) + alphaPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
-		dSigmaBezierDLambdaPb = -alphaRegularization * dSigmaBezierDtBezier / (dEpsiBezierdtBezier + RETURN_MAP_TOL) * dPhiTensdXi(0);
+		dSigmaBezierDLambdaPb = -alphaRegularization * dSigmaBezierDtBezier / (dEpsiBezierdtBezier + RETURN_MAP_TOL) * dPhiTensdXi;
 
-		dAlpha11TotDLambdaPb = alphaRegularization * computeDAlpha11TotDEpsiPb11PlRecovStage() * dPhiTensdXi(0);
-		dSigmaYieldTotDLambdaPb = alphaRegularization * computeDSigmaYieldTotDEpsiPb11PlRecovStage() * dPhiTensdXi(0);
+		dAlpha11TotDLambdaPb = alphaRegularization * computeDAlpha11TotDEpsiPb11PlRecovStage() * dPhiTensdXi;
+		dSigmaYieldTotDLambdaPb = alphaRegularization * computeDSigmaYieldTotDEpsiPb11PlRecovStage() * dPhiTensdXi;
 
 		dFchi1tdLambdaPb = -1 / pow((b_1tTrial * pow(sigmaBezier, 2)), 2) * ((2 * yieldStressTot * dSigmaYieldTotDLambdaPb - 2 * (dSigmaBezierDLambdaPb - dAlpha11TotDLambdaPb) *
-			(sigmaBezier - backstressTot(0))) * (b_1tTrial * pow(sigmaBezier, 2)) - (pow(yieldStressTot, 2) - pow((sigmaBezier - backstressTot(0)), 2)) * 2 * b_1tTrial * dSigmaBezierDLambdaPb * sigmaBezier);
+			(sigmaBezier - backstressTot)) * (b_1tTrial * pow(sigmaBezier, 2)) - (pow(yieldStressTot, 2) - pow((sigmaBezier - backstressTot), 2)) * 2 * b_1tTrial * dSigmaBezierDLambdaPb * sigmaBezier);
 		dChi1tDLambdaPB = -b_1tTrial * dFchi1tdLambdaPb;
 
-		dCdLambdaPB = alphaRegularization * calculateDCdLambdaPB(etaTangent, dPhiTensdXi(0));
+		dCdLambdaPB = alphaRegularization * calculateDCdLambdaPB(etaTangent, dPhiTensdXi);
 
-		gammaDiagPrime(0) = -pow(gammaDiag(0), 2) * (dCdLambdaPB(0) + 2. * (1. + chi1t) + 2. * consistParam_plRecov * dChi1tDLambdaPB);
-		gammaDiagPrime(1) = -pow(gammaDiag(1), 2) * (dCdLambdaPB(1) + 6.);
-		gammaDiagPrime(2) = -pow(gammaDiag(2), 2) * (dCdLambdaPB(2) + 6.);
+		gammaDiagPrime = -pow(gammaDiag, 2) * (dCdLambdaPB + 2. * (1. + chi1t) + 2. * consistParam_plRecov * dChi1tDLambdaPB);
 
-		dXidLambda(0) = gammaDiagPrime(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0) - 2. * chi1t * consistParam_plRecov * backstressTot(0)) - 2 * chi1t * gammaDiag(0) * backstressTot(0) - 2 * consistParam_plRecov * gammaDiag(0) * backstressTot(0) * dChi1tDLambdaPB - gammaDiagPrime(0) / LambdaC_nPlus1Diag(0) * backstressTot(0) - gammaDiag(0) * dCdLambdaPB(0) * backstressTot(0) - gammaDiag(0) * 2. * chi1t * consistParam_plRecov * dAlpha11TotDLambdaPb - gammaDiag(0) / LambdaC_nPlus1Diag(0) * dAlpha11TotDLambdaPb;
-		dXidLambda(1) = gammaDiagPrime(1) * (strain_nPlus1(1) - strainPlasticIntermed(1) - strainPostBucklingIntermed(1)) - gammaDiagPrime(1) / LambdaC_nPlus1Diag(1) * backstressTot(1) - gammaDiag(1) * dCdLambdaPB(1) * backstressTot(1);
-		dXidLambda(2) = gammaDiagPrime(2) * (strain_nPlus1(2) - strainPlasticIntermed(2) - strainPostBucklingIntermed(2)) - gammaDiagPrime(2) / LambdaC_nPlus1Diag(2) * backstressTot(2) - gammaDiag(2) * dCdLambdaPB(2) * backstressTot(2);
+		dXidLambda = gammaDiagPrime * (strain_nPlus1 - strainPlasticIntermed - strainPostBucklingIntermed - 2. * chi1t * consistParam_plRecov * backstressTot) - 2 * chi1t * gammaDiag * backstressTot - 2 * consistParam_plRecov * gammaDiag * backstressTot * dChi1tDLambdaPB - gammaDiagPrime / LambdaC_nPlus1Diag * backstressTot - gammaDiag * dCdLambdaPB * backstressTot - gammaDiag * 2. * chi1t * consistParam_plRecov * dAlpha11TotDLambdaPb - gammaDiag / LambdaC_nPlus1Diag * dAlpha11TotDLambdaPb;
 
-		dPhiTensdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1t * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2) * dChi1tDLambdaPB + 2 * chi1t * stressTrial(0) * dAlpha11TotDLambdaPb - 2 * dSigmaYieldTotDLambdaPb * yieldStressTot;
+		dPhiTensdLambdaPB = 2. * dXidLambda * (relativeStressNPlus1 + chi1t * stressTrial) + pow(stressTrial, 2) * dChi1tDLambdaPB + 2 * chi1t * stressTrial * dAlpha11TotDLambdaPb - 2 * dSigmaYieldTotDLambdaPb * yieldStressTot;
 
 		// Do the Newton Step
 		consistParam_plRecov = consistParam_plRecov - phiTens / dPhiTensdLambdaPB;
 
 		strainPBEqTrial = strainPBEqIntermed * -psi * consistParam_plRecov;
 		strainPostBucklingTrial = strainPostBucklingIntermed + consistParam_plRecov * dPhiTensdXi;
-		if (strainPostBucklingTrial(0) > 0)
+		if (strainPostBucklingTrial > 0)
 		{
 			break;
 		}
 
-		tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial(0));
+		tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial);
 		sigmaBezier = pow((1. - tBezier), 3) * sigmaPrBezierTrial + 3. * pow((1. - tBezier), 2) * tBezier * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) + 3. * (1. - tBezier) * pow(tBezier, 2) * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) + pow(tBezier, 3) * sigmaYrBezierTrial;
-		yieldStressTot = computeYieldStressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
-		backstressTot = computeBackstressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
-		f1t = calculateF1t(yieldStressTot, backstressTot(0), alphaRegularization * strainPostBucklingTrial(0));
+		yieldStressTot = computeYieldStressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial);
+		backstressTot = computeBackstressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial);
+		f1t = calculateF1t(yieldStressTot, backstressTot, alphaRegularization * strainPostBucklingTrial);
 		chi1t = b_1tTrial * (1 - f1t);
 
 		//if (iterationNumber_ReturnMapping > MAXIMUM_ITERATIONS_RETURNMAPPING - 2)
@@ -1536,11 +1509,11 @@ int HLBModelUniaxial::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 	// Update each post-buckling backstress
 	backstressPTot = alphaPKIntermed[0] + alphaPKIntermed[1];
-	backstress11Pb_nPlus1 = backstressTot(0) - backstressPTot(0);
-	Vector backstress1PB_nPlus1 = Vector(N_DIMS);
-	Vector backstress2PB_nPlus1 = Vector(N_DIMS);
-	backstress1PB_nPlus1(0) = rAlphaBackstress1Trial * backstress11Pb_nPlus1;
-	backstress2PB_nPlus1(0) = rAlphaBackstress2Trial * backstress11Pb_nPlus1;
+	backstress11Pb_nPlus1 = backstressTot - backstressPTot;
+	double backstress1PB_nPlus1 = 0.;
+	double backstress2PB_nPlus1 = 0.;
+	backstress1PB_nPlus1 = rAlphaBackstress1Trial * backstress11Pb_nPlus1;
+	backstress2PB_nPlus1 = rAlphaBackstress2Trial * backstress11Pb_nPlus1;
 	alphaPBKTrial[0] = backstress1PB_nPlus1;
 	alphaPBKTrial[1] = backstress2PB_nPlus1;
 
@@ -1576,7 +1549,7 @@ int HLBModelUniaxial::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-int HLBModelUniaxial::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) {
+int HLBModelUniaxial::returnMappingUVCRecovStage(double strain_nPlus1, double alphaTot) {
 	// Initialize all the variables
 	int retVal = 0;
 	bool convergedReturnMapping = false;
@@ -1584,26 +1557,25 @@ int HLBModelUniaxial::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector al
 	double yieldStressP = 0.;
 	double isotropicModulus = 0.;
 	double beta = 0.;
-	Vector alphaTilde = Vector(N_DIMS);
+	double alphaTilde = 0.;
 	double eK = 0.;
-	Vector gammaDiag = Vector(N_DIMS);
+	double gammaDiag = 0.;
 	double consistParam_plastic = 0.;
 	double f2bar = 0.;
 	double fBar = 0.;
 	double betaPrime = 0.;
-	Vector alphaTildePrime = Vector(N_DIMS);
-	Vector gammaDiagPrime = Vector(N_DIMS);
+	double alphaTildePrime = 0.;
+	double gammaDiagPrime = 0.;
 	double consistDenom = 0.;
 	double phiVM = 0.;
-	std::vector<Vector> alpha12Tot_Vector;
+	std::vector<double> alpha12Tot_Vector;
 	double etaTangent = 0.;
-	Vector LambdaC_nPlus1Diag = Vector(N_DIMS);
-	Vector relativeStressNPlus1 = Vector(N_DIMS);
-	Vector SumEKAlphaKTerm = Vector(N_DIMS);
+	double LambdaC_nPlus1Diag = 0.;
+	double relativeStressNPlus1 = 0.;
+	double SumEKAlphaKTerm = 0.;
 	double dEtaTangentdEpsiPb11 = 0.;
-	Vector dCdLambdaP = Vector(N_DIMS);
-	Vector dXidLambda = Vector(N_DIMS);
-	Vector PMatMultrelativeStressNPlus1 = Vector(N_DIMS);
+	double dCdLambdaP = 0.;
+	double dXidLambda = 0.;
 	double yieldStressTot = 0.;
 
 	// Fill alphaTot_Vector with the two vector
@@ -1627,7 +1599,7 @@ int HLBModelUniaxial::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector al
 		//etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
 		// Try solve issue with positive strainPostBucklingTrial(0) giving wrong etaTangent 05.02.2025
 		etaTangent = 1.;
-		LambdaC_nPlus1Diag = etaTangent * lambdaC;
+		LambdaC_nPlus1Diag = etaTangent * elasticTangent;
 
 		// Isotropic hardening parameters
 		yieldStressP = calculateYieldStressPlastic(strainPEqTrial);
@@ -1635,7 +1607,7 @@ int HLBModelUniaxial::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector al
 		isotropicModulus = calculateIsotropicModulus(strainPEqTrial);
 		// Kinematic hardening parameters
 		beta = 0.;
-		alphaTilde.Zero();
+		alphaTilde=0.;
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
 			eK = calculateEk(i);
 			beta += cK[i] / gammaK[i] * (1. - eK);
@@ -1645,25 +1617,21 @@ int HLBModelUniaxial::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector al
 		beta = 1. + beta / yieldStressTot;
 
 		// Update the relative stress and eta
-		gammaDiag(0) = 1. / (beta + consistParam_plastic * 4. / 3. * LambdaC_nPlus1Diag(0));
-		gammaDiag(1) = 1. / (beta + consistParam_plastic * 2 * LambdaC_nPlus1Diag(1));
-		gammaDiag(2) = 1. / (beta + consistParam_plastic * 2 * LambdaC_nPlus1Diag(2));
+		gammaDiag = 1. / (beta + consistParam_plastic * 4. / 3. * LambdaC_nPlus1Diag);
 
-		SumEKAlphaKTerm.Zero();
+		SumEKAlphaKTerm=0.;
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
 			eK = calculateEk(i);
 			SumEKAlphaKTerm += (alpha12Tot_Vector[i] * eK);
 		}
-		relativeStressNPlus1(0) = gammaDiag(0) * (LambdaC_nPlus1Diag(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0)) - SumEKAlphaKTerm(0));
-		relativeStressNPlus1(1) = gammaDiag(1) * (LambdaC_nPlus1Diag(1) * (strain_nPlus1(1) - strainPlasticIntermed(1) - strainPostBucklingIntermed(1)) - SumEKAlphaKTerm(1));
-		relativeStressNPlus1(2) = gammaDiag(2) * (LambdaC_nPlus1Diag(2) * (strain_nPlus1(2) - strainPlasticIntermed(2) - strainPostBucklingIntermed(2)) - SumEKAlphaKTerm(2));
+		relativeStressNPlus1 = gammaDiag * (LambdaC_nPlus1Diag * (strain_nPlus1 - strainPlasticIntermed - strainPostBucklingIntermed) - SumEKAlphaKTerm);
 
-		f2bar = 2. / 3. * pow(relativeStressNPlus1(0), 2) + 2. * pow(relativeStressNPlus1(1), 2) + 2. * pow(relativeStressNPlus1(2), 2);
+		f2bar = 2. / 3. * pow(relativeStressNPlus1, 2);
 		fBar = sqrt(f2bar);
 
 		// Calculate Newton denominator
 		betaPrime = 0.;
-		alphaTildePrime.Zero();
+		alphaTildePrime=0.;
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
 			eK = calculateEk(i);
 			betaPrime = betaPrime - cK[i] * isotropicModulus / (gammaK[i] * pow(yieldStressTot, 2)) * (1. - eK)
@@ -1676,28 +1644,20 @@ int HLBModelUniaxial::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector al
 		//dEtaTangentdEpsiPb11 = -calculateDEtaTangentdEpsiPb11();
 		// Try solve issue with positive strainPostBucklingTrial(0) giving wrong etaTangent 05.02.2025
 		dEtaTangentdEpsiPb11 = 0.;
-		dCdLambdaP(0) = dEtaTangentdEpsiPb11 * 2 / 3 * relativeStressNPlus1(0) * elasticMatrix(0, 0);
-		dCdLambdaP(1) = dEtaTangentdEpsiPb11 * 2 / 3 * relativeStressNPlus1(0) * elasticMatrix(1, 1);
-		dCdLambdaP(2) = dEtaTangentdEpsiPb11 * 2 / 3 * relativeStressNPlus1(0) * elasticMatrix(2, 2);
+		dCdLambdaP = dEtaTangentdEpsiPb11 * 2 / 3 * relativeStressNPlus1 * elasticTangent;
 
-		gammaDiagPrime(0) = -pow(gammaDiag(0), 2) * (betaPrime + 4. / 3. * LambdaC_nPlus1Diag(0) + 4. / 3. * dCdLambdaP(0) * consistParam_plastic);
-		gammaDiagPrime(1) = -pow(gammaDiag(1), 2) * (betaPrime + 2. * LambdaC_nPlus1Diag(1) + 2. * dCdLambdaP(1) * consistParam_plastic);
-		gammaDiagPrime(2) = -pow(gammaDiag(2), 2) * (betaPrime + 2. * LambdaC_nPlus1Diag(2) + 2. * dCdLambdaP(2) * consistParam_plastic);
+		gammaDiagPrime = -pow(gammaDiag, 2) * (betaPrime + 4. / 3. * LambdaC_nPlus1Diag + 4. / 3. * dCdLambdaP * consistParam_plastic);
 
-		dXidLambda(0) = gammaDiagPrime(0) * (LambdaC_nPlus1Diag(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0)) - SumEKAlphaKTerm(0)) + gammaDiag(0) * (dCdLambdaP(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0)) + alphaTildePrime(0));
-		dXidLambda(1) = gammaDiagPrime(1) * (LambdaC_nPlus1Diag(1) * (strain_nPlus1(1) - strainPlasticIntermed(1) - strainPostBucklingIntermed(1)) - SumEKAlphaKTerm(1)) + gammaDiag(1) * (dCdLambdaP(1) * (strain_nPlus1(1) - strainPlasticIntermed(1) - strainPostBucklingIntermed(1)) + alphaTildePrime(1));
-		dXidLambda(2) = gammaDiagPrime(2) * (LambdaC_nPlus1Diag(2) * (strain_nPlus1(2) - strainPlasticIntermed(2) - strainPostBucklingIntermed(2)) - SumEKAlphaKTerm(2)) + gammaDiag(2) * (dCdLambdaP(2) * (strain_nPlus1(2) - strainPlasticIntermed(2) - strainPostBucklingIntermed(2)) + alphaTildePrime(2));
+		dXidLambda = gammaDiagPrime * (LambdaC_nPlus1Diag * (strain_nPlus1 - strainPlasticIntermed - strainPostBucklingIntermed) - SumEKAlphaKTerm) + gammaDiag * (dCdLambdaP * (strain_nPlus1 - strainPlasticIntermed - strainPostBucklingIntermed) + alphaTildePrime);
 
-		consistDenom = (2. / 3. * relativeStressNPlus1(0) * dXidLambda(0) + 2. * relativeStressNPlus1(1) * dXidLambda(1) + 2. * relativeStressNPlus1(2) * dXidLambda(2))
-			- sqrt(2. / 3.) * 2. / 3. * yieldStressTot * isotropicModulus * fBar;
+		consistDenom = (2. / 3. * relativeStressNPlus1 * dXidLambda)- sqrt(2. / 3.) * 2. / 3. * yieldStressTot * isotropicModulus * fBar;
 
 		// Newton step
 		phiVM = 1. / 2. * f2bar - 1. / 3. * pow(yieldStressTot, 2);
 		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + SMALL_NUMBER);
 		strainPEqTrial = strainPEqIntermed + sqrt(2. / 3.) * consistParam_plastic * fBar;
 
-		PMatMultrelativeStressNPlus1 = PMat * relativeStressNPlus1;
-		strainPostBucklingTrial(0) = strainPostBucklingIntermed(0) + consistParam_plastic * PMatMultrelativeStressNPlus1(0);
+		strainPostBucklingTrial = strainPostBucklingIntermed + consistParam_plastic * 2./3. * relativeStressNPlus1;
 
 		// Check convergence
 		if (fabs(phiVM / (2. / 3. * pow(initialYield, 2))) < RETURN_MAP_TOL) {
@@ -1712,10 +1672,10 @@ int HLBModelUniaxial::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector al
 		/*alphaPKTrial[i] = alpha12Tot_Vector[i] - alphaPBKConverged[i];*/
 		alphaPKTrial[i] = alpha12Tot_Vector[i] - alphaPBKIntermed[i];
 	}
-	strainPlasticTrial = strainPlasticIntermed + consistParam_plastic * PMat * relativeStressNPlus1;
+	strainPlasticTrial = strainPlasticIntermed + consistParam_plastic * 2./3. * relativeStressNPlus1;
 
 	/*etaTangent = calculateEtaTangentReduce();*/
-	stressTrial = (etaTangent * elasticMatrix) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
+	stressTrial = (etaTangent * elasticTangent) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 
 	// Update c1c for compressive yield surface
 	//c1cTrial = c1cUnloadTrial * (strainPostBucklingTrial(0) / epsilonPB11UnloadTrial);
@@ -1741,43 +1701,35 @@ int HLBModelUniaxial::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector al
 
 void HLBModelUniaxial::calculateConsistentTangentModulusElastic(double etaTangent) {
 	//stiffnessTrial = elasticMatrix;
-	stiffnessTrial = etaTangent * elasticMatrix;
+	stiffnessTrial = etaTangent * elasticTangent;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 void HLBModelUniaxial::calculateConsistentTangentModulusHardening(double consistParam_plastic, double fBar,
-	const Vector& stressRelative) {
+	double stressRelative) {
 	// Initialize the variables
-	Matrix iD3 = Matrix(N_DIMS, N_DIMS);
-	Matrix complianceMatrix = Matrix(N_DIMS, N_DIMS);
 	double yieldStressP = 0.;
 	double yieldStressTot = 0.;
 	double isotropicModulus = 0.;
-	Vector nHat = Vector(N_DIMS);
+	double nHat = 0.;
 	double eK = 0.;
 	double beta = 0.;
-	Vector hPrime = Vector(N_DIMS);
-	Matrix hOutN = Matrix(N_DIMS, N_DIMS);
-	Matrix aMat = Matrix(N_DIMS, N_DIMS);
-	Vector nTilde = Vector(N_DIMS);
-	Matrix xiTilde = Matrix(N_DIMS, N_DIMS);
-	Matrix xiTildeA = Matrix(N_DIMS, N_DIMS);
+	double hPrime = 0.;
+	double aMat = 0.;
+	double nTilde = 0.;
+	double xiTilde = 0.;
+	double xiTildeA = 0.;
 	double theta_2 = 0.;
-	Vector hTilde = Vector(N_DIMS);
+	double hTilde = 0.;
 	double theta_1 = 0.;
-	Matrix nOutN = Matrix(N_DIMS, N_DIMS);
 	double etaTangent = 0.;
-	std::vector<Vector> alpha12Tot_Vector;
+	std::vector<double> alpha12Tot_Vector;
 
 	// Fill alphaTot_Vector with the two vector
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
 		alpha12Tot_Vector.push_back(alphaPKConverged[i] + alphaPBKConverged[i]); // Total backstress (P1+P2+Pb1+Pb2)
 	}
-
-	iD3.Zero(); // 3x3 indentity matrix
-	iD3(0, 0) = iD3(1, 1) = iD3(2, 2) = 1.;
-	complianceMatrix = calculateComplianceMatrix();
 
 	// Isotropic hardening parameters
 	yieldStressP = calculateYieldStressPlastic(strainPEqTrial);
@@ -1795,25 +1747,19 @@ void HLBModelUniaxial::calculateConsistentTangentModulusHardening(double consist
 		hPrime += cK[i] * eK / yieldStressTot * stressRelative - gammaK[i] * eK * alpha12Tot_Vector[i];
 	}
 	hPrime *= sqrt(2. / 3.);
-	hOutN = hPrime % nHat;
-	aMat = matinv3(beta * iD3 + consistParam_plastic * hOutN * PMat);
+	aMat = 1.0/(beta + consistParam_plastic * hPrime * nHat * 2./3.);
 
 	nTilde = nHat - consistParam_plastic * aMat * hPrime;
 
-	etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial(0));
+	etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial);
 
-	xiTilde = matinv3(1. / etaTangent * complianceMatrix + consistParam_plastic * PMat * aMat);
+	xiTilde = 1./(1. / etaTangent * 1./elasticTangent + consistParam_plastic * 2./3. * aMat);
 	xiTildeA = aMat * xiTilde;
 
 	theta_2 = 1. - 2. / 3. * isotropicModulus * consistParam_plastic;
-	hTilde = hPrime + xiTilde * (PMat * nTilde);
-	theta_1 = 2. / 3. * isotropicModulus + theta_2 * dotprod3(nHat, PMat * (aMat * hTilde));
-	nOutN = nTilde % nHat;
-	stiffnessTrial.Zero();
-	stiffnessTrial = xiTilde - theta_2 / theta_1 * xiTilde * PMat * nOutN * PMat * xiTildeA;
-
-	// Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	hTilde = hPrime + xiTilde * (2./3. * nTilde);
+	theta_1 = 2. / 3. * isotropicModulus + theta_2 * nHat * 2. / 3. * (aMat * hTilde);
+	stiffnessTrial = xiTilde - theta_2 / theta_1 * xiTilde * 2./3. * nTilde * nHat * 2./3. * xiTildeA;
 
 	//// Try to fix flat tangent issue
 	//double alphaElastic = 0.01;
@@ -1824,113 +1770,80 @@ void HLBModelUniaxial::calculateConsistentTangentModulusHardening(double consist
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void HLBModelUniaxial::calculateConsistentTangentModulusSoftening(const Vector& strain_nPlus1, const Vector& backstressTot,
-	const Vector& relativeStressNPlus1, const Vector& stressTrial, double consistParam_postBuckling) {
+void HLBModelUniaxial::calculateConsistentTangentModulusSoftening(double strain_nPlus1, double backstressTot,
+	double relativeStressNPlus1, double stressTrial, double consistParam_postBuckling) {
 	// Initialize the variables
-	Vector dPhiCompDSigma = Vector(N_DIMS);
+	double dPhiCompDSigma = 0.;
 	double chi1c = 0.;
-	Vector gammaDiag = Vector(N_DIMS);
+	double gammaDiag = 0.;
 	double sigmaSurSigmaY = 0;
 	double dSigmaSurSigmaYdEpsilonPB11 = 0;
-	Vector dGammaDChi1cDiag = Vector(N_DIMS);
-	Vector dXiDChi1c = Vector(N_DIMS);
+	double dGammaDChi1cDiag = 0.;
+	double dXiDChi1c = 0.;
 	double dPhiCompDChi1c = 0.;
 	double dChi1cDepsiPB11 = 0.;
-	Vector d2PhiCompDSigmaDChi1c = Vector(N_DIMS);
-	Vector d2PhiCompDSigma2Diag = Vector(N_DIMS);
+	double d2PhiCompDSigmaDChi1c = 0.;
+	double d2PhiCompDSigma2Diag = 0.;
 	double B = 0.;
-	Vector D = Vector(N_DIMS);
+	double D = 0.;
 	double DPreFactor = 0.;
-	Matrix CepTerm1 = Matrix(N_DIMS, N_DIMS);
-	Matrix CepTerm2 = Matrix(N_DIMS, N_DIMS);
-	Matrix CepTerm3 = Matrix(N_DIMS, N_DIMS);
-	Matrix I = Matrix(N_DIMS, N_DIMS);
-	Matrix CepTerm3Inverse = Matrix(N_DIMS, N_DIMS);
+	double CepTerm1 = 0.;
+	double CepTerm2 = 0.;
+	double CepTerm3 = 0.;
 	double etaTangent = 0.;
-	Vector LambdaC_nPlus1Diag = Vector(N_DIMS);
+	double LambdaC_nPlus1Diag = 0.;
 	double dEtaTangentdEpsiPb11 = 0.;
-	Vector F = Vector(N_DIMS);
+	double F = 0.;
 
-	chi1c = calculateChi1c(strainPostBucklingTrial(0));
+	chi1c = calculateChi1c(strainPostBucklingTrial);
 
-	etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial(0));
-	LambdaC_nPlus1Diag = etaTangent * lambdaC;
+	etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial);
+	LambdaC_nPlus1Diag = etaTangent * elasticTangent;
 
-	dPhiCompDSigma(0) = 2. * (relativeStressNPlus1(0) + chi1c * stressTrial(0));
-	dPhiCompDSigma(1) = 6. * relativeStressNPlus1(1);
-	dPhiCompDSigma(2) = 6. * relativeStressNPlus1(2);
+	dPhiCompDSigma = 2. * (relativeStressNPlus1 + chi1c * stressTrial);
 
-	gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_postBuckling * (2. + 2. * chi1c));
-	gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_postBuckling * 6.);
-	gammaDiag(2) = gammaDiag(1);
+	gammaDiag = 1. / (1. / LambdaC_nPlus1Diag + consistParam_postBuckling * (2. + 2. * chi1c));
 
 	//sigmaSurSigmaY = calculateSigmaSurSigmaY(strainPostBucklingTrial(0));
-	sigmaSurSigmaY = (this->*calculateSigmaSurSigmaY)(strainPostBucklingTrial(0));
+	sigmaSurSigmaY = (this->*calculateSigmaSurSigmaY)(strainPostBucklingTrial);
 	//dSigmaSurSigmaYdEpsilonPB11 = calculateDSigmaSurSigmaYdEpsilonPB11();
 	dSigmaSurSigmaYdEpsilonPB11 = (this->*calculateDSigmaSurSigmaYdEpsilonPB11)();
 
-	dGammaDChi1cDiag.Zero();
-	dGammaDChi1cDiag(0) = -2. * consistParam_postBuckling * pow(gammaDiag(0), 2);
+	dGammaDChi1cDiag = -2. * consistParam_postBuckling * pow(gammaDiag, 2);
 
-	dXiDChi1c.Zero();
-	dXiDChi1c(0) = dGammaDChi1cDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - 2 * consistParam_postBuckling * gammaDiag(0) * backstressTot(0) - dGammaDChi1cDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
+	dXiDChi1c = dGammaDChi1cDiag * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingConverged - 2. * chi1c * consistParam_postBuckling * backstressTot) - 2 * consistParam_postBuckling * gammaDiag * backstressTot - dGammaDChi1cDiag / LambdaC_nPlus1Diag * backstressTot;
 
-	dPhiCompDChi1c = 2. * dXiDChi1c(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXiDChi1c(1) * relativeStressNPlus1(1) + 6. * dXiDChi1c(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
+	dPhiCompDChi1c = 2. * dXiDChi1c * (relativeStressNPlus1 + chi1c * stressTrial) + pow(stressTrial, 2);
 
 	dChi1cDepsiPB11 = 2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
 
-	d2PhiCompDSigma2Diag(0) = 2. * (1. + chi1c);
-	d2PhiCompDSigma2Diag(1) = 6.;
-	d2PhiCompDSigma2Diag(2) = 6.;
+	d2PhiCompDSigma2Diag = 2. * (1. + chi1c);
 
-	d2PhiCompDSigmaDChi1c(0) = 2. * (dXiDChi1c(0) * (1. + chi1c) + stressTrial(0));
+	d2PhiCompDSigmaDChi1c = 2. * (dXiDChi1c * (1. + chi1c) + stressTrial);
 
-	B = 1. / (1. - dChi1cDepsiPB11 * consistParam_postBuckling * d2PhiCompDSigmaDChi1c(0));
+	B = 1. / (1. - dChi1cDepsiPB11 * consistParam_postBuckling * d2PhiCompDSigmaDChi1c);
 
 	dEtaTangentdEpsiPb11 = calculateDEtaTangentdEpsiPb11();
 
-	F(0) = -consistParam_postBuckling * d2PhiCompDSigmaDChi1c(0) + dEtaTangentdEpsiPb11 * 1. / dChi1cDepsiPB11 * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingTrial(0));
-	F(1) = dEtaTangentdEpsiPb11 * 1. / dChi1cDepsiPB11 * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingTrial(1));
-	F(2) = dEtaTangentdEpsiPb11 * 1. / dChi1cDepsiPB11 * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingTrial(2));
+	F = -consistParam_postBuckling * d2PhiCompDSigmaDChi1c + dEtaTangentdEpsiPb11 * 1. / dChi1cDepsiPB11 * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 
-	DPreFactor = 1. / (dPhiCompDChi1c * dChi1cDepsiPB11 * dPhiCompDSigma(0) * B);
-	D(0) = DPreFactor * (dPhiCompDSigma(0) + dPhiCompDChi1c * dChi1cDepsiPB11 * consistParam_postBuckling * d2PhiCompDSigma2Diag(0) * B);
-	D(1) = DPreFactor * (dPhiCompDSigma(1));
-	D(2) = DPreFactor * (dPhiCompDSigma(2));
+	DPreFactor = 1. / (dPhiCompDChi1c * dChi1cDepsiPB11 * dPhiCompDSigma * B);
+	D = DPreFactor * (dPhiCompDSigma + dPhiCompDChi1c * dChi1cDepsiPB11 * consistParam_postBuckling * d2PhiCompDSigma2Diag * B);
 
-	CepTerm1(0, 0) = d2PhiCompDSigma2Diag(0) - dChi1cDepsiPB11 * F(0) * d2PhiCompDSigma2Diag(0) * B;
-	CepTerm1(1, 0) = -dChi1cDepsiPB11 * F(1) * d2PhiCompDSigma2Diag(0) * B;
-	CepTerm1(1, 1) = d2PhiCompDSigma2Diag(1);
-	CepTerm1(2, 0) = -dChi1cDepsiPB11 * F(2) * d2PhiCompDSigma2Diag(0) * B;
-	CepTerm1(2, 2) = d2PhiCompDSigma2Diag(2);
+	CepTerm1 = d2PhiCompDSigma2Diag - dChi1cDepsiPB11 * F * d2PhiCompDSigma2Diag* B;
 	/*CepTerm2 = D * (dPhiCompDSigma + consistParam_postBuckling * A * dPhiCompDSigma(0));*/
 	//opserr << "This is dPhiCompDSigma" << dPhiCompDSigma << endln;
 	//opserr << "This is D" << D << endln;
-	CepTerm2(0, 0) = D(0) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(0) - dPhiCompDSigma(0));
-	CepTerm2(0, 1) = D(0) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(1) - dPhiCompDSigma(1));
-	CepTerm2(0, 2) = D(0) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(2) - dPhiCompDSigma(2));
-	CepTerm2(1, 0) = D(1) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(0) - dPhiCompDSigma(0));
-	CepTerm2(1, 1) = D(1) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(1) - dPhiCompDSigma(1));
-	CepTerm2(1, 2) = D(1) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(2) - dPhiCompDSigma(2));
-	CepTerm2(2, 0) = D(2) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(0) - dPhiCompDSigma(0));
-	CepTerm2(2, 1) = D(2) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(1) - dPhiCompDSigma(1));
-	CepTerm2(2, 2) = D(2) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(2) - dPhiCompDSigma(2));
+	CepTerm2 = D * (dChi1cDepsiPB11 * dPhiCompDSigma * B * F - dPhiCompDSigma);
 	//opserr << "This is CepTerm2" << CepTerm2 << endln;
 
-	I(0, 0) = I(1, 1) = I(2, 2) = 1.;
-	CepTerm3 = I + elasticMatrix * (consistParam_postBuckling * CepTerm1 + CepTerm2);
+	CepTerm3 = 1. + elasticTangent * (consistParam_postBuckling * CepTerm1 + CepTerm2);
 	//opserr << "This is CepTerm3" << CepTerm3 << endln;
-	CepTerm3Inverse = matinv3(CepTerm3);
-	stiffnessTrial.Zero();
-	stiffnessTrial = elasticMatrix * CepTerm3Inverse;
-
-	//Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
-	//opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
+	stiffnessTrial = elasticTangent * 1./CepTerm3;
 
 	// Try to fix flat tangent issue
 	//stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
-	stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
+	//stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
 
 	return;
 
@@ -1938,29 +1851,27 @@ void HLBModelUniaxial::calculateConsistentTangentModulusSoftening(const Vector& 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void HLBModelUniaxial::calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus1, double consistParam_plRecov, double yieldStressTot, Vector relativeStressNPlus1, Vector backstressTot) {
+void HLBModelUniaxial::calculateConsistentTangentModulusPlRecovStage(double strain_nPlus1, double consistParam_plRecov, double yieldStressTot, double relativeStressNPlus1, double backstressTot) {
 	// Initialize the variables
-	Vector dPhiTensDSigma = Vector(N_DIMS);
+	double dPhiTensDSigma = 0.;
 	double chi1t = 0.;
-	Vector gammaDiag = Vector(N_DIMS);
-	Vector dGammaDChi1tDiag = Vector(N_DIMS);
-	Vector dXiDChi1t = Vector(N_DIMS);
+	double gammaDiag = 0.;
+	double dGammaDChi1tDiag = 0.;
+	double dXiDChi1t = 0.;
 	double dPhiTensDChi1t = 0.;
 	double dChi1tDEpsiPB11 = 0.;
-	Vector d2PhiTensDSigmaDChi1t = Vector(N_DIMS);
-	Vector d2PhiTensDSigma2Diag = Vector(N_DIMS);
+	double d2PhiTensDSigmaDChi1t = 0.;
+	double d2PhiTensDSigma2Diag = 0.;
 	double B = 0.;
-	Vector D = Vector(N_DIMS);
+	double D = 0.;
 	double DPreFactor = 0.;
-	Matrix CepTerm1 = Matrix(N_DIMS, N_DIMS);
-	Matrix CepTerm2 = Matrix(N_DIMS, N_DIMS);
-	Matrix CepTerm3 = Matrix(N_DIMS, N_DIMS);
-	Matrix I = Matrix(N_DIMS, N_DIMS);
-	Matrix CepTerm3Inverse = Matrix(N_DIMS, N_DIMS);
+	double CepTerm1 = 0.;
+	double CepTerm2 = 0.;
+	double CepTerm3 = 0.;
 	double etaTangent = 0.;
-	Vector LambdaC_nPlus1Diag = Vector(N_DIMS);
+	double LambdaC_nPlus1Diag = 0.;
 	double dEtaTangentdEpsiPb11 = 0.;
-	Vector F = Vector(N_DIMS);
+	double F = 0.;
 	double tBezier = 0.;
 	double sigmaBezier = 0.;
 	double dSigmaBezierDtBezier = 0.;
@@ -1968,19 +1879,19 @@ void HLBModelUniaxial::calculateConsistentTangentModulusPlRecovStage(Vector stra
 	double dSigmaBezierDEpsiPb11 = 0.;
 	double dAlpha11TotDEpsiPb11 = 0.;
 	double dF1tDEpsiPB11 = 0.;
-	Vector dPhiTensDAlpha = Vector(N_DIMS);
-	Vector d2PhiTensDSigmaDAlphaDiag = Vector(N_DIMS);
-	Vector H = Vector(N_DIMS);
+	double dPhiTensDAlpha = 0.;
+	double d2PhiTensDSigmaDAlphaDiag = 0.;
+	double H = 0.;
 	double L = 0.;
 	double dSigmaYieldTotDEpsiPb11 = 0.;
 	double dPhiTensDSigmaYield = 0.;
 
-	chi1t = calculateChi1t(yieldStressTot, backstressTot(0), alphaRegularization * strainPostBucklingTrial(0));
+	chi1t = calculateChi1t(yieldStressTot, backstressTot, alphaRegularization * strainPostBucklingTrial);
 
-	etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
-	LambdaC_nPlus1Diag = etaTangent * lambdaC;
+	etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial);
+	LambdaC_nPlus1Diag = etaTangent * elasticTangent;
 
-	tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial(0));
+	tBezier = calculateTBezier(alphaRegularization * strainPostBucklingTrial);
 	sigmaBezier = pow((1. - tBezier), 3) * sigmaPrBezierTrial + 3. * pow((1 - tBezier), 2) * tBezier * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) + 3. * (1 - tBezier) * pow(tBezier, 2) * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) + pow(tBezier, 3) * sigmaYrBezierTrial;
 	dSigmaBezierDtBezier = -3. * pow((1. - tBezier), 2) * sigmaPrBezierTrial + 3. * (sigmaPrBezierTrial + alphaPrBezierTrial * kPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (sigmaYrBezierTrial + alphaYrBezierTrial * kYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * sigmaYrBezierTrial;
 	dEpsiBezierDtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11UnloadTrial) + 3. * (abs(epsilonPB11UnloadTrial) + alphaPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
@@ -1989,136 +1900,89 @@ void HLBModelUniaxial::calculateConsistentTangentModulusPlRecovStage(Vector stra
 	dAlpha11TotDEpsiPb11 = alphaRegularization * computeDAlpha11TotDEpsiPb11PlRecovStage();
 	dSigmaYieldTotDEpsiPb11 = alphaRegularization * computeDSigmaYieldTotDEpsiPb11PlRecovStage();
 
-	gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_plRecov * (2. + 2. * chi1t));
-	gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_plRecov * 6.);
-	gammaDiag(2) = gammaDiag(1);
+	gammaDiag = 1. / (1. / LambdaC_nPlus1Diag + consistParam_plRecov * (2. + 2. * chi1t));
 
-	dGammaDChi1tDiag.Zero();
-	dGammaDChi1tDiag(0) = -2. * consistParam_plRecov * pow(gammaDiag(0), 2);
+	dGammaDChi1tDiag = -2. * consistParam_plRecov * pow(gammaDiag, 2);
 
-	dXiDChi1t.Zero();
-	dXiDChi1t(0) = dGammaDChi1tDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1t * consistParam_plRecov * backstressTot(0)) - 2 * consistParam_plRecov * gammaDiag(0) * backstressTot(0) - dGammaDChi1tDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
+	dXiDChi1t = dGammaDChi1tDiag * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingConverged - 2. * chi1t * consistParam_plRecov * backstressTot) - 2 * consistParam_plRecov * gammaDiag * backstressTot - dGammaDChi1tDiag / LambdaC_nPlus1Diag * backstressTot;
 
 	dF1tDEpsiPB11 = -1 / pow((b_1tTrial * pow(sigmaBezier, 2)), 2) * ((2 * yieldStressTot * dSigmaYieldTotDEpsiPb11 - 2 * (dSigmaBezierDEpsiPb11 - dAlpha11TotDEpsiPb11) *
-		(sigmaBezier - backstressTot(0))) * (b_1tTrial * pow(sigmaBezier, 2)) - (pow(yieldStressTot, 2) - pow((sigmaBezier - backstressTot(0)), 2)) * 2 * b_1tTrial * dSigmaBezierDEpsiPb11 * sigmaBezier);
+		(sigmaBezier - backstressTot)) * (b_1tTrial * pow(sigmaBezier, 2)) - (pow(yieldStressTot, 2) - pow((sigmaBezier - backstressTot), 2)) * 2 * b_1tTrial * dSigmaBezierDEpsiPb11 * sigmaBezier);
 	dChi1tDEpsiPB11 = -b_1tTrial * dF1tDEpsiPB11;
 
-	dPhiTensDSigma(0) = 2. * (relativeStressNPlus1(0) + chi1t * stressTrial(0));
-	dPhiTensDSigma(1) = 6. * relativeStressNPlus1(1);
-	dPhiTensDSigma(2) = 6. * relativeStressNPlus1(2);
+	dPhiTensDSigma = 2. * (relativeStressNPlus1 + chi1t * stressTrial);
 
-	dPhiTensDChi1t = 2. * dXiDChi1t(0) * (relativeStressNPlus1(0) + chi1t * stressTrial(0)) + 6. * dXiDChi1t(1) * relativeStressNPlus1(1) + 6. * dXiDChi1t(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
+	dPhiTensDChi1t = 2. * dXiDChi1t * (relativeStressNPlus1 + chi1t * stressTrial) + pow(stressTrial, 2);
 
-	dPhiTensDAlpha(0) = -2. * relativeStressNPlus1(0);
-	dPhiTensDAlpha(1) = -6. * relativeStressNPlus1(1);
-	dPhiTensDAlpha(2) = -6. * relativeStressNPlus1(2);
+	dPhiTensDAlpha = -2. * relativeStressNPlus1;
 
 	dPhiTensDSigmaYield = -2 * yieldStressTot;
 
-	d2PhiTensDSigma2Diag(0) = 2. * (1. + chi1t);
-	d2PhiTensDSigma2Diag(1) = 6.;
-	d2PhiTensDSigma2Diag(2) = 6.;
+	d2PhiTensDSigma2Diag = 2. * (1. + chi1t);
 
-	d2PhiTensDSigmaDChi1t(0) = 2. * (dXiDChi1t(0) * (1. + chi1t) + stressTrial(0));
+	d2PhiTensDSigmaDChi1t = 2. * (dXiDChi1t * (1. + chi1t) + stressTrial);
 
-	d2PhiTensDSigmaDAlphaDiag(0) = -2.;
-	d2PhiTensDSigmaDAlphaDiag(1) = -6.;
-	d2PhiTensDSigmaDAlphaDiag(2) = -6.;
+	d2PhiTensDSigmaDAlphaDiag = -2.;
 
-	B = 1. / (1. + 2 * consistParam_plRecov * dAlpha11TotDEpsiPb11 - dChi1tDEpsiPB11 * consistParam_plRecov * d2PhiTensDSigmaDChi1t(0));
+	B = 1. / (1. + 2 * consistParam_plRecov * dAlpha11TotDEpsiPb11 - dChi1tDEpsiPB11 * consistParam_plRecov * d2PhiTensDSigmaDChi1t);
 
 	dEtaTangentdEpsiPb11 = alphaRegularization * calculateDEtaTangentdEpsiPb11();
 
-	H(0) = -2. / dChi1tDEpsiPB11 * dAlpha11TotDEpsiPb11 + d2PhiTensDSigmaDChi1t(0);
+	H = -2. / dChi1tDEpsiPB11 * dAlpha11TotDEpsiPb11 + d2PhiTensDSigmaDChi1t;
 
-	L = (dPhiTensDAlpha(0) * dAlpha11TotDEpsiPb11 + dPhiTensDSigmaYield * dSigmaYieldTotDEpsiPb11) / dChi1tDEpsiPB11 + dPhiTensDChi1t;
+	L = (dPhiTensDAlpha * dAlpha11TotDEpsiPb11 + dPhiTensDSigmaYield * dSigmaYieldTotDEpsiPb11) / dChi1tDEpsiPB11 + dPhiTensDChi1t;
 
-	F(0) = -consistParam_plRecov * H(0) + dEtaTangentdEpsiPb11 * 1. / dChi1tDEpsiPB11 * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingTrial(0));
-	F(1) = dEtaTangentdEpsiPb11 * 1. / dChi1tDEpsiPB11 * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingTrial(1));
-	F(2) = dEtaTangentdEpsiPb11 * 1. / dChi1tDEpsiPB11 * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingTrial(2));
+	F = -consistParam_plRecov * H + dEtaTangentdEpsiPb11 * 1. / dChi1tDEpsiPB11 * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 
-	DPreFactor = 1. / (L * dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B);
-	D(0) = DPreFactor * (dPhiTensDSigma(0) + L * dChi1tDEpsiPB11 * consistParam_plRecov * d2PhiTensDSigma2Diag(0) * B);
-	D(1) = DPreFactor * (dPhiTensDSigma(1));
-	D(2) = DPreFactor * (dPhiTensDSigma(2));
+	DPreFactor = 1. / (L * dChi1tDEpsiPB11 * dPhiTensDSigma * B);
+	D = DPreFactor * (dPhiTensDSigma + L * dChi1tDEpsiPB11 * consistParam_plRecov * d2PhiTensDSigma2Diag * B);
 
-	CepTerm1(0, 0) = d2PhiTensDSigma2Diag(0) - dChi1tDEpsiPB11 * F(0) * d2PhiTensDSigma2Diag(0) * B;
-	CepTerm1(1, 0) = -dChi1tDEpsiPB11 * F(1) * d2PhiTensDSigma2Diag(0) * B;
-	CepTerm1(1, 1) = d2PhiTensDSigma2Diag(1);
-	CepTerm1(2, 0) = -dChi1tDEpsiPB11 * F(2) * d2PhiTensDSigma2Diag(0) * B;
-	CepTerm1(2, 2) = d2PhiTensDSigma2Diag(2);
+	CepTerm1 = d2PhiTensDSigma2Diag - dChi1tDEpsiPB11 * F * d2PhiTensDSigma2Diag * B;
 	/*CepTerm2 = D * (dPhiCompDSigma + consistParam_postBuckling * A * dPhiCompDSigma(0));*/
 	//opserr << "This is dPhiCompDSigma" << dPhiCompDSigma << endln;
 	//opserr << "This is D" << D << endln;
-	CepTerm2(0, 0) = D(0) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
-	CepTerm2(0, 1) = D(0) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
-	CepTerm2(0, 2) = D(0) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
-	CepTerm2(1, 0) = D(1) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
-	CepTerm2(1, 1) = D(1) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
-	CepTerm2(1, 2) = D(1) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
-	CepTerm2(2, 0) = D(2) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
-	CepTerm2(2, 1) = D(2) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
-	CepTerm2(2, 2) = D(2) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
+	CepTerm2 = D * (dChi1tDEpsiPB11 * dPhiTensDSigma * B * F - dPhiTensDSigma);
 	//opserr << "This is CepTerm2" << CepTerm2 << endln;
 
-	I(0, 0) = I(1, 1) = I(2, 2) = 1.;
-	CepTerm3 = I + elasticMatrix * (consistParam_plRecov * CepTerm1 + CepTerm2);
+	CepTerm3 = 1. + elasticTangent * (consistParam_plRecov * CepTerm1 + CepTerm2);
 	//opserr << "This is CepTerm3" << CepTerm3 << endln;
-	CepTerm3Inverse = matinv3(CepTerm3);
-	stiffnessTrial.Zero();
-	stiffnessTrial = elasticMatrix * CepTerm3Inverse;
-
-	//Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
-	/*opserr << "This is tangentModulusPlRecovStage" << stiffnessTrial << endln;
-	opserr << "This is strain vector:" << strainTrial << endln;*/
+	stiffnessTrial = elasticTangent * 1./CepTerm3;
 
 	// Try to fix flat tangent issue
 	//stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
-	stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
+	//stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
 
 	return;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-void HLBModelUniaxial::calculateConsistentTangentModulusUVCRecov(Vector strain_nPlus1, double consistParam_plastic, double fBar,
-	const Vector relativeStressNPlus1) {
+void HLBModelUniaxial::calculateConsistentTangentModulusUVCRecov(double strain_nPlus1, double consistParam_plastic, double fBar,
+	double relativeStressNPlus1) {
 	// Initialize the variables
-	Matrix iD3 = Matrix(N_DIMS, N_DIMS);
 	double yieldStressP = 0.;
 	double yieldStressTot = 0.;
 	double isotropicModulus = 0.;
-	Vector nHat = Vector(N_DIMS);
+	double nHat = 0.;
 	double eK = 0.;
 	double beta = 0.;
-	Vector hPrime = Vector(N_DIMS);
-	Matrix hOutN = Matrix(N_DIMS, N_DIMS);
-	Matrix aMat = Matrix(N_DIMS, N_DIMS);
-	Matrix xiTilde = Matrix(N_DIMS, N_DIMS);
-	Matrix xiTildeA = Matrix(N_DIMS, N_DIMS);
+	double hPrime = 0.;
+	double aMat = 0.;
+	double xiTilde = 0.;
+	double xiTildeA = 0.;
 	double theta_2 = 0.;
-	Vector theta_1_intermVector = Vector(N_DIMS);
+	double theta_1_intermVector = 0.;
 	double theta_1 = 0.;
-	Matrix nOutN = Matrix(N_DIMS, N_DIMS);
 	double etaTangent = 0.;
-	std::vector<Vector> alpha12Tot_Vector;
-	Vector F = Vector(N_DIMS);
+	std::vector<double> alpha12Tot_Vector;
+	double F = 0.;
 	double dEtaTangentdEpsiPb11 = 0.;
-	Matrix lambdappMat = Matrix(N_DIMS, N_DIMS);
-	Vector theta_3 = Vector(N_DIMS);
-	Vector theta_3_intermVector = Vector(N_DIMS);
-	Matrix PMultXiTildeA = Matrix(N_DIMS, N_DIMS);
-	Matrix FOutTheta3 = Matrix(3, 3);
+	double lambdappMat = 0.;
+	double theta_3 = 0.;
 
 	// Fill alphaTot_Vector with the two vector
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
 		alpha12Tot_Vector.push_back(alphaPKConverged[i] + alphaPBKConverged[i]); // Total backstress (P1+P2+Pb1+Pb2)
 	}
-
-	iD3.Zero(); // 3x3 indentity matrix
-	iD3(0, 0) = iD3(1, 1) = iD3(2, 2) = 1.;
-	lambdappMat.Zero();
-	lambdappMat(0, 0) = 1.;
 
 	// Isotropic hardening parameters
 	yieldStressP = calculateYieldStressPlastic(strainPEqTrial);
@@ -2138,38 +2002,29 @@ void HLBModelUniaxial::calculateConsistentTangentModulusUVCRecov(Vector strain_n
 		hPrime += cK[i] * eK / yieldStressTot * relativeStressNPlus1 - gammaK[i] * eK * alpha12Tot_Vector[i];
 	}
 	hPrime *= sqrt(2. / 3.);
-	hOutN = hPrime % nHat;
-	aMat = matinv3(beta * iD3 + consistParam_plastic * hOutN * PMat);
+	aMat = 1./(beta + consistParam_plastic * hPrime * nHat * 2./3.);
 
 	dEtaTangentdEpsiPb11 = -calculateDEtaTangentdEpsiPb11();
 
-	F = -1. * (iD3 + lambdappMat) * PMat * relativeStressNPlus1 + consistParam_plastic * (iD3 + lambdappMat) * PMat * fBar * aMat * hPrime + dEtaTangentdEpsiPb11 * 2. / 3. * relativeStressNPlus1(0) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
+	F = -1. * (1. + lambdappMat) * 2./3. * relativeStressNPlus1 + consistParam_plastic * (1. + lambdappMat) * 2./3. * fBar * aMat * hPrime + dEtaTangentdEpsiPb11 * 2. / 3. * relativeStressNPlus1 * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 	/*opserr << "This is F" << F << endln;*/
 
-	xiTilde = matinv3(matinv3(elasticMatrix) + consistParam_plastic * (iD3 + lambdappMat) * PMat * aMat);
+	xiTilde = 1./(1./elasticTangent + consistParam_plastic * (1. + lambdappMat) * 2./3. * aMat);
 	xiTildeA = aMat * xiTilde;
 	/*opserr << "This is xiTilde" << xiTilde << endln;
 	opserr << "This is xiTildeA" << xiTildeA << endln;*/
 
 	theta_2 = 1. - 2. / 3. * isotropicModulus * consistParam_plastic;
-	theta_1_intermVector = PMat * aMat * (xiTilde * F - fBar * aMat * hPrime);
+	theta_1_intermVector = 2./3. * aMat * (xiTilde * F - fBar * aMat * hPrime);
 	/*opserr << "This is theta_1_intermVector" << theta_1_intermVector << endln;*/
-	theta_1 = theta_2 * dotprod3(nHat, theta_1_intermVector) - 2. / 3. * fBar * isotropicModulus;
+	theta_1 = theta_2 * nHat* theta_1_intermVector - 2. / 3. * fBar * isotropicModulus;
 	//opserr << "This is theta_1" << theta_1 << endln;
 
-	PMultXiTildeA = PMat * xiTildeA;
-	theta_3_intermVector.Zero();
-	theta_3_intermVector.addMatrixVector(0., PMultXiTildeA, nHat, 1.0);
-	theta_3 = -theta_2 * theta_3_intermVector;
+	theta_3 = -theta_2 * 2. / 3. * xiTildeA* nHat;
 	//opserr << "This is theta_3" << theta_3 << endln;
 
-	stiffnessTrial.Zero();
-	FOutTheta3 = F % theta_3;
-	stiffnessTrial = xiTilde * (iD3 + FOutTheta3 * 1. / theta_1);
+	stiffnessTrial = xiTilde * (1. + F * theta_3 * 1. / theta_1);
 	//opserr << "This is stiffnessTrial" << stiffnessTrial << endln;
-
-	// Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
 
 	return;
 }
@@ -2181,7 +2036,7 @@ void HLBModelUniaxial::calculateConsistentTangentModulusUVCRecov(Vector strain_n
 * @param v new total strain vector.
 * @return 0 if successful, -1 if return mapping did not converge.
 */
-int HLBModelUniaxial::setTrialStrain(const Vector& v) {
+int HLBModelUniaxial::setTrialStrain(double v) {
 
 	int rm_convergence;
 	// Reset the trial state
@@ -2209,7 +2064,7 @@ int HLBModelUniaxial::setTrialStrain(const Vector& v) {
 *
 * Note that this material model is rate independent.
 */
-int HLBModelUniaxial::setTrialStrain(const Vector& v, const Vector& r) {
+int HLBModelUniaxial::setTrialStrain(double v, double r) {
 
 	// Reset the trial state
 	revertToLastCommit();
@@ -2230,7 +2085,7 @@ int HLBModelUniaxial::setTrialStrain(const Vector& v, const Vector& r) {
 * @param v strain increment vector
 * @return 0 if successful
 */
-int HLBModelUniaxial::setTrialStrainIncr(const Vector& v) {
+int HLBModelUniaxial::setTrialStrainIncr(double v) {
 
 	// Reset the trial state
 	revertToLastCommit();
@@ -2254,7 +2109,7 @@ int HLBModelUniaxial::setTrialStrainIncr(const Vector& v) {
 *
 * Note that this material model is rate independent.
 */
-int HLBModelUniaxial::setTrialStrainIncr(const Vector& v, const Vector& r) {
+int HLBModelUniaxial::setTrialStrainIncr(double v, double r) {
 
 	// Reset the trial state
 	revertToLastCommit();
@@ -2270,21 +2125,21 @@ int HLBModelUniaxial::setTrialStrainIncr(const Vector& v, const Vector& r) {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-const Vector& HLBModelUniaxial::getStrain() {
+double HLBModelUniaxial::getStrain() {
 
 	return strainTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-const Vector& HLBModelUniaxial::getStress() {
+double HLBModelUniaxial::getStress() {
 
 	return stressTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-const Matrix& HLBModelUniaxial::getTangent() {
+double HLBModelUniaxial::getTangent() {
 
 	return stiffnessTrial;
 }
@@ -2303,57 +2158,51 @@ double HLBModelUniaxial::getYieldStress() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-Matrix& HLBModelUniaxial::getStrainIncrementDecomposition() {
+Vector& HLBModelUniaxial::getStrainIncrementDecomposition() {
 
 	//Compute each increment
-	Vector deltaEpsiP = strainPlasticTrial - strainPlasticConverged;
-	Vector deltaEpsiPb = strainPostBucklingTrial - strainPostBucklingConverged;
-	Vector deltaEpsiE = strainTrial - strainConverged - deltaEpsiP - deltaEpsiPb;
+	double deltaEpsiP = strainPlasticTrial - strainPlasticConverged;
+	double deltaEpsiPb = strainPostBucklingTrial - strainPostBucklingConverged;
+	double deltaEpsiE = strainTrial - strainConverged - deltaEpsiP - deltaEpsiPb;
 
-	// Put everything in the matrix
-	for (int i = 0; i < 2; i++)
-	{
-		strainIncrementDecomposition(i, 0) = deltaEpsiE(i);
-		strainIncrementDecomposition(i, 1) = deltaEpsiP(i);
-		strainIncrementDecomposition(i, 2) = deltaEpsiPb(i);
-	}
+	// Put everything in the vector
+	strainIncrementDecomposition(0) = deltaEpsiE;
+	strainIncrementDecomposition(1) = deltaEpsiP;
+	strainIncrementDecomposition(2) = deltaEpsiPb;
 
 	return strainIncrementDecomposition;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-Matrix& HLBModelUniaxial::getStrainDecomposition() {
+Vector& HLBModelUniaxial::getStrainDecomposition() {
 
 	//Compute each increment
 	/*Vector epsiP = strainPlasticTrial;
 	Vector epsiPb = strainPostBucklingTrial;
 	Vector epsiE = strainTrial - epsiP - epsiPb;*/
-	Vector epsiP = strainPlasticConverged;
-	Vector epsiPb = strainPostBucklingConverged;
-	Vector epsiE = strainConverged - epsiP - epsiPb;
+	double epsiP = strainPlasticConverged;
+	double epsiPb = strainPostBucklingConverged;
+	double epsiE = strainConverged - epsiP - epsiPb;
 
 	// Put everything in the matrix
-	for (int i = 0; i < 2; i++)
-	{
-		strainDecomposition(i, 0) = epsiE(i);
-		strainDecomposition(i, 1) = epsiP(i);
-		strainDecomposition(i, 2) = epsiPb(i);
-	}
+	strainDecomposition(0) = epsiE;
+	strainDecomposition(1) = epsiP;
+	strainDecomposition(2) = epsiPb;
 
 	return strainDecomposition;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-Vector& HLBModelUniaxial::getPlasticStrains() {
+double HLBModelUniaxial::getPlasticStrains() {
 	return strainPlasticTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 
-const Matrix& HLBModelUniaxial::getInitialTangent() {
+double HLBModelUniaxial::getInitialTangent() {
 
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable
 	return stiffnessInitial;
@@ -2362,7 +2211,7 @@ const Matrix& HLBModelUniaxial::getInitialTangent() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 
-const Matrix& HLBModelUniaxial::getConvergedTangent() {
+double HLBModelUniaxial::getConvergedTangent() {
 	return stiffnessConverged;
 }
 
@@ -2370,7 +2219,7 @@ const Matrix& HLBModelUniaxial::getConvergedTangent() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 
-const Vector& HLBModelUniaxial::getConvergedStress() {
+double HLBModelUniaxial::getConvergedStress() {
 	return stressConverged;
 }
 
@@ -2497,6 +2346,8 @@ void HLBModelUniaxial::setIntermediateVariables() {
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
+
+//Stopped here 11.02.2025
 
 /**
 *
@@ -2796,17 +2647,6 @@ void HLBModelUniaxial::calculateElasticStiffness() {
 	elasticMatrix(0, 0) = (2. + 2. * poissonRatio) * eDenom;
 	elasticMatrix(1, 1) = 1. * eDenom;
 	elasticMatrix(2, 2) = 1. * eDenom;
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-
-Matrix HLBModelUniaxial::calculateComplianceMatrix() {
-	double eDenom = 1.0 / elasticModulus;
-	Matrix complianceMatrix = Matrix(N_DIMS, N_DIMS);
-	complianceMatrix.Zero();
-	complianceMatrix(0, 0) = 1.0 * eDenom;
-	complianceMatrix(1, 1) = complianceMatrix(2, 2) = 2. * (1. + poissonRatio) * eDenom;
-	return complianceMatrix;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */

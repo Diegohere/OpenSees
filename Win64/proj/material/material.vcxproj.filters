@@ -1409,9 +1409,6 @@
     <ClCompile Include="..\..\..\SRC\material\section\NDTestNonlocalFiberSection3d.cpp">
       <Filter>section</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\SRC\material\uniaxial\LocalBucklingWebPlateUniaxial.cpp">
-      <Filter>uniaxial</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\SRC\material\section\NDTestShear4RectangleFiberSection3d.cpp">
       <Filter>section</Filter>
     </ClCompile>
@@ -1427,6 +1424,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\SRC\material\section\NDShearFiberSection3d.cpp">
       <Filter>section</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\material\uniaxial\HLBModelUniaxial.cpp">
+      <Filter>uniaxial</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -2625,9 +2625,6 @@
     <ClInclude Include="..\..\..\SRC\material\section\NDTestNonlocalFiberSection3d.h">
       <Filter>section</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\SRC\material\uniaxial\LocalBucklingWebPlateUniaxial.h">
-      <Filter>uniaxial</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\SRC\material\section\NDTestShear4RectangleFiberSection3d.h">
       <Filter>section</Filter>
     </ClInclude>
@@ -2643,6 +2640,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\material\section\NDShearFiberSection3d.h">
       <Filter>section</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\material\uniaxial\HLBModelUniaxial.h">
+      <Filter>uniaxial</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
