@@ -96,9 +96,6 @@ public:
 	// Returns a copy of the material in the current state
 	UniaxialMaterial* getCopy(void);
 
-	// Returns a copy of the material without copying the state variables
-	UniaxialMaterial* getCopy(const char* code);
-
 	// sendSelf function
 	int sendSelf(int commitTag, Channel& theChannel);
 

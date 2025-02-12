@@ -121,7 +121,7 @@ void* OPS_HLBModelUniaxial(void) {
 		return 0;
 	}
 
-	if (numData == 19)
+	if (numData == 18)
 	{
 		// Read the steel type
 		const char* steelTypePointer = OPS_GetString();
@@ -139,7 +139,7 @@ void* OPS_HLBModelUniaxial(void) {
 			softeningProps[0], softeningProps[1], softeningProps[2],
 			regularizationgProps[0], plateType, steelType);
 	}
-	else if (numData == 41)
+	else if (numData == 40)
 	{
 		// Get parameters for cyclic loading
 		nInputsToRead = N_CYCLIC_PARAMETERS;
@@ -2347,26 +2347,24 @@ void HLBModelUniaxial::setIntermediateVariables() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-//Stopped here 11.02.2025
-
 /**
 *
 * @return 0 if successful
 */
 int HLBModelUniaxial::revertToStart() {
 
-	strainConverged.Zero();
-	strainPlasticConverged.Zero();
+	strainConverged=0.;
+	strainPlasticConverged=0.;
 	strainPEqConverged = 0.;
-	strainPostBucklingConverged.Zero();
+	strainPostBucklingConverged=0.;
 	strainPEqConverged = 0.;
 	strainPBEqConverged = 0.;
-	stressConverged.Zero();
+	stressConverged = 0.;
 	plasticLoading = false;
-	stiffnessConverged.Zero();
+	stiffnessConverged = 0.;
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		alphaPKConverged[i].Zero();
-		alphaPBKConverged[i].Zero();
+		alphaPKConverged[i] = 0.;
+		alphaPBKConverged[i] = 0.;
 	}
 	sumEjConverged = 0.;
 	c1cConverged = 0.;
@@ -2375,7 +2373,7 @@ int HLBModelUniaxial::revertToStart() {
 	sigmaPrBezierConverged = 0.;
 	sigmaYrBezierConverged = 0.;
 	epsilonPB11UnloadConverged = 0.;
-	backstressAfterCompressionConverged.Zero();
+	backstressAfterCompressionConverged = 0.;
 	epsilonPB11MinConverged = 0.;
 	alphaPrBezierConverged = 0.;
 	alphaYrBezierConverged = 0.;
@@ -2417,7 +2415,7 @@ UniaxialMaterial* HLBModelUniaxial::getCopy() {
 			beta1RegressionAlphaPrBezier, beta2RegressionAlphaPrBezier, beta3RegressionAlphaPrBezier,
 			beta1RegressionAlphaYrBezier, beta2RegressionAlphaYrBezier, beta3RegressionAlphaYrBezier,
 			beta1RegressionErc, beta2RegressionErc);*/
-	theCopy = new HLBModelUniaxial(this->getTag(), elasticModulus, poissonRatio,
+	theCopy = new HLBModelUniaxial(this->getTag(), elasticModulus,
 		initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
 		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial);
 
@@ -2527,41 +2525,6 @@ UniaxialMaterial* HLBModelUniaxial::getCopy() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 /**
-* Returns a new UniaxialMaterial if the code matches the type specification.
-* @param code the type specification of the material copy requested
-* @return a to pointer to the copy
-*
-* This is called by the continuum elements.
-*/
-UniaxialMaterial* HLBModelUniaxial::getCopy(const char* code) {
-	if (strcmp(code, getType()) == 0) {
-		HLBModelUniaxial* theCopy;
-		/*theCopy = new HLBModelUniaxial(this->getTag(), elasticModulus, poissonRatio,
-			initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
-			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType,
-			beta1RegressionEuSurEl, beta2RegressionEuSurEl, beta3RegressionEuSurEl,
-			beta1RegressionSigmaPrBezier, beta2RegressionSigmaPrBezier, beta3RegressionSigmaPrBezier,
-			beta1RegressionSigmaYrBezier, beta2RegressionSigmaYrBezier, beta3RegressionSigmaYrBezier,
-			beta1RegressionKPrBezier, beta2RegressionKPrBezier, beta3RegressionKPrBezier,
-			beta1RegressionKYrBezier, beta2RegressionKYrBezier, beta3RegressionKYrBezier,
-			beta1RegressionAlphaPrBezier, beta2RegressionAlphaPrBezier, beta3RegressionAlphaPrBezier,
-			beta1RegressionAlphaYrBezier, beta2RegressionAlphaYrBezier, beta3RegressionAlphaYrBezier,
-			beta1RegressionErc, beta2RegressionErc);*/
-		theCopy = new HLBModelUniaxial(this->getTag(), elasticModulus, poissonRatio,
-			initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
-			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial);
-		return theCopy;
-	}
-	else {
-		// Throw an error if failed to make copy
-		opserr << "HLBModelUniaxial::getCopy invalid UniaxialMaterial type, expecting " << code << endln;
-		return 0;
-	}
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-
-/**
 * Not yet implemented for paralleliziation
 * @param commitTag
 * @param theChannel
@@ -2642,83 +2605,8 @@ void HLBModelUniaxial::Print(OPS_Stream& s, int flag) {
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 void HLBModelUniaxial::calculateElasticStiffness() {
-	double eDenom = elasticModulus / (2. + 2. * poissonRatio);
-	elasticMatrix.Zero();
-	elasticMatrix(0, 0) = (2. + 2. * poissonRatio) * eDenom;
-	elasticMatrix(1, 1) = 1. * eDenom;
-	elasticMatrix(2, 2) = 1. * eDenom;
+	elasticTangent = elasticModulus;
 }
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-
-void HLBModelUniaxial::initializeEigendecompositions() {
-
-	// Orthogonal matrix (eigenvectors)
-	qMat.Zero();
-	qMat(0, 0) = 1.;
-	qMat(1, 1) = 1.;
-	qMat(2, 2) = 1.;
-	// Transpose
-	qMatT.Zero();
-	qMatT.addMatrixTranspose(0., qMat, 1.0);
-
-	// Projection matrix
-	PMat.Zero();
-	PMat(0, 0) = 2. / 3.;
-	PMat(1, 1) = 2.;
-	PMat(2, 2) = 2.;
-	lambdaP.Zero();
-	lambdaP(0) = 2. / 3.;
-	lambdaP(1) = 2.;
-	lambdaP(2) = 2.;
-
-	// Projection vector
-	pVect.Zero();
-	pVect(0) = 1.;
-	lambdapp.Zero();
-	lambdapp(0) = 1.;
-	ppMat.Zero();
-	ppMat(0, 0) = 1.;
-
-	// Elastic matrix, diagonal
-	lambdaC.Zero();
-	lambdaC(0) = elasticModulus;
-	lambdaC(1) = shearModulus;
-	lambdaC(2) = shearModulus;
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-
-/**
-*
-* @param v1 length 3 vector
-* @param v2 length 3 vector
-* @return the dot product of the two vectors
-*
-*/
-double HLBModelUniaxial::dotprod3(const Vector& v1, const Vector& v2) {
-	double res = 0.;
-	for (unsigned int i = 0; i < N_DIMS; ++i)
-		res += v1(i) * v2(i);
-	return res;
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-
-/**
-*
-* @param v1 length 3 vector
-* @param v2 length 3 vector
-* @return vector containing the component-wise multiplication of the two vectors
-*
-*/
-Vector HLBModelUniaxial::vecMult3(const Vector& v1, const Vector& v2) {
-	Vector res = Vector(N_DIMS);
-	for (unsigned int i = 0; i < N_DIMS; ++i)
-		res(i) = v1(i) * v2(i);
-	return res;
-}
-
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 double HLBModelUniaxial::calculateYieldStressPlastic(double epsiPeq) {
@@ -2996,7 +2884,7 @@ double HLBModelUniaxial::calculateSigmaSurSigmaY_FlangePlate(double epsiPb11) {
 	//double sol4eq1_V02 = 0.;
 
 	// Check if strainPBEqTrial is equal to 0 
-	if (abs(strainPostBucklingTrial(0)) < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
+	if (abs(strainPostBucklingTrial) < 1e-10) { // if equal to 0 --> sigmaSurSigmaY=1
 		sigmaSurSigmaY = 1.;
 	}
 	else {
@@ -3081,7 +2969,7 @@ double HLBModelUniaxial::calculateDSigmaSurSigmaYdEpsilonPB11_WebPlate() {
 	double cPlate = 0.;
 
 	// Transform epsilonPBeq from double to complex number
-	std::complex<double> epsilonPB11Regularized(alphaRegularization * abs(strainPostBucklingTrial(0)), alphaRegularization * hStep);
+	std::complex<double> epsilonPB11Regularized(alphaRegularization * abs(strainPostBucklingTrial), alphaRegularization * hStep);
 
 	alphaAngle = 55. * 3.1416 / 180.;
 	cPlate = bPlateWidth / (2 * tan(alphaAngle));
@@ -3192,7 +3080,7 @@ double HLBModelUniaxial::calculateDSigmaSurSigmaYdEpsilonPB11_FlangePlate() {
 	double cPlate = 0.;
 
 	// Transform epsilonPBeq from double to complex number
-	std::complex<double> epsilonPB11Regularized(alphaRegularization * abs(strainPostBucklingTrial(0)), alphaRegularization * hStep);
+	std::complex<double> epsilonPB11Regularized(alphaRegularization * abs(strainPostBucklingTrial), alphaRegularization * hStep);
 
 	alphaAngle = 55. * 3.1416 / 180.;
 	cPlate = bPlateWidth / (2 * tan(alphaAngle));
@@ -3454,9 +3342,8 @@ double HLBModelUniaxial::calculateEtaTangentReduce(double epsiPb11) {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-Vector HLBModelUniaxial::calculateDCdLambdaPB(double etaTangent, double dPhiCompdXiVector11) {
-	Vector dCdLambdaPB = Vector(N_DIMS);
-	dCdLambdaPB.Zero();
+double HLBModelUniaxial::calculateDCdLambdaPB(double etaTangent, double dPhiCompdXiVector11) {
+	double dCdLambdaPB = 0.;
 	double dEtaTangentdEpsiPb11 = 0.;
 
 	double epsiPb11_min = pow(1. / beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), -beta2RegressionEuSurEl), 1 / beta3RegressionEuSurEl);
@@ -3471,9 +3358,7 @@ Vector HLBModelUniaxial::calculateDCdLambdaPB(double etaTangent, double dPhiComp
 	}*/
 	dEtaTangentdEpsiPb11 = calculateDEtaTangentdEpsiPb11();
 
-	dCdLambdaPB(0) = 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(0, 0);
-	dCdLambdaPB(1) = 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(1, 1);
-	dCdLambdaPB(2) = 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(2, 2);
+	dCdLambdaPB= 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticTangent;
 
 	return dCdLambdaPB;
 }
@@ -3496,10 +3381,10 @@ double HLBModelUniaxial::calculateDEtaTangentdEpsiPb11() {
 
 	// Try to solve oscillation trap
 	double bound4Smoothin = 50. / 100. * abs(epsiPb11_min);
-	double a2XTilda = beta3RegressionEuSurEl * beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), (beta3RegressionEuSurEl - 1.));
+	double a2XTilda = beta3RegressionEuSurEl * beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(alphaRegularization * abs(strainPostBucklingTrial), (beta3RegressionEuSurEl - 1.));
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);*/
-	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial + epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3521,7 +3406,7 @@ double HLBModelUniaxial::calculateDEtaTangentdEpsiPb11() {
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void HLBModelUniaxial::calculateC1c(double yieldStress, Vector alphaTot, double epsiPb11) {
+void HLBModelUniaxial::calculateC1c(double yieldStress, double alphaTot, double epsiPb11) {
 	/*c1c = (pow(yieldStress, 2) - pow((-sigmaC0Stress - alphaTot11), 2)) / pow((-sigmaC0Stress), 2);*/
 	//c1c = (pow(yieldStress, 2) - pow((-sigmaC - alphaTot11), 2)) / pow((-sigmaC), 2);
 
@@ -3533,11 +3418,11 @@ void HLBModelUniaxial::calculateC1c(double yieldStress, Vector alphaTot, double 
 	//double stress4C1c = stressTrial(0) + stressTol;
 	//c1cTrial = (pow(yieldStress, 2) - pow((-sigmaC + stressTol), 2)) / pow(stress4C1c, 2);
 
-	double stressTol = elasticMatrix(0, 0) * SMALL_NUMBER; // Additional stress component due to tolerance
+	double stressTol = elasticTangent * SMALL_NUMBER; // Additional stress component due to tolerance
 	//double stressTol = 0.; // Additional stress component due to tolerance
-	double sigma11UpdatedTol = stressTrial(0) + stressTol;
-	Vector xiTrial = (stressTrial + pVect * stressTol) - alphaTot;
-	double xiVonMisesSquared = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2));
+	double sigma11UpdatedTol = stressTrial + stressTol;
+	double xiTrial = (stressTrial + stressTol) - alphaTot;
+	double xiVonMisesSquared = pow(xiTrial, 2);
 
 	double chi_1c = (pow(yieldStress, 2) - xiVonMisesSquared) / pow(sigma11UpdatedTol, 2);
 	//double chi_1c= (pow(yieldStress, 2) - pow((sigma11UpdatedTol - alphaTot(0)), 2)) / pow(sigma11UpdatedTol, 2);
@@ -3553,22 +3438,22 @@ void HLBModelUniaxial::calculateC1c(double yieldStress, Vector alphaTot, double 
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-void HLBModelUniaxial::setTensileEllipsoidYieldSurf(double yieldStressTot, Vector alphaTot, double targetStress4PLRecov) {
+void HLBModelUniaxial::setTensileEllipsoidYieldSurf(double yieldStressTot, double alphaTot, double targetStress4PLRecov) {
 	double sigmaPr_regression = 0.;
 	double scaleFactorBezierStress = 0.;
 
 	//Determine the stress at wich would reach Von-Mises yield surface
-	scaleFactorBezierStress = 2 * yieldStressTot - (yieldStressTot - alphaTot(0));
+	scaleFactorBezierStress = 2 * yieldStressTot - (yieldStressTot - alphaTot);
 
 	// Set quantities for Bezier curve
-	alphaPrBezierTrial = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionAlphaPrBezier);
-	alphaYrBezierTrial = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionAlphaYrBezier);
-	sigmaYrBezierTrial = beta1RegressionSigmaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionSigmaYrBezier);
-	kPrBezierTrial = beta1RegressionKPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionKPrBezier) * sigmaYrBezierTrial;
-	kYrBezierTrial = beta1RegressionKYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionKYrBezier) * sigmaYrBezierTrial;
+	alphaPrBezierTrial = beta1RegressionAlphaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaPrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial), beta3RegressionAlphaPrBezier);
+	alphaYrBezierTrial = beta1RegressionAlphaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionAlphaYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial), beta3RegressionAlphaYrBezier);
+	sigmaYrBezierTrial = beta1RegressionSigmaYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial), beta3RegressionSigmaYrBezier);
+	kPrBezierTrial = beta1RegressionKPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKPrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial), beta3RegressionKPrBezier) * sigmaYrBezierTrial;
+	kYrBezierTrial = beta1RegressionKYrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionKYrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial), beta3RegressionKYrBezier) * sigmaYrBezierTrial;
 
 	// Determine different stresses sigmaPr
-	sigmaPr_regression = beta1RegressionSigmaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaPrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), beta3RegressionSigmaPrBezier);
+	sigmaPr_regression = beta1RegressionSigmaPrBezier * pow((bPlateWidth / tPlateThickness), beta2RegressionSigmaPrBezier) * pow(alphaRegularization * abs(strainPostBucklingTrial), beta3RegressionSigmaPrBezier);
 	sigmaPrBezierTrial = std::min(scaleFactorBezierStress, sigmaPr_regression * sigmaYrBezierTrial);
 
 	// Check if Bezier curve becomes larger than sigmaY + alphaAfterCompression(1) this fixes issue with f1t > 1
@@ -3592,9 +3477,9 @@ void HLBModelUniaxial::setTensileEllipsoidYieldSurf(double yieldStressTot, Vecto
 		1. / (beta3RegressionSigmaPrBezier + beta3RegressionSigmaYrBezier));
 
 	// Compute b_1t
-	if (alphaRegularization * strainPostBucklingTrial(0) < epsilonPB11MinTrial)
+	if (alphaRegularization * strainPostBucklingTrial < epsilonPB11MinTrial)
 	{
-		b_1tTrial = (pow(yieldStressTot, 2) - pow((sigmaPrBezierTrial - alphaTot(0)), 2)) / pow(sigmaPrBezierTrial, 2);
+		b_1tTrial = (pow(yieldStressTot, 2) - pow((sigmaPrBezierTrial - alphaTot), 2)) / pow(sigmaPrBezierTrial, 2);
 	}
 	else
 	{
@@ -3602,7 +3487,7 @@ void HLBModelUniaxial::setTensileEllipsoidYieldSurf(double yieldStressTot, Vecto
 	}
 
 	// Set epsilonPb11Unload
-	epsilonPB11UnloadTrial = alphaRegularization * strainPostBucklingTrial(0);
+	epsilonPB11UnloadTrial = alphaRegularization * strainPostBucklingTrial;
 
 	// Compute yield surface center and radius after compression stage
 	backstressAfterCompressionTrial = alphaTot;
@@ -3718,9 +3603,9 @@ double HLBModelUniaxial::calculateTBezier(double epsiPb11) {
 void HLBModelUniaxial::calculateRatioAlphaBackstress() {
 	double dSigmaBezierDEpsiPb11 = 0.;
 	double backstressPb11_endPlRecovStage = 0.; // total backstress component at end of plastic recovery stage
-	Vector backstressP1 = Vector(N_DIMS);
-	Vector backstressP2 = Vector(N_DIMS);
-	Vector backstressP = Vector(N_DIMS); // vector of plastic backstress alphaP1 + alphaP2 at time when computing
+	double backstressP1 = 0.;
+	double backstressP2 = 0.;
+	double backstressP = 0.; // vector of plastic backstress alphaP1 + alphaP2 at time when computing
 	double theta1 = 0.;
 	double KPrime = 0.;
 	double hPrime11 = 0.;
@@ -3734,14 +3619,14 @@ void HLBModelUniaxial::calculateRatioAlphaBackstress() {
 	backstressP1 = alphaPKConverged[0];
 	backstressP2 = alphaPKConverged[1];
 	backstressP = backstressP1 + backstressP2;
-	backstressPb11_endPlRecovStage = backstress11TotAfterFullPLRecovTrial - backstressP(0);
+	backstressPb11_endPlRecovStage = backstress11TotAfterFullPLRecovTrial - backstressP;
 
 	theta1 = 2. * elasticModulus / 3. * 1. / (1. - 1. / elasticModulus * dSigmaBezierDEpsiPb11);
 	KPrime = qInf * bIso * exp(-bIso * strainPEqConverged) - dInf * aIso * exp(-aIso * strainPEqConverged);
 	hPrime11 = sqrt(3. / 2.) * theta1 - sqrt(2. / 3.) * (KPrime + elasticModulus);
 
 	// Compute ratios for update of post-buckling backstress during plastic recovery stage
-	rAlphaBackstress1Trial = 1 / (backstressPb11_endPlRecovStage * (gammaK[0] - gammaK[1])) * (cK[0] + cK[1] - gammaK[0] * backstressP1(0) - gammaK[1] * backstressP2(0) - gammaK[1] * backstressPb11_endPlRecovStage - sqrt(3. / 2.) * hPrime11);
+	rAlphaBackstress1Trial = 1 / (backstressPb11_endPlRecovStage * (gammaK[0] - gammaK[1])) * (cK[0] + cK[1] - gammaK[0] * backstressP1 - gammaK[1] * backstressP2 - gammaK[1] * backstressPb11_endPlRecovStage - sqrt(3. / 2.) * hPrime11);
 	rAlphaBackstress2Trial = 1. - rAlphaBackstress1Trial;
 }
 
@@ -3763,12 +3648,12 @@ void HLBModelUniaxial::computeSigmaCDegradation() {
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
-Vector HLBModelUniaxial::computeBackstressTotPlRecovStage(double epsiPb11) {
+double HLBModelUniaxial::computeBackstressTotPlRecovStage(double epsiPb11) {
 	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
 	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = backstress11TotAfterFullPLRecovTrial;
-	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial(0) - backstress11TotAfterFullPLRecovTrial) * epsiPb11 + backstress11TotAfterFullPLRecovTrial;
+	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial - backstress11TotAfterFullPLRecovTrial) * epsiPb11 + backstress11TotAfterFullPLRecovTrial;
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
 	double xTilda = (epsiPb11 + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
@@ -3784,12 +3669,10 @@ Vector HLBModelUniaxial::computeBackstressTotPlRecovStage(double epsiPb11) {
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	Vector alphaP = alphaPKIntermed[0] + alphaPKIntermed[1];
+	double alphaP = alphaPKIntermed[0] + alphaPKIntermed[1];
 	/*double alpha11Pb_nPlus1 = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda - alphaP(0);*/
-	double alpha11Pb_nPlus1 = gXTilda * a1XTilda + (1. - gXTilda) * a2XTilda - alphaP(0);
-	Vector alphaPb_nPlus1 = Vector(N_DIMS);
-	alphaPb_nPlus1(0) = alpha11Pb_nPlus1;
-	Vector BackstressTot = alphaP + alphaPb_nPlus1;
+	double alphaPb_nPlus1 = gXTilda * a1XTilda + (1. - gXTilda) * a2XTilda - alphaP;
+	double BackstressTot = alphaP + alphaPb_nPlus1;
 
 	return BackstressTot;
 }
@@ -3829,10 +3712,10 @@ double HLBModelUniaxial::computeDAlpha11TotDEpsiPb11PlRecovStage() {
 	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = 0.;
-	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial(0) - backstress11TotAfterFullPLRecovTrial);
+	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial - backstress11TotAfterFullPLRecovTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3860,7 +3743,7 @@ double HLBModelUniaxial::computeDSigmaYieldTotDEpsiPb11PlRecovStage() {
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (sigmaYieldAfterCompressionTrial - sigmaYieldTotAfterFullPLRecovTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3885,10 +3768,10 @@ void HLBModelUniaxial::computeReduceC1cLinearEvol() {
 	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
 
 	double a1XTilda = 0.;
-	double a2XTilda = c1cUnloadTrial * (alphaRegularization * strainPostBucklingTrial(0) / epsilonPB11UnloadTrial);
+	double a2XTilda = c1cUnloadTrial * (alphaRegularization * strainPostBucklingTrial / epsilonPB11UnloadTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3906,38 +3789,6 @@ void HLBModelUniaxial::computeReduceC1cLinearEvol() {
 
 	double test = 0.;
 
-}
-
-/* ----------------------------------------------------------------------------------------------------------------- */
-
-/**
-*
-* @param A a 3x3 invertible matrix
-* @return the inverse of A
-*
-*/
-Matrix HLBModelUniaxial::matinv3(const Matrix& A) {
-	double detInv;
-	Matrix B = Matrix(3, 3);
-
-	// Calculate the determinant
-	detInv = 1. /
-		(A(0, 0) * A(1, 1) * A(2, 2) - A(0, 0) * A(1, 2) * A(2, 1)
-			- A(0, 1) * A(1, 0) * A(2, 2) + A(0, 1) * A(1, 2) * A(2, 0)
-			+ A(0, 2) * A(1, 0) * A(2, 1) - A(0, 2) * A(1, 1) * A(2, 0));
-
-	// Calculate the inverse
-	B(0, 0) = +detInv * (A(1, 1) * A(2, 2) - A(1, 2) * A(2, 1));
-	B(1, 0) = -detInv * (A(1, 0) * A(2, 2) - A(1, 2) * A(2, 0));
-	B(2, 0) = +detInv * (A(1, 0) * A(2, 1) - A(1, 1) * A(2, 0));
-	B(0, 1) = -detInv * (A(0, 1) * A(2, 2) - A(0, 2) * A(2, 1));
-	B(1, 1) = +detInv * (A(0, 0) * A(2, 2) - A(0, 2) * A(2, 0));
-	B(2, 1) = -detInv * (A(0, 0) * A(2, 1) - A(0, 1) * A(2, 0));
-	B(0, 2) = +detInv * (A(0, 1) * A(1, 2) - A(0, 2) * A(1, 1));
-	B(1, 2) = -detInv * (A(0, 0) * A(1, 2) - A(0, 2) * A(1, 0));
-	B(2, 2) = +detInv * (A(0, 0) * A(1, 1) - A(0, 1) * A(1, 0));
-
-	return B;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
