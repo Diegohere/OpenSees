@@ -174,6 +174,33 @@ TestNonlocalElement2dDH::TestNonlocalElement2dDH(int tag, int nodeI, int nodeJ, 
 
 	//get copy of sections
 	this->setSectionPointers(numSec, sec);
+
+	//// Check pseudo-inverse procedure
+	//Matrix testMatrix(3, 3);
+	///*testMatrix(0, 0) = 4;
+	//testMatrix(0, 1) = 1;
+	//testMatrix(0, 2) = 2;
+	//testMatrix(1, 0) = 1;
+	//testMatrix(1, 1) = 3;
+	//testMatrix(1, 2) = 0;
+	//testMatrix(2, 0) = 2;
+	//testMatrix(2, 1) = 0;
+	//testMatrix(2, 2) = 5;*/
+	//testMatrix(0, 0) = 2.0;
+	//testMatrix(0, 1) = 4.0;
+	//testMatrix(0, 2) = 6.0;
+	//testMatrix(1, 0) = 4.0;
+	//testMatrix(1, 1) = 8.0;
+	//testMatrix(1, 2) = 12.0;
+	//testMatrix(2, 0) = 6.0;
+	//testMatrix(2, 1) = 12.0;
+	//testMatrix(2, 2) = 18.0;
+	//opserr << "This is matrix A: " << testMatrix << endln;
+	//Matrix testInverse(3, 3);
+	//double testTol = 1e-4;
+	//testMatrix.computePseudoInverseSymmetric(testInverse, testTol);
+	//opserr << "This is testInverse: " << testInverse << endln;
+	//int test1 = 1;
 }
 
 // Destructor

@@ -85,6 +85,9 @@ class Matrix
     int compute_Eigen_decomposition(Matrix& Q, Vector& Lambda, Matrix& Qinv);
     // Solve Ax=b using (truncated Eigen decomposition)
     int solve_truncatedEigen(const Vector& b, Vector& x, const double& tol);
+    // Added by Diego Heredia 18.02.2025
+    // Compute the Moore-Penrose inverse of a symmetric matrix
+    int computePseudoInverseSymmetric(Matrix& APlus, const double tol);
 
     // overloaded operators 
     inline double &operator()(int row, int col);

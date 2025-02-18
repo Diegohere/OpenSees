@@ -1035,6 +1035,102 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
 }
 
 
+// Added by Diego Heredia 18.02.2025
+int Matrix::computePseudoInverseSymmetric(Matrix& APlus, const double tol)
+{
+    // Check if matrix is square
+    if (numRows != numCols) {
+        opserr << "compute_Eigen_decomposition - the matrix of dimensions [" << numRows << "," << numCols << "] is not square\n";
+        return -1;
+    }
+
+    // copy the data
+    double* A_copy = new (nothrow) double[numCols * numCols];
+    //opserr << "This is A.data: " << endln;
+    for (int i = 0; i < numCols * numCols; i++)
+    {
+        //opserr <<  data[i] << endln;
+        A_copy[i] = data[i];
+    }
+
+    // Step 1: Compute (right) eigen vectors and eigen values of A using LAPACKE_dgeev
+    Vector Lambda(numCols);
+    Matrix Q(numRows, numCols);
+
+    int lda = numCols;
+    int ldvl = numCols;
+    int ldvr = numCols;
+    double* wi = new (nothrow) double[numCols];
+    double* vl = new (nothrow) double[ldvl * numCols];
+
+    char jobvl = 'N'; // Do notCompute the left eigen vectors
+    char jobvr = 'V'; //  Compute the right eigen vectors
+    double wkopt;
+    double* work;
+    int lwork = -1;
+    int info;
+#ifdef _WIN32
+    // Query and allocate the optimal workspace
+    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
+        &wkopt, &lwork, &info);
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+
+    // Solve the eigen problem
+    DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
+        work, &lwork, &info);
+
+    //// Some outputs
+    //opserr << "This is Q: " << Q << endln;
+    //opserr << "This is LambdaDiag: " << Lambda << endln;
+
+    // Step 2: Compute Q*Lambda*Q^T
+    // Compute Q * Lambda
+    Vector QMultInvLambda(numCols * numRows);
+    for (int i = 0; i < numCols; ++i) {
+        for (int j = 0; j < numCols; ++j) {
+            if (abs(Lambda[j]) > tol)// truncate values 
+            {
+                QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] / Lambda[j];
+            }
+        }
+    }
+    //opserr << "This is QMultInvLambda: " << QMultLambda << endln;
+    
+    // Compute Q * Lambda * Q'
+    for (int i = 0; i < numCols; ++i) {
+        for (int j = 0; j < numCols; ++j) {
+            for (int k = 0; k < numCols; ++k) {
+                APlus(i,j) += QMultInvLambda[i + k * numCols] * Q.data[j + k * numCols];
+            }
+        }
+    }
+    //opserr << "This is APlus: " << APlus << endln;
+
+
+    if (info != 0)
+    {
+        // Free dynamically alocated memory
+        delete[] A_copy;
+        delete[] wi;
+        delete[] vl;
+        delete[] work;
+        return -abs(info);
+    }
+#else
+    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+        &wkopt, &lwork, &info);
+    lwork = (int)wkopt;
+    work = new (nothrow) double[lwork];
+
+    // Solve the eigen problem
+    dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+        work, &lwork, &info);
+#endif
+}
+
+
+
 int
 Matrix::Invert(Matrix &theInverse) const
 {
