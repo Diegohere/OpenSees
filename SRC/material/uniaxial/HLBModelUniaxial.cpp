@@ -840,7 +840,7 @@ int HLBModelUniaxial::timeIntegration() {
 					retVal = returnMappingPlRecovStage(strain_nPlus1);
 
 					// Check if we have reduced all the epsiPb11
-					if (retVal == 0 && strainPostBucklingTrial <= 0. || abs(strainPostBucklingTrial) <= SMALL_NUMBER) // We don't have reduced too much
+					if (retVal == 0 && (strainPostBucklingTrial <= 0. || abs(strainPostBucklingTrial) <= SMALL_NUMBER)) // We don't have reduced too much
 					{
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
@@ -884,7 +884,7 @@ int HLBModelUniaxial::timeIntegration() {
 					retVal = returnMappingUVCRecovStage(strain_nPlus1, alphaTot);
 
 					// Check if we have reduced all the epsiPb11
-					if (retVal == 0 && strainPostBucklingTrial <= 0. || abs(strainPostBucklingTrial) <= SMALL_NUMBER) // We don't have reduced too much
+					if (retVal == 0 && (strainPostBucklingTrial <= 0. || abs(strainPostBucklingTrial) <= SMALL_NUMBER)) // We don't have reduced too much
 					{
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 

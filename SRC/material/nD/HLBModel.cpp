@@ -820,8 +820,10 @@ int HLBModel::timeIntegration() {
 	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 
-	/*if (strainConverged(0) <= -0.000308844 && strainConverged(0) > -0.000308846 && strainTrial(0) <= -0.000209417 && strainTrial(0) > -0.000209419) {
+	/*if (strainConverged(0) <= 0.0015837 && strainConverged(0) > 0.0015836 && strainTrial(0) <= 0.0015999 && strainTrial(0) > 0.001599) {
 		double testBreak = 0.;
+		opserr << "This is strainConverged: " << strainConverged << endln;
+		opserr << "This is strainTrial: " << strainTrial << endln;
 	}*/
 
 	// Loop for time integration
@@ -885,7 +887,7 @@ int HLBModel::timeIntegration() {
 					retVal = returnMappingPlRecovStage(strain_nPlus1);
 
 					// Check if we have reduced all the epsiPb11
-					if (retVal == 0 && strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER) // We don't have reduced too much
+					if (retVal == 0 && (strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER)) // We don't have reduced too much
 					{
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
@@ -929,7 +931,7 @@ int HLBModel::timeIntegration() {
 					retVal = returnMappingUVCRecovStage(strain_nPlus1, alphaTot);
 
 					// Check if we have reduced all the epsiPb11
-					if (retVal == 0 && strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER) // We don't have reduced too much
+					if (retVal == 0 && (strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER)) // We don't have reduced too much
 					{
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
@@ -1540,6 +1542,7 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		dAlpha11TotDLambdaPb = alphaRegularization * computeDAlpha11TotDEpsiPb11PlRecovStage() * dPhiTensdXi(0);
 		dSigmaYieldTotDLambdaPb = alphaRegularization * computeDSigmaYieldTotDEpsiPb11PlRecovStage() * dPhiTensdXi(0);
 
+		// Try fix trap between 3 values issue 18.02.2025: TODO
 		dFchi1tdLambdaPb = -1 / pow((b_1tTrial * pow(sigmaBezier, 2)), 2) * ((2 * yieldStressTot * dSigmaYieldTotDLambdaPb - 2 * (dSigmaBezierDLambdaPb - dAlpha11TotDLambdaPb) *
 			(sigmaBezier - backstressTot(0))) * (b_1tTrial * pow(sigmaBezier, 2)) - (pow(yieldStressTot, 2) - pow((sigmaBezier - backstressTot(0)), 2)) * 2 * b_1tTrial * dSigmaBezierDLambdaPb * sigmaBezier);
 		dChi1tDLambdaPB = -b_1tTrial * dFchi1tdLambdaPb;
