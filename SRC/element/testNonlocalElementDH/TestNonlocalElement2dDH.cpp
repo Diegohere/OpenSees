@@ -697,512 +697,385 @@ TestNonlocalElement2dDH::update(void)
 
 	while (converged == false && numSubdivide <= maxSubdivisions)
 	{
-		// try regular newton (if l==0), or
-		// initial tangent on first iteration then regular newton (if l==1), or 
-		// initial tangent iterations (if l==2)
-		for (int l = 0; l < 3; l++)
+		qTrial = q;
+		KelementTrial = Kelement;
+
+		for (i = 0; i < numSections; i++)
 		{
-			qTrial = q;
-			KelementTrial = Kelement;
+			eNonLocalSubdivide[i] = eNonlocal[i];
+			eLocalSubdivide[i] = eLocal[i];
+			FSectionSubdivide[i] = FSection[i];
+			srSubdivide[i] = sr[i];
 
-			for (i = 0; i < numSections; i++)
+			//Added 23.10.2023 so that goes to zero when change l
+			eu_nonlocal_Tot[i].Zero();
+			eu_local_Tot[i].Zero();
+		}
+
+		// calculate nodal force increments and update nodal forces dq=KelementTrial*dvTrial
+		dq.addMatrixVector(0.0, KelementTrial, dvTrial, 1.0);
+		qTrial += dq;
+
+		////todo
+		//opserr << "This is dvTrial" << dvTrial << endln;
+		//opserr << "This is KelementTrial" << KelementTrial << endln;
+		//opserr << "This is qTrial:" << qTrial<< endln;
+
+		if (initialFlag != 2)
+		{
+			for (j = 0; j < maxIters; j++)
 			{
-				eNonLocalSubdivide[i] = eNonlocal[i];
-				eLocalSubdivide[i] = eLocal[i];
-				FSectionSubdivide[i] = FSection[i];
-				srSubdivide[i] = sr[i];
+				// initialize f and vr for integration
+				Felement.Zero();
+				vu.Zero();
 
-				//Added 23.10.2023 so that goes to zero when change l
-				eu_nonlocal_Tot[i].Zero();
-				eu_local_Tot[i].Zero();
-			}
+				//Compute matrices H and Hinv for nonlocal
+				//computeMatrixH();
+				computeCoefficientMatrixH();
 
-			// calculate nodal force increments and update nodal forces dq=KelementTrial*dvTrial
-			dq.addMatrixVector(0.0, KelementTrial, dvTrial, 1.0);
-			qTrial += dq;
-
-			////todo
-			//opserr << "This is dvTrial" << dvTrial << endln;
-			//opserr << "This is KelementTrial" << KelementTrial << endln;
-			//opserr << "This is qTrial:" << qTrial<< endln;
-
-			if (initialFlag != 2)
-			{
-				int numIters = maxIters;
-				if (l == 1)
-					numIters = 10 * maxIters; // allow 10 times more iterations for initial tangent
-
-				for (j = 0; j < numIters; j++)
+				//todo store this in matri and use and the end
+				//if (beamIntegr->addElasticFlexibility(L, Felement) < 0)
 				{
-					// initialize f and vr for integration
-					Felement.Zero();
-					vu.Zero();
+					/*vu(0) += Felement(0, 0) * qTrial(0);
+					vu(1) += Felement(1, 1) * qTrial(1) + Felement(1, 2) * qTrial(2);
+					vu(2) += Felement(2, 1) * qTrial(1) + Felement(2, 2) * qTrial(2);*/
+				}
 
-					//Compute matrices H and Hinv for nonlocal
-					//computeMatrixH();
-					computeCoefficientMatrixH();
+				//double v0[3];
+				//v0[0] = 0.0; v0[1] = 0.0; v0[2] = 0.0;
 
-					//todo store this in matri and use and the end
-					//if (beamIntegr->addElasticFlexibility(L, Felement) < 0)
+				//for (int ie = 0; ie < numEleLoads; ie++)
+				//	beamIntegr->addElasticDeformations(eleLoads[ie], eleLoadFactors[ie], L, v0);
+
+				//// Add effects of element loads
+				//vu(0) += v0[0];
+				//vu(1) += v0[1];
+				//vu(2) += v0[2];
+
+				for (i = 0; i < numSections; i++)
+				{
+					int order = sections[i]->getOrder();
+					const ID& code = sections[i]->getType();
+
+					//static Vector s_seci(NEBD);
+					Vector ds(2);
+					//static Vector deStar_local_seci(NEBD);
+					Matrix Fb(2, 2);
+
+					double xL = xi[i];
+					double xL1 = xL - 1.0;
+					double wtL = wt[i] * L;
+
+					// calculate total section forces s = b*q + bp*currDistrLoad;
+					int ii;
+					for (ii = 0; ii < order; ii++)
 					{
-						/*vu(0) += Felement(0, 0) * qTrial(0);
-						vu(1) += Felement(1, 1) * qTrial(1) + Felement(1, 2) * qTrial(2);
-						vu(2) += Felement(2, 1) * qTrial(1) + Felement(2, 2) * qTrial(2);*/
+						switch (code(ii))
+						{
+						case SECTION_RESPONSE_P:
+							s_Tot[i](ii) = qTrial(0);
+							break;
+						case SECTION_RESPONSE_MZ:
+							s_Tot[i](ii) = xL1 * qTrial(1) + xL * qTrial(2);
+							break;
+						case SECTION_RESPONSE_VY:
+							s_Tot[i](ii) = oneOverL * (qTrial(1) + qTrial(2));
+							break;
+						default:
+							s_Tot[i](ii) = 0.0;
+							break;
+						}
+					}
+					// Add the effects of element loads, if present s = b*q + sp
+					if (numEleLoads > 0)
+						this->computeSectionForces(s_Tot[i], i);
+
+					//// ds = s - sr[i];
+					//ds = s_seci;
+					//ds.addVector(1.0, srSubdivide[i], -1.0);
+
+					// calculate increment section forces ds = b*dq;
+					for (ii = 0; ii < order; ii++)
+					{
+						switch (code(ii))
+						{
+						case SECTION_RESPONSE_P:
+							ds(ii) = dq(0);
+							break;
+						case SECTION_RESPONSE_MZ:
+							ds(ii) = xL1 * dq(1) + xL * dq(2);
+							break;
+						case SECTION_RESPONSE_VY:
+							ds(ii) = oneOverL * (dq(1) + dq(2));
+							break;
+						default:
+							ds(ii) = 0.0;
+							break;
+						}
 					}
 
-					//double v0[3];
-					//v0[0] = 0.0; v0[1] = 0.0; v0[2] = 0.0;
+					//Add s_seci to matrix containing all section forces
+					//s_Tot[i] = s_seci;
 
-					//for (int ie = 0; ie < numEleLoads; ie++)
-					//	beamIntegr->addElasticDeformations(eleLoads[ie], eleLoadFactors[ie], L, v0);
+					//opserr << "This is s_seci:" << s_seci << endln;
 
-					//// Add effects of element loads
-					//vu(0) += v0[0];
-					//vu(1) += v0[1];
-					//vu(2) += v0[2];
+					// compute local section deformation increments e += fs * ds;   
+					deStar_local_Tot[i].addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0);
 
-					for (i = 0; i < numSections; i++)
+					//opserr << "This is deStar_local_sec:" << deStar_local_seci << endln;
+				}
+
+				//Compute deStar_nonlocal[]
+				this->computeDeStar_nonlocal(deStar_nonlocal_Tot, deStar_local_Tot);
+
+				////todo
+				/*opserr << "This is deStar_local_Tot:" << deStar_local_Tot << endln;
+				opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot << endln;*/
+				//opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot << endln;
+
+				for (i = 0; i < numSections; i++)
+				{
+					// set section deformations
+					if (initialFlag != 0)
 					{
-						int order = sections[i]->getOrder();
-						const ID& code = sections[i]->getType();
+						eNonLocalSubdivide[i] += deStar_nonlocal_Tot[i];  //e_NL += deStar_nonlocal
+						eNonLocalSubdivide[i] += eu_nonlocal_Tot[i];  //e_NL += eu_nonlocal
+					}
 
-						//static Vector s_seci(NEBD);
-						Vector ds(2);
-						//static Vector deStar_local_seci(NEBD);
-						Matrix Fb(2, 2);
+					eLocalSubdivide[i] += deStar_local_Tot[i] + eu_local_Tot[i];
+				}
 
-						/*s_seci.setData(workArea, order);
-						ds.setData(&workArea[order], order);
-						deStar_local_seci.setData(&workArea[2 * order], order);
-						Fb.setData(&workArea[3 * order], order, 3);*/
+				for (i = 0; i < numSections; i++)
+				{
+					//static Vector eu_local_interm(2);  //intermediate vector to fill eu_local_tot
+					//eu_local_interm.Zero();
 
-						double xL = xi[i];
-						double xL1 = xL - 1.0;
-						double wtL = wt[i] * L;
+					//Set the section deformations for section state determination
+					if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
+					{
+						opserr << "TestNonlocalElement2dDH::update() - section failed in setTrial\n";
+						opserr << "This is section: " << i + 1 << endln;
+						return -1;
+					}
 
-						// calculate total section forces s = b*q + bp*currDistrLoad;
-						int ii;
-						for (ii = 0; ii < order; ii++)
-						{
-							switch (code(ii))
-							{
-							case SECTION_RESPONSE_P:
-								s_Tot[i](ii) = qTrial(0);
-								break;
-							case SECTION_RESPONSE_MZ:
-								s_Tot[i](ii) = xL1 * qTrial(1) + xL * qTrial(2);
-								break;
-							case SECTION_RESPONSE_VY:
-								s_Tot[i](ii) = oneOverL * (qTrial(1) + qTrial(2));
-								break;
-							default:
-								s_Tot[i](ii) = 0.0;
-								break;
-							}
-						}
-						// Add the effects of element loads, if present s = b*q + sp
-						if (numEleLoads > 0)
-							this->computeSectionForces(s_Tot[i], i);
+					// get section resisting forces
+					srSubdivide[i] = sections[i]->getStressResultant();
 
-						//// ds = s - sr[i];
-						//ds = s_seci;
-						//ds.addVector(1.0, srSubdivide[i], -1.0);
-
-						// calculate increment section forces ds = b*dq;
-						for (ii = 0; ii < order; ii++)
-						{
-							switch (code(ii))
-							{
-							case SECTION_RESPONSE_P:
-								ds(ii) = dq(0);
-								break;
-							case SECTION_RESPONSE_MZ:
-								ds(ii) = xL1 * dq(1) + xL * dq(2);
-								break;
-							case SECTION_RESPONSE_VY:
-								ds(ii) = oneOverL * (dq(1) + dq(2));
-								break;
-							default:
-								ds(ii) = 0.0;
-								break;
-							}
-						}
-
-						//Add s_seci to matrix containing all section forces
-						//s_Tot[i] = s_seci;
-
-						////todo
-						//opserr << "This is s_seci:" << s_seci << endln;
-
-						// compute local section deformation increments
-						if (l == 0)
-						{
-							//  regular newton e += fs * ds;     
-							deStar_local_Tot[i].addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0);
-						}
-						else if (l == 2)
-						{
-							//  newton with initial tangent if first iteration e += FSection0 * ds;     
-							//  otherwise regular newton e += FSection * ds;    
-							if (j == 0)
-							{
-								const Matrix& FSection0 = sections[i]->getInitialFlexibility();
-
-								deStar_local_Tot[i].addMatrixVector(0.0, FSection0, ds, 1.0);
-							}
-							else
-							{
-								deStar_local_Tot[i].addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0);
-							}
-						}
-						else
-						{
-							//  newton with initial tangent e += FSection0 * ds;    
-							const Matrix& FSection0 = sections[i]->getInitialFlexibility();
-							deStar_local_Tot[i].addMatrixVector(0.0, FSection0, ds, 1.0);
-						}
-
-						////todo
-						//opserr << "This is deStar_local_sec:" << deStar_local_seci << endln;
-
-						//Add each delta e_star_local to matrix containing all sections
-						/*deStar_local_Tot(0, i) = deStar_local_seci(0);
-						deStar_local_Tot(1, i) = deStar_local_seci(1);*/
+					//// get section flexibility matrix
+					//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+					//Compute section flexibility using decompostion and pseudoInverse
+					const Matrix& Ksection = sections[i]->getSectionTangent();
+					
+					int isNotSingular = Ksection.checkIllCondion(Tol);
+					if (isNotSingular == 0) {// The matrix is not singular (it's well-conditioned)
+						
+					}
+					else // The matrix singular (ill-conditioned)
+					{
 
 					}
 
-					//Compute deStar_nonlocal[]
-					this->computeDeStar_nonlocal(deStar_nonlocal_Tot, deStar_local_Tot);
+					//int isSingular=Ksection.Invert(Fsection);
+					opserr << "isSingular: " << isNotSingular << endln;
 
-					////todo
-					/*opserr << "This is deStar_local_Tot:" << deStar_local_Tot << endln;
-					opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot << endln;*/
-					//opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot << endln;
-
-					for (i = 0; i < numSections; i++)
-					{
-
-						//Initilization variables needed in this loop
-						/*static Vector deStar_nonlocal_isec(NEBD);
-						static Vector eu_nonlocal_isec(NEBD);*/
-
-						//Fil the vector with actual values
-						/*deStar_nonlocal_isec(0) = deStar_nonlocal_Tot(0, i);
-						deStar_nonlocal_isec(1) = deStar_nonlocal_Tot(1, i);
-
-						eu_nonlocal_isec(0) = eu_nonlocal_Tot(0, i);
-						eu_nonlocal_isec(1) = eu_nonlocal_Tot(1, i);*/
-
-						// set section deformations
-						if (initialFlag != 0)
-						{
-							eNonLocalSubdivide[i] += deStar_nonlocal_Tot[i];  //e_NL += deStar_nonlocal
-							eNonLocalSubdivide[i] += eu_nonlocal_Tot[i];  //e_NL += eu_nonlocal
-						}
-
-						eLocalSubdivide[i] += deStar_local_Tot[i] + eu_local_Tot[i];
-					}
-
-					//Compute the local section deformations for section state determination
-					//this->computeE_local(numSections, eNonLocalSubdivide, H, e_local_Tot);
-
-					//Loop to fill the eLocalSUbdivide vector from the matrix E_local
-					//static Vector eLocalSubdivide_isec(2);  //intermediate vector to fill eLocalSUbdivide
-					//for (i = 0; i < numSections; i++)
+					//const Matrix &Fsection_elastic = sections[i]->getInitialFlexibility();
+					//const Matrix &Ksection_elastic = sections[i]->getInitialTangent();
+					//const Matrix &Ksection = sections[i]->getSectionTangent();
+					//Matrix Ksection_plastic = Matrix(2, 2);
+					//if (abs(Ksection(0, 0) - Ksection_elastic(0, 0)) > Tol) // if not elastic
 					//{
-					//	eLocalSubdivide_isec.Zero();
-
-					//	//Fill the intermediate vector
-					//	eLocalSubdivide_isec(0) = e_local_Tot(0, i);
-					//	eLocalSubdivide_isec(1) = e_local_Tot(1, i);
-
-					//	//Put the intermediate vector in the final vector
-					//	eLocalSubdivide[i] = eLocalSubdivide_isec;
+					//	Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
+					//	Matrix Ksection_intermed1_inverse = Matrix(2, 2);
+					//	Ksection_intermed1.Invert(Ksection_intermed1_inverse);
+					//	Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
 					//}
+					/*opserr << "Ksection: " << Ksection << endln;
+					opserr << "Ksection_elastic: " << Ksection_elastic << endln;
+					opserr << "Ksection_plastic: " << Ksection_plastic << endln;*/
+					FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 
-					for (i = 0; i < numSections; i++)
+
+					// calculate section residual deformations de = FSection * (s - sr);
+					static Vector s_seci(2); // initialize vector s_secii
+					static Vector ds(2);
+
+					ds = s_Tot[i];  //take the corresponding section force from matrix with all section forces
+					ds.addVector(1.0, srSubdivide[i], -1.0);  // ds = s - sr[i];
+
+					//compute eu_local for section i
+					eu_local_Tot[i].addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0);
+
+				}
+
+				//Compute eu_non_local_tot
+				this->computeEu_nonlocal(eu_nonlocal_Tot, eu_local_Tot);
+
+				//Compute Felement_nonlocal
+				this->computeFelement_nonlocal(Felement);
+				//Felement = Felement_nonlocal;
+
+				for (i = 0; i < numSections; i++)
+				{
+					int order = sections[i]->getOrder();
+					const ID& code = sections[i]->getType();
+
+					double xL = xi[i];
+					double xL1 = xL - 1.0;
+					double wtL = wt[i] * L;
+
+					double dei;
+					double tmp;
+
+					for (int ii = 0; ii < order; ii++)
 					{
-						//static Vector eu_local_interm(2);  //intermediate vector to fill eu_local_tot
-						//eu_local_interm.Zero();
-
-						//Set the section deformations for section state determination
-						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
+						dei = eu_nonlocal_Tot[i](ii) * wtL;
+						switch (code(ii))
 						{
-							opserr << "TestNonlocalElement2dDH::update() - section failed in setTrial\n";
-							opserr << "This is section: " << i + 1 << endln;
-							return -1;
-						}
-
-						// get section resisting forces
-						srSubdivide[i] = sections[i]->getStressResultant();
-
-						// get section flexibility matrix
-						FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-
-						// calculate section residual deformations de = FSection * (s - sr);
-						static Vector s_seci(2); // initialize vector s_secii
-						static Vector ds(2);
-
-						ds = s_Tot[i];  //take the corresponding section force from matrix with all section forces
-						ds.addVector(1.0, srSubdivide[i], -1.0);  // ds = s - sr[i];
-
-						//compute eu_local for section i
-						eu_local_Tot[i].addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0);
-
-						//Fill matrix eu_local_tot with eu_local for section i
-						/*eu_local_Tot(0, i) = eu_local_interm(0);
-						eu_local_Tot(1, i) = eu_local_interm(1);*/
-
-					}
-
-					//Compute eu_non_local_tot
-					this->computeEu_nonlocal(eu_nonlocal_Tot, eu_local_Tot);
-
-					//Compute Felement_nonlocal
-					this->computeFelement_nonlocal(Felement);
-					//Felement = Felement_nonlocal;
-
-					//Initilization of integrale_BeuNL
-					/*static Vector integrale_BeuNL(NEBD);
-					integrale_BeuNL.Zero();*/
-
-					for (i = 0; i < numSections; i++)
-					{
-
-						//This was for local formulation
-						// integrate element flexibility matrix f = f + (b^ fs * b) * wtL;
-
-						/*int jj;
-						const Matrix& FSec = FSectionSubdivide[i];
-						Fb.Zero();
-						double tmp;
-
-						for (ii = 0; ii < order; ii++)
-						{
-							switch (code(ii))
-							{
-							case SECTION_RESPONSE_P:
-								for (jj = 0; jj < order; jj++)
-									Fb(jj, 0) += FSec(jj, ii) * wtL;
-								break;
-							case SECTION_RESPONSE_MZ:
-								for (jj = 0; jj < order; jj++)
-								{
-									tmp = FSec(jj, ii) * wtL;
-									Fb(jj, 1) += xL1 * tmp;
-									Fb(jj, 2) += xL * tmp;
-								}
-								break;
-							case SECTION_RESPONSE_VY:
-								for (jj = 0; jj < order; jj++)
-								{
-									tmp = oneOverL * FSec(jj, ii) * wtL;
-									Fb(jj, 1) += tmp;
-									Fb(jj, 2) += tmp;
-								}
-								break;
-							default:
-								break;
-							}
-						}
-
-						for (ii = 0; ii < order; ii++)
-						{
-							switch (code(ii))
-							{
-							case SECTION_RESPONSE_P:
-								for (jj = 0; jj < 3; jj++)
-									Felement(0, jj) += Fb(ii, jj);
-								break;
-							case SECTION_RESPONSE_MZ:
-								for (jj = 0; jj < 3; jj++)
-								{
-									tmp = Fb(ii, jj);
-									Felement(1, jj) += xL1 * tmp;
-									Felement(2, jj) += xL * tmp;
-								}
-								break;
-							case SECTION_RESPONSE_VY:
-								for (jj = 0; jj < 3; jj++)
-								{
-									tmp = oneOverL * Fb(ii, jj);
-									Felement(1, jj) += tmp;
-									Felement(2, jj) += tmp;
-								}
-								break;
-							default:
-								break;
-							}
-						}*/
-
-						// Integrate unbalanced deformations vu += (b^ (e + de)) * wtL  vr.addMatrixTransposeVector(1.0, b[i], vs[i] + dvs, wtL);;
-						//de.addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0); //used for local formulation
-						//de.addVector(1.0, eSubdivide[i], 1.0);   //used for local formulation
-
-						int order = sections[i]->getOrder();
-						const ID& code = sections[i]->getType();
-
-						double xL = xi[i];
-						double xL1 = xL - 1.0;
-						double wtL = wt[i] * L;
-
-						double dei;
-						/*static Vector dei_interm(2);
-						dei_interm = eNonLocalSubdivide[i];*/
-						double tmp;
-
-						for (int ii = 0; ii < order; ii++)
-						{
-							//dei = dei_interm(ii) * wtL;
-							dei = eu_nonlocal_Tot[i](ii) * wtL;
-							switch (code(ii))
-							{
-							case SECTION_RESPONSE_P:
-								vu(0) += dei;
-								break;
-							case SECTION_RESPONSE_MZ:
-								vu(1) += xL1 * dei;
-								vu(2) += xL * dei;
-								break;
-							case SECTION_RESPONSE_VY:
-								tmp = oneOverL * dei;
-								vu(1) += tmp;
-								vu(2) += tmp;
-								break;
-							default:
-								break;
-							}
+						case SECTION_RESPONSE_P:
+							vu(0) += dei;
+							break;
+						case SECTION_RESPONSE_MZ:
+							vu(1) += xL1 * dei;
+							vu(2) += xL * dei;
+							break;
+						case SECTION_RESPONSE_VY:
+							tmp = oneOverL * dei;
+							vu(1) += tmp;
+							vu(2) += tmp;
+							break;
+						default:
+							break;
 						}
 					}
-					//vu.Zero();
-					////vu = v - integrale_BeuNL;
-					//vu = integrale_BeuNL; //using definition below
+				}
+				//vu.Zero();
+				////vu = v - integrale_BeuNL;
+				//vu = integrale_BeuNL; //using definition below
 
-					// calculate element stiffness matrix invert3by3Matrix(F, Kelement);	  
-					if (Felement.Solve(I, KelementTrial) < 0) {
-						opserr << "TestNonlocalElement2dDH::update() -- could not invert flexibility\n";
-						//opserr << "This is Felement:" <<Felement<<endln;
-					}
+				// calculate element stiffness matrix invert3by3Matrix(F, Kelement);	  
+				if (Felement.Solve(I, KelementTrial) < 0) {
+					opserr << "TestNonlocalElement2dDH::update() -- could not invert flexibility\n";
+					/*opserr << "This is Felement: " <<Felement<<endln;
+					opserr << "This is KelementTrial: " << KelementTrial << endln;*/
+				}
 
-					// Check if section experiences softening
-					double WDot_isec;
-					double WDot_cumulativeSoft = 0.;
-					double WDot_cumulativeElasticUnload = 0.;
-					double elasticUnload = 0.;
-					//double WDot_isec_cumulativeElastic = 0.;
-					//double WDot_totElastic = 0.;
-					for (i = 0; i < numSections; i++)
+				// Check if section experiences softening
+				double WDot_isec;
+				double WDot_cumulativeSoft = 0.;
+				double WDot_cumulativeElasticUnload = 0.;
+				double elasticUnload = 0.;
+				//double WDot_isec_cumulativeElastic = 0.;
+				//double WDot_totElastic = 0.;
+				for (i = 0; i < numSections; i++)
+				{
+					WDot_isec = 0.;
+					for (int iComp = 0; iComp < 2; iComp++)
 					{
-						WDot_isec = 0.;
-						for (int iComp = 0; iComp < 2; iComp++)
-						{
-							WDot_isec += 0.5 * (srSubdivide[i](iComp) - srCommit[i](iComp)) * (eLocalSubdivide[i](iComp) - eLocalCommit[i](iComp));
-						}
-						//opserr << "This is WDot:" << WDot << endln;
-						//if (WDot_isec < 0. && abs(WDot_isec)>1)
-						if (WDot_isec < 0.)
-						{
-							WDot_cumulativeSoft += WDot_isec;
-						}
-						else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
-							//else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0. && abs(eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm()) > 1.* eLocalCommit[i].Norm())
-						{
-							elasticUnload += 1;
-							WDot_cumulativeElasticUnload += WDot_isec;
-						}
+						WDot_isec += 0.5 * (srSubdivide[i](iComp) - srCommit[i](iComp)) * (eLocalSubdivide[i](iComp) - eLocalCommit[i](iComp));
 					}
-					if (elasticUnload == numSections)
+					//opserr << "This is WDot:" << WDot << endln;
+					//if (WDot_isec < 0. && abs(WDot_isec)>1)
+					if (WDot_isec < 0.)
 					{
-						WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeElasticUnload, 0.), WSofteningTol);
+						WDot_cumulativeSoft += WDot_isec;
+					}
+					else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
+						//else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0. && abs(eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm()) > 1.* eLocalCommit[i].Norm())
+					{
+						elasticUnload += 1;
+						WDot_cumulativeElasticUnload += WDot_isec;
+					}
+				}
+				if (elasticUnload == numSections)
+				{
+					WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeElasticUnload, 0.), WSofteningTol);
+				}
+				else
+				{
+					WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeSoft, 0.), WSofteningTol);
+				}
+
+				//todo 
+				//opserr << "This is the element flexibility matrix:" << Felement << endln;
+				//opserr << "This is the element stiffness matrix:" << KelementTrial << endln;
+				//return -1;
+
+				//// dv = vin + dvTrial  - vu
+				//dv = vin;
+				//dv += dvTrial;
+				//dv -= vu;
+
+				//opserr << "This is dv prior change:" << dv << endln;
+
+				//// dv = -vin - dvTrial  + vu
+				//dv.addVector(0.0, vin, -1.0);
+				//dv -= dvTrial;
+				//dv += vu;
+
+				// dv = -vin - dvTrial  + vu +v
+				dv.addVector(0.0, vu, -1.0);
+				/*dv -= dvTrial;
+				dv += vu;
+				dv += v;*/
+
+				//opserr << "This is vu:" << vu << endln;
+				//opserr << "This is vin:" << vin << endln;
+				//opserr << "This is dvTrial:" << dvTrial << endln;
+				//opserr << "This is dv:" << dv << endln;
+
+				// dq = Kelement * dv;
+				dq.addMatrixVector(0.0, KelementTrial, dv, 1.0);
+
+				qTrial += dq;
+
+				// check for convergence of this interval
+				if (dv.Norm() < Tol)
+					//if (dv.Norm()/(dvTrial.Norm()+ DBL_EPSILON) < Tol)
+				{
+					// set the target displacement
+					dvToDo -= dvTrial;
+					vin += dvTrial;
+
+					// check if we have got to where we wanted
+					if (dvToDo.Norm() <= DBL_EPSILON)
+					{
+						converged = true;
 					}
 					else
 					{
-						WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeSoft, 0.), WSofteningTol);
+						// we convreged but we have more to do
+						// reset variables for start of next subdivision
+						dvTrial = dvToDo;
+						numSubdivide = 1;
 					}
 
-					//todo 
-					//opserr << "This is the element flexibility matrix:" << Felement << endln;
-					//opserr << "This is the element stiffness matrix:" << KelementTrial << endln;
-					//return -1;
+					// set Kelement, e and q values
+					Kelement = KelementTrial;
+					q = qTrial;
 
-					//// dv = vin + dvTrial  - vu
-					//dv = vin;
-					//dv += dvTrial;
-					//dv -= vu;
-
-					//opserr << "This is dv prior change:" << dv << endln;
-
-					//// dv = -vin - dvTrial  + vu
-					//dv.addVector(0.0, vin, -1.0);
-					//dv -= dvTrial;
-					//dv += vu;
-
-					// dv = -vin - dvTrial  + vu +v
-					dv.addVector(0.0, vu, -1.0);
-					/*dv -= dvTrial;
-					dv += vu;
-					dv += v;*/
-
-					//opserr << "This is vu:" << vu << endln;
-					//opserr << "This is vin:" << vin << endln;
-					//opserr << "This is dvTrial:" << dvTrial << endln;
-					//opserr << "This is dv:" << dv << endln;
-
-					// dq = Kelement * dv;
-					dq.addMatrixVector(0.0, KelementTrial, dv, 1.0);
-
-					qTrial += dq;
-
-					// check for convergence of this interval
-					if (dv.Norm() < Tol)
-					//if (dv.Norm()/(dvTrial.Norm()+ DBL_EPSILON) < Tol)
+					for (int k = 0; k < numSections; k++)
 					{
-						// set the target displacement
-						dvToDo -= dvTrial;
-						vin += dvTrial;
-
-						// check if we have got to where we wanted
-						if (dvToDo.Norm() <= DBL_EPSILON)
-						{
-							converged = true;
-						}
-						else
-						{
-							// we convreged but we have more to do
-							// reset variables for start of next subdivision
-							dvTrial = dvToDo;
-							numSubdivide = 1;
-						}
-
-						// set Kelement, e and q values
-						Kelement = KelementTrial;
-						q = qTrial;
-
-						for (int k = 0; k < numSections; k++)
-						{
-							eNonlocal[k] = eNonLocalSubdivide[k];
-							eLocal[k] = eLocalSubdivide[k];
-							FSection[k] = FSectionSubdivide[k];
-							sr[k] = srSubdivide[k];
-						}
-
-						// break out of j & l loops
-						j = numIters + 1;
-						l = 4;
+						eNonlocal[k] = eNonLocalSubdivide[k];
+						eLocal[k] = eLocalSubdivide[k];
+						FSection[k] = FSectionSubdivide[k];
+						sr[k] = srSubdivide[k];
 					}
-					else //if(dv.Norm() < tolerance)
+
+					// break out of j & l loops
+					j = maxIters + 1;
+				}
+				else //if(dv.Norm() < tolerance)
+				{
+					// if we have failed to converge for all of our newton schemes - reduce step size by the factor specified
+
+					if (j == (maxIters - 1))
 					{
-						// if we have failed to converge for all of our newton schemes - reduce step size by the factor specified
-
-						if (j == (numIters - 1) && (l == 2))
-						{
-							dvTrial /= factor;
-							numSubdivide++;
-						}
+						dvTrial /= factor;
+						numSubdivide++;
 					}
-				}// for (j=0; j<numIters; j++)
-			}// if (initialFlag != 2)
-		}// for (int l=0; l<2; l++)
+				}
+			}// for (j=0; j<numIters; j++)
+		}// if (initialFlag != 2)
 	}// while (converged == false)
 
 

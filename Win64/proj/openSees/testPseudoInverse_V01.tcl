@@ -73,9 +73,9 @@
 
 	
 	set absCoordCorner [expr $bSection/2.0];
-	set zIS [expr $absCoordCorner];
+	set zIS [expr -$absCoordCorner];
 	set yIS [expr -$absCoordCorner];
-	set zJS [expr -$absCoordCorner];
+	set zJS [expr $absCoordCorner];
 	set yJS [expr $absCoordCorner];
 
 	
@@ -86,8 +86,8 @@
 	}
 
 	
-	#set integration "NewtonCotes 1 5"
-	#element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
+	# set integration "NewtonCotes 1 7"
+	# element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
 	set lc [expr 0.0*$bSection];
 	set nIP 5
 	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 $nIP  20 1e-6 $lc 
@@ -99,10 +99,10 @@
 puts "Recorders ..."
 
 # Record displacements 
-	recorder Node -file $dataDir/Test01_pseudoInverse_Disp.txt -node 2 -dof 1 disp;
+	# recorder Node -file $dataDir/issue_elasticPerfectPlastic_fbElem_7IPs_Disp.txt -node 2 -dof 1 2 3 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/Test01_pseudoInverse_RBase.txt -node 1 -dof 1 reaction;
+	# recorder Node -file $dataDir/issue_elasticPerfectPlastic_fbElem_7IPs_RBase.txt -node 1 -dof 1 2 3 reaction;
 	
 # Record stress and strains for fibers
 	# recorder Element -file $dataDir/WebPlate_bSurT30_cyclic_stressFiber.txt -ele 12 section 1 fiber 150. 150. 1 stress;
