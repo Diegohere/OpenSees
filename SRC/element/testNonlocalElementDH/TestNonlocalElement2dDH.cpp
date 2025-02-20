@@ -901,7 +901,7 @@ TestNonlocalElement2dDH::update(void)
 					//Compute section flexibility using decompostion and pseudoInverse
 					const Matrix& Ksection = sections[i]->getSectionTangent();
 					
-					int isIllCondition = Ksection.checkIllCondition(Tol);
+					int isIllCondition = Ksection.checkIllCondition(1e-12);
 					if (isIllCondition == 0) {// The matrix is not ill-conditioned 
 						FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 					}
@@ -918,7 +918,7 @@ TestNonlocalElement2dDH::update(void)
 						opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
 						opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
 						Matrix Fsection_plastic = Matrix(2, 2);
-						Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, Tol);
+						Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, 1e-8);
 						FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
 						/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
 						opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;

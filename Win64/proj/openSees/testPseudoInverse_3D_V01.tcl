@@ -2,8 +2,8 @@
 #          Set Up & Source Definition									  
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
-	model BasicBuilder -ndm 2 -ndf 3;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir resultsTest02_pseudoInverse;			# name of output folder
+	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
+	set dataDir resultsTest01_3D_pseudoInverse;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 ###################################################################################################
@@ -15,7 +15,6 @@
 	set bPlate  360.0;										# HSS depth for material law
 	set tPlate 12;										# plate thickness  for material law
 	set bSurTPlate [expr $bPlate / $tPlate];				# b/t HSS plate
-	set sigmaC0 354.9674;									# Initial capping stress sigmaC0
 	
 ###################################################################################################
 #          Define Subassembly Geometry									  
@@ -30,7 +29,7 @@
 	
 # set up geometric transformation of elements
 	set ColTransfTag 1; 			# associate a tag to column transformation
-	geomTransf Linear $ColTransfTag;		# Linear transformation
+	geomTransf Linear $ColTransfTag 0 0 1;		# Linear transformation
 	#geomTransf Corotational $ColTransfTag 0 0 1;		# Corotational transformation
 	
 ###################################################################################################
@@ -39,13 +38,13 @@
 
 # define nodes and assign masses to beam-column intersections of frame
 	# command:  node nodeID xcoord ycoord 
-	node 1 0.0 0.0;
-	node 2 0.0 $L;
+	node 1 0.0 0.0 0.0;
+	node 2 0.0 $L 0.0;
 	
 # assign boundary conditions 
 	# command:  fix nodeID dxFixity dyFixity rzFixity
 	# fixity values: 1 = constrained; 0 = unconstrained
-	fix 1 1 1 1;
+	fix 1 1 1 1 1 1 1;
 	#fix 2 0 0 0;
 	
 ###################################################################################################
@@ -62,14 +61,17 @@
 	set J   [expr $do**3*$tPlate]; 		# torsional constant   
 	set GJ 	[expr $G*$J];  			# torsional stiffness 
 	
+	set plateType web;
+	set steelMaterial A992Gr50;
+	set sigmaC0 [expr 99999999999];
+	
 	#nDMaterial ElasticIsotropic 1 $E $nu
 	#nDMaterial LocalBucklingWebPlate 1 200000.0 0.3 370.0 0.0 1.0 0.0 1.0 1 3512.0 30.0 $bPlate $tPlate $sigmaC0 1.;
-	#nDMaterial LocalBucklingWebPlate 1 191020.0 0.3 373.72 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 1;
-	#uniaxialMaterial HLBModelUniaxial 1 205000.0 373.72 141.47 15.20 135.95 211.16 2 25621.00 235.12 942.18 3.16 $bPlate $tPlate $sigmaC0 1.0 web A992Gr50;
-	uniaxialMaterial Steel01 1 355.0 205000.0 0.0
+	nDMaterial HLBModel 1 205000.0 0.3 355.0 0.0 1.0 0.0 1.0 2 0.0 1.0 0.0 1.0 $bPlate $tPlate $sigmaC0 1.0 $plateType $steelMaterial;
+
 	
 	set N_LoadingDir 10;
-	set N_TranverseDir 1;
+	set N_TranverseDir 2;
 
 	
 	set absCoordCorner [expr $bSection/2.0];
@@ -79,7 +81,7 @@
 	set yJS [expr $absCoordCorner];
 
 	
-	section Fiber 1 {;	
+	section NDFiberTestNonlocal 1 -GJ $GJ {;	
 	#			 matTag  umSubdivY  numSubdivZ  yI  	zI  	yJ    zJ
 	patch rect 1 $N_LoadingDir $N_TranverseDir $yIS $zIS $yJS $zJS;
 
@@ -100,11 +102,11 @@ puts "Recorders ..."
 
 # Record displacements 
 	# recorder Node -file $dataDir/issue_elasticPerfectPlastic_fbElem_7IPs_Disp.txt -node 2 -dof 1 2 3 disp;
-	 recorder Node -file $dataDir/testPseudoInverse_5IPs_V02_Disp.txt -node 2 -dof 1 2 3 disp;
+	 recorder Node -file $dataDir/testPseudoInverse_3D_5IPs_V01_Disp.txt -node 2 -dof 1 2 3 4 5 6 disp;
 	
 # Record reactions
 	# recorder Node -file $dataDir/issue_elasticPerfectPlastic_fbElem_7IPs_RBase.txt -node 1 -dof 1 2 3 reaction;
-	recorder Node -file $dataDir/testPseudoInverse_5IPs_V02_RBase.txt -node 1 -dof 1 2 3 reaction;
+	recorder Node -file $dataDir/testPseudoInverse_3D_5IPs_V01_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
 	
 # Record stress and strains for fibers
 	# recorder Element -file $dataDir/WebPlate_bSurT30_cyclic_stressFiber.txt -ele 12 section 1 fiber 150. 150. 1 stress;
@@ -148,9 +150,9 @@ puts "Running Analysis..."
 
 # assign lateral loads and create load pattern
   set CtrlNode 2
-  set CtrlDOF 2;
+  set CtrlDOF 1;
   pattern Plain 200 Linear {			
-	 load $CtrlNode 0.0 1.0 0.0;
+	 load $CtrlNode 1.0 0.0 0.0 0.0 0.0 0.0;
   }
   
 # analysis commands
@@ -192,8 +194,7 @@ puts "Running Analysis..."
 	# Subtract dUi+1 - dUi
 	set D1 [lindex $disp $index];
 	set D2 [lindex $disp $index-1];
-	#set dU1 [expr ($D1-$D2)*$L];
-	set dU1 [expr ($D1-$D2)*$L/20];
+	set dU1 [expr ($D1-$D2)*$L];
 	
 	# Create Nsteps from Amplitude to Amplitude
 	set dU [expr ($dU1)/$NSteps]

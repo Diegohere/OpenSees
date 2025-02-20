@@ -1087,11 +1087,20 @@ int Matrix::computePseudoInverseSymmetric(Matrix& APlus, const double tol)
 	//opserr << "This is LambdaDiag: " << Lambda << endln;
 
 	// Step 2: Compute Q*Lambda*Q^T
+	// Find maximun eigenvalue
+	double maxAbsEig = abs(Lambda(0));  // Initializing to the absolute value of the first eigenvalue
+	for (int i = 1; i < numCols; i++) { // Loop through eigenvalues to find the max and min
+		double absEig = abs(Lambda(i));
+		if (absEig > maxAbsEig) {
+			maxAbsEig = absEig;
+		}
+		}
 	// Compute Q * Lambda
 	Vector QMultInvLambda(numCols * numRows);
 	for (int i = 0; i < numCols; ++i) {
 		for (int j = 0; j < numCols; ++j) {
-			if (abs(Lambda[j]) > tol)// truncate values 
+			//if (abs(Lambda[j]) > tol)// truncate values 
+			if (abs(Lambda[j]) / maxAbsEig >= tol)// truncate values 
 			{
 				QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] / Lambda[j];
 			}

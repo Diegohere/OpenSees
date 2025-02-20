@@ -1875,6 +1875,9 @@ void HLBModel::calculateConsistentTangentModulusHardening(double consistParam_pl
 	// Take the symmetric approximation
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
 
+	/*stiffnessTrial.Zero();
+	opserr << "This is stiffnessTrial: " << stiffnessTrial << endln;*/
+
 	//// Try to fix flat tangent issue
 	//double alphaElastic = 0.01;
 	//stiffnessTrial = alphaElastic * elasticMatrix + (1.- alphaElastic) * stiffnessTrial;
