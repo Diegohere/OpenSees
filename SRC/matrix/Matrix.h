@@ -89,7 +89,7 @@ class Matrix
     // Compute the Moore-Penrose inverse of a symmetric matrix
     int computePseudoInverseSymmetric(Matrix& APlus, const double tol);
     // Check if a symmetric matrix is ill-conditioned (if 1/condNumber >tol)
-    int checkIllCondion(double tol) const;
+    int checkIllCondition(double tol) const;
 
     // overloaded operators 
     inline double &operator()(int row, int col);

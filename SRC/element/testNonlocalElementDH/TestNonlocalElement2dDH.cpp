@@ -201,6 +201,41 @@ TestNonlocalElement2dDH::TestNonlocalElement2dDH(int tag, int nodeI, int nodeJ, 
 	//testMatrix.computePseudoInverseSymmetric(testInverse, testTol);
 	//opserr << "This is testInverse: " << testInverse << endln;
 	//int test1 = 1;
+
+	//// Check ill-condition procedure
+	//Matrix testMatrix(3, 3);
+	///*testMatrix(0, 0) = 4;
+	//testMatrix(0, 1) = 1;
+	//testMatrix(0, 2) = 2;
+	//testMatrix(1, 0) = 1;
+	//testMatrix(1, 1) = 3;
+	//testMatrix(1, 2) = 0;
+	//testMatrix(2, 0) = 2;
+	//testMatrix(2, 1) = 0;
+	//testMatrix(2, 2) = 5;*/
+	///*testMatrix(0, 0) = 2.0;
+	//testMatrix(0, 1) = 4.0;
+	//testMatrix(0, 2) = 6.0;
+	//testMatrix(1, 0) = 4.0;
+	//testMatrix(1, 1) = 8.0;
+	//testMatrix(1, 2) = 12.0;
+	//testMatrix(2, 0) = 6.0;
+	//testMatrix(2, 1) = 12.0;
+	//testMatrix(2, 2) = 18.0;*/
+	//testMatrix(0, 0) = 1.0;
+	//testMatrix(0, 1) = 1.0;
+	//testMatrix(0, 2) = 1.0;
+	//testMatrix(1, 0) = 1.0;
+	//testMatrix(1, 1) = 1.0001;
+	//testMatrix(1, 2) = 1.0;
+	//testMatrix(2, 0) = 1.0;
+	//testMatrix(2, 1) = 1.0;
+	//testMatrix(2, 2) = 1.0002;
+	//opserr << "This is matrix A: " << testMatrix << endln;
+	//double testTol = 1e-4;
+	//int isIllCond=testMatrix.checkIllCondion(testTol);
+	//opserr << "This is isIllCond: " << isIllCond << endln;
+	//int test1 = 1;
 }
 
 // Destructor
@@ -866,34 +901,29 @@ TestNonlocalElement2dDH::update(void)
 					//Compute section flexibility using decompostion and pseudoInverse
 					const Matrix& Ksection = sections[i]->getSectionTangent();
 					
-					int isNotSingular = Ksection.checkIllCondion(Tol);
-					if (isNotSingular == 0) {// The matrix is not singular (it's well-conditioned)
-						
+					int isIllCondition = Ksection.checkIllCondition(Tol);
+					if (isIllCondition == 0) {// The matrix is not ill-conditioned 
+						FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 					}
 					else // The matrix singular (ill-conditioned)
 					{
-
-					}
-
-					//int isSingular=Ksection.Invert(Fsection);
-					opserr << "isSingular: " << isNotSingular << endln;
-
-					//const Matrix &Fsection_elastic = sections[i]->getInitialFlexibility();
-					//const Matrix &Ksection_elastic = sections[i]->getInitialTangent();
-					//const Matrix &Ksection = sections[i]->getSectionTangent();
-					//Matrix Ksection_plastic = Matrix(2, 2);
-					//if (abs(Ksection(0, 0) - Ksection_elastic(0, 0)) > Tol) // if not elastic
-					//{
-					//	Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
-					//	Matrix Ksection_intermed1_inverse = Matrix(2, 2);
-					//	Ksection_intermed1.Invert(Ksection_intermed1_inverse);
-					//	Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
-					//}
-					/*opserr << "Ksection: " << Ksection << endln;
-					opserr << "Ksection_elastic: " << Ksection_elastic << endln;
-					opserr << "Ksection_plastic: " << Ksection_plastic << endln;*/
-					FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-
+						const Matrix &Fsection_elastic = sections[i]->getInitialFlexibility();
+					    const Matrix &Ksection_elastic = sections[i]->getInitialTangent();
+						Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
+						Matrix Ksection_intermed1_inverse = Matrix(2, 2);
+						Ksection_intermed1.Invert(Ksection_intermed1_inverse);
+						Matrix Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
+						/*opserr << "This is Ksection: " << Ksection << endln;
+						opserr << "This is Ksection_intermed1: " << Ksection_intermed1 << endln;
+						opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
+						opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
+						Matrix Fsection_plastic = Matrix(2, 2);
+						Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, Tol);
+						FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
+						/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
+						opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
+						opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
+					}	
 
 					// calculate section residual deformations de = FSection * (s - sr);
 					static Vector s_seci(2); // initialize vector s_secii

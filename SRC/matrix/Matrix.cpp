@@ -1159,10 +1159,10 @@ int Matrix::computePseudoInverseSymmetric(Matrix& APlus, const double tol)
 
 
 
-int Matrix::checkIllCondion(double tol) const
+int Matrix::checkIllCondition(double tol) const
 {
 	// Returns 0 if matrix is not ill-conditioned 
-	int isIllCondition = 0;
+	int isfailDGEEV = 0;
 
 	// Check if matrix is square
 	if (numRows != numCols) {
@@ -1215,8 +1215,8 @@ int Matrix::checkIllCondion(double tol) const
 
 
 	// Step 2: Check if ill conditioned
-	isIllCondition = -abs(info);
-	if (isIllCondition < 0) // if singular
+	isfailDGEEV = -abs(info);
+	if (isfailDGEEV < 0) // if fail DGEEV
 	{
 		return -1;
 	}

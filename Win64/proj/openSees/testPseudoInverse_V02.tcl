@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 2 -ndf 3;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir resultsTest01_pseudoInverse;			# name of output folder
+	set dataDir resultsTest02_pseudoInverse;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 ###################################################################################################
@@ -89,7 +89,7 @@
 	# set integration "NewtonCotes 1 7"
 	# element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 10 1e-6
 	set lc [expr 0.0*$bSection];
-	set nIP 9
+	set nIP 5
 	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 $nIP  40 1e-6 $lc 
 	
 ############################################################################
@@ -100,11 +100,11 @@ puts "Recorders ..."
 
 # Record displacements 
 	# recorder Node -file $dataDir/issue_elasticPerfectPlastic_fbElem_7IPs_Disp.txt -node 2 -dof 1 2 3 disp;
-	 recorder Node -file $dataDir/testPseudoInverse_9IPs_V01_Disp.txt -node 2 -dof 1 2 3 disp;
+	 recorder Node -file $dataDir/testPseudoInverse_5IPs_V02_Disp.txt -node 2 -dof 1 2 3 disp;
 	
 # Record reactions
 	# recorder Node -file $dataDir/issue_elasticPerfectPlastic_fbElem_7IPs_RBase.txt -node 1 -dof 1 2 3 reaction;
-	recorder Node -file $dataDir/testPseudoInverse_9IPs_V01_RBase.txt -node 1 -dof 1 2 3 reaction;
+	recorder Node -file $dataDir/testPseudoInverse_5IPs_V02_RBase.txt -node 1 -dof 1 2 3 reaction;
 	
 # Record stress and strains for fibers
 	# recorder Element -file $dataDir/WebPlate_bSurT30_cyclic_stressFiber.txt -ele 12 section 1 fiber 150. 150. 1 stress;
@@ -148,9 +148,9 @@ puts "Running Analysis..."
 
 # assign lateral loads and create load pattern
   set CtrlNode 2
-  set CtrlDOF 1;
+  set CtrlDOF 2;
   pattern Plain 200 Linear {			
-	 load $CtrlNode 1.0 0.0 0.0;
+	 load $CtrlNode 0.0 1.0 0.0;
   }
   
 # analysis commands
@@ -192,7 +192,8 @@ puts "Running Analysis..."
 	# Subtract dUi+1 - dUi
 	set D1 [lindex $disp $index];
 	set D2 [lindex $disp $index-1];
-	set dU1 [expr ($D1-$D2)*$L];
+	#set dU1 [expr ($D1-$D2)*$L/2];
+	set dU1 [expr ($D1-$D2)*$L/20];
 	
 	# Create Nsteps from Amplitude to Amplitude
 	set dU [expr ($dU1)/$NSteps]
