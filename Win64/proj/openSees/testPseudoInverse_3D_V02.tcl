@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir resultsTest02_3D_pseudoInverse;			# name of output folder
+	set dataDir resultsTest02_3D_pseudoInverse_test;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 ###################################################################################################
@@ -102,11 +102,11 @@ puts "Recorders ..."
 
 # Record displacements 
 	# recorder Node -file $dataDir/issue_elasticPerfectPlastic_fbElem_7IPs_Disp.txt -node 2 -dof 1 2 3 disp;
-	 recorder Node -file $dataDir/testPseudoInverse_3D_9IPs_V02_Disp.txt -node 2 -dof 1 2 3 4 5 6 disp;
+	 #recorder Node -file $dataDir/testPseudoInverse_3D_9IPs_V02_Disp.txt -node 2 -dof 1 2 3 4 5 6 disp;
 	
 # Record reactions
 	# recorder Node -file $dataDir/issue_elasticPerfectPlastic_fbElem_7IPs_RBase.txt -node 1 -dof 1 2 3 reaction;
-	recorder Node -file $dataDir/testPseudoInverse_3D_9IPs_V02_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
+	#recorder Node -file $dataDir/testPseudoInverse_3D_9IPs_V02_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
 	
 # Record stress and strains for fibers
 	# recorder Element -file $dataDir/WebPlate_bSurT30_cyclic_stressFiber.txt -ele 12 section 1 fiber 150. 150. 1 stress;
@@ -182,6 +182,10 @@ puts "Running Analysis..."
   set LoopLength [llength $disp]
   set h 1 
   
+  # openFile for convergence check
+  set filename "convergence_log.txt"
+set fileId [open $filename "a"]
+  
 # Run the static cyclic analysis
   set NSteps 1;
   set dU1 0;
@@ -206,10 +210,24 @@ puts "Running Analysis..."
      puts "increment = [expr {$h}] / [expr {$LoopLength}]";
 
 	set ok [ analyze $NSteps]
+	
+	set norms [testNorms]
+	set nIters [ testIter]
+	# Convert testNorms list to a space-separated string
+    set normsString [join $norms " "]
+    # Write to file: "iteration_number  nIters  norm1 norm2 norm3 ..."
+    #puts $fileId "$h $nIters $normsString"
+	
+	set nDOFsTot [getNDF]
+	puts "nDOFsTot = $nDOFsTot";
+	
 	set h [expr $h + 1 ]
 } 	
 set tFinish [clock seconds];
 puts "Duration Process: [expr $tFinish - $tStart]"; 
+
+# Close the file
+close $fileId
 
 
 	

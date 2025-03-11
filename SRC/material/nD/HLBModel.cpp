@@ -1991,9 +1991,9 @@ void HLBModel::calculateConsistentTangentModulusSoftening(const Vector& strain_n
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
 	//opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
 
-	// Try to fix flat tangent issue
-	//stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
-	stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
+	//// Try to fix flat tangent issue
+	////stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
+	//stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
 
 	return;
 
@@ -2136,9 +2136,9 @@ void HLBModel::calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus
 	/*opserr << "This is tangentModulusPlRecovStage" << stiffnessTrial << endln;
 	opserr << "This is strain vector:" << strainTrial << endln;*/
 
-	// Try to fix flat tangent issue
-	//stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
-	stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
+	//// Try to fix flat tangent issue
+	////stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
+	//stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
 
 	return;
 }

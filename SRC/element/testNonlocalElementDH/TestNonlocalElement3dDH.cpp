@@ -677,7 +677,7 @@ TestNonlocalElement3dDH::update(void)
 
 	static double factor = 10;
 
-	maxSubdivisions = 4;
+	maxSubdivisions = 50;
 
 	while (converged == false && numSubdivide <= maxSubdivisions)
 	{
@@ -705,7 +705,10 @@ TestNonlocalElement3dDH::update(void)
 
 		if (initialFlag != 2)
 		{
-			for (j = 0; j < maxIters; j++)
+			// set the maximum number of iteration
+			int numItersMax = maxIters;
+
+			for (j = 0; j < numItersMax; j++)
 			{
 				// initialize f and vr for integration
 				Felement.Zero();
@@ -892,6 +895,9 @@ TestNonlocalElement3dDH::update(void)
 						/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
 						opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
 						opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
+
+						// Increase the maximum number of iterations because Modified Newton
+						numItersMax = 100*maxIters;
 					}
 
 					// calculate section residual deformations de = FSection * (s - sr);
@@ -1061,7 +1067,7 @@ TestNonlocalElement3dDH::update(void)
 						// we convreged but we have more to do
 						// reset variables for start of next subdivision
 						dvTrial = dvToDo;
-						numSubdivide = 1;
+						//numSubdivide = 1;
 					}
 
 					// set Kelement, e and q values
@@ -1078,13 +1084,13 @@ TestNonlocalElement3dDH::update(void)
 					}
 
 					// break out of j & l loops
-					j = maxIters + 1;
+					j = numItersMax + 1;
 				}
 				else //if(dv.Norm() < tolerance)
 				{
 					// if we have failed to converge for all of our newton schemes - reduce step size by the factor specified
 
-					if (j == (maxIters - 1))
+					if (j == (numItersMax - 1))
 					{
 						dvTrial /= factor;
 						numSubdivide++;

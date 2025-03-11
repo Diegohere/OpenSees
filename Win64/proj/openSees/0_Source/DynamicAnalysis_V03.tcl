@@ -94,6 +94,10 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 	# }
 	set controlTime [getTime];
 	set krylovflag 1; # do not check again the 1st iteration unconverged Krylov
+	
+	# set norms [testNorms]
+	# set nIters [ testIter]
+	# puts "This is norms at time $controlTime: $norms";
 
 	# ------- TOLERANCE_0 ----------------------------
 	if {$ok != 0} {
