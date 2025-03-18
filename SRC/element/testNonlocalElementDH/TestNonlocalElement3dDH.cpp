@@ -906,7 +906,10 @@ TestNonlocalElement3dDH::update(void)
 								opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
 								opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
 								Matrix Fsection_plastic = Matrix(6, 6);
-								Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, 1e-2);
+								if (Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, 1e-2) < 0)
+								{
+									return -1; // matrix has nan (modified DH 18.03.2025)
+								}
 								FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
 								//opserr << "This is Ksection: " << Ksection << endln;
 								/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;

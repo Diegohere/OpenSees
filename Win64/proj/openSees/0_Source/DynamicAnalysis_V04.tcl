@@ -12,7 +12,7 @@ wipeAnalysis;
 
 # ------- PLAY WITH THESE PARAMETERS -----------------------------------------------------------------------------------------------------------------------------------------------------------
 
-set show_iter 0; # Convergence information: 0 - no information / 2 - last iteration step
+set show_iter 2; # Convergence information: 0 - no information / 2 - last iteration step
 
 #set tol_0 1.0e-8;  
 #set tol_1 1.0e-7;  

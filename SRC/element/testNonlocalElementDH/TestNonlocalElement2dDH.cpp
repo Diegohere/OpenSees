@@ -186,7 +186,7 @@ TestNonlocalElement2dDH::TestNonlocalElement2dDH(int tag, int nodeI, int nodeJ, 
 	//testMatrix(2, 0) = 2;
 	//testMatrix(2, 1) = 0;
 	//testMatrix(2, 2) = 5;*/
-	//testMatrix(0, 0) = 2.0;
+	///*testMatrix(0, 0) = 2.0;
 	//testMatrix(0, 1) = 4.0;
 	//testMatrix(0, 2) = 6.0;
 	//testMatrix(1, 0) = 4.0;
@@ -194,11 +194,20 @@ TestNonlocalElement2dDH::TestNonlocalElement2dDH(int tag, int nodeI, int nodeJ, 
 	//testMatrix(1, 2) = 12.0;
 	//testMatrix(2, 0) = 6.0;
 	//testMatrix(2, 1) = 12.0;
-	//testMatrix(2, 2) = 18.0;
+	//testMatrix(2, 2) = 18.0;*/
+	//testMatrix(0, 0) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(0, 1) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(0, 2) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(1, 0) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(1, 1) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(1, 2) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(2, 0) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(2, 1) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(2, 2) = std::numeric_limits<double>::quiet_NaN();
 	//opserr << "This is matrix A: " << testMatrix << endln;
 	//Matrix testInverse(3, 3);
 	//double testTol = 1e-4;
-	//testMatrix.computePseudoInverseSymmetric(testInverse, testTol);
+	//int value=testMatrix.computePseudoInverseSymmetric(testInverse, testTol);
 	//opserr << "This is testInverse: " << testInverse << endln;
 	//int test1 = 1;
 
@@ -222,7 +231,7 @@ TestNonlocalElement2dDH::TestNonlocalElement2dDH(int tag, int nodeI, int nodeJ, 
 	//testMatrix(2, 0) = 6.0;
 	//testMatrix(2, 1) = 12.0;
 	//testMatrix(2, 2) = 18.0;*/
-	//testMatrix(0, 0) = 1.0;
+	///*testMatrix(0, 0) = 1.0;
 	//testMatrix(0, 1) = 1.0;
 	//testMatrix(0, 2) = 1.0;
 	//testMatrix(1, 0) = 1.0;
@@ -230,10 +239,19 @@ TestNonlocalElement2dDH::TestNonlocalElement2dDH(int tag, int nodeI, int nodeJ, 
 	//testMatrix(1, 2) = 1.0;
 	//testMatrix(2, 0) = 1.0;
 	//testMatrix(2, 1) = 1.0;
-	//testMatrix(2, 2) = 1.0002;
+	//testMatrix(2, 2) = 1.0002;*/
+	//testMatrix(0, 0) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(0, 1) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(0, 2) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(1, 0) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(1, 1) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(1, 2) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(2, 0) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(2, 1) = std::numeric_limits<double>::quiet_NaN();
+	//testMatrix(2, 2) = std::numeric_limits<double>::quiet_NaN(); 
 	//opserr << "This is matrix A: " << testMatrix << endln;
 	//double testTol = 1e-4;
-	//int isIllCond=testMatrix.checkIllCondion(testTol);
+	//int isIllCond=testMatrix.checkIllCondition(testTol);
 	//opserr << "This is isIllCond: " << isIllCond << endln;
 	//int test1 = 1;
 }
@@ -939,7 +957,10 @@ TestNonlocalElement2dDH::update(void)
 								opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
 								opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
 								Matrix Fsection_plastic = Matrix(2, 2);
-								Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, 1e-8);
+								if (Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, 1e-2) < 0)
+								{
+									return -1; // matrix has nan (modified DH 18.03.2025)
+								}
 								FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
 								/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
 								opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;

@@ -1040,6 +1040,15 @@ Matrix::solve_truncatedEigen(const Vector& b, Vector& x, const double& tol)
 // Added by Diego Heredia 18.02.2025
 int Matrix::computePseudoInverseSymmetric(Matrix& APlus, const double tol)
 {
+	// Check if nan Added 18.03.2025
+	for (int i = 0; i < numCols * numCols; i++)
+	{
+		if (isnan(data[i]))
+		{
+			return -1;
+		}
+	}
+
 	// Check if matrix is square
 	if (numRows != numCols) {
 		opserr << "compute_Eigen_decomposition - the matrix of dimensions [" << numRows << "," << numCols << "] is not square\n";
@@ -1170,6 +1179,15 @@ int Matrix::computePseudoInverseSymmetric(Matrix& APlus, const double tol)
 
 int Matrix::checkIllCondition(double tol) const
 {
+	// Check if nan Added 18.03.2025
+	for (int i = 0; i < numCols * numCols; i++)
+	{
+		if (isnan(data[i]))
+		{
+			return -1;
+		}
+	}
+
 	// Returns 0 if matrix is not ill-conditioned 
 	int isfailDGEEV = 0;
 
@@ -1179,7 +1197,7 @@ int Matrix::checkIllCondition(double tol) const
 		return -1;
 	}
 
-	// copy the data
+	// copy the data 
 	double* A_copy = new (nothrow) double[numCols * numCols];
 	//opserr << "This is A.data: " << endln;
 	for (int i = 0; i < numCols * numCols; i++)

@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 2 -ndf 3;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir resultsTest02_pseudoInverse;			# name of output folder
+	set dataDir resultsTest02_pseudoInverse_testNAN;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 
 ###################################################################################################
