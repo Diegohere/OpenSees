@@ -89,7 +89,7 @@ void* OPS_SimpsonBeamIntegration(int& integrationTag, ID& secTags)
 }
 
 SimpsonBeamIntegration::SimpsonBeamIntegration() :
-BeamIntegration(BEAM_INTEGRATION_TAG_Simpson)
+BeamIntegration(BEAM_INTEGRATION_TAG_SimpsonIrregularlySpacedBeamIntegration)
 {
 	// Nothing to do
 }

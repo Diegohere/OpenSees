@@ -1013,6 +1013,9 @@
     <ClCompile Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement2dDH.cpp">
       <Filter>testNonlocalElementDH</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\SimpsonIrregularlySpacedBeamIntegration.cpp">
+      <Filter>forceBeamColumn</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\element\Element.h">
@@ -1785,6 +1788,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\element\testNonlocalElementDH\TestNonlocalElement2dDH.h">
       <Filter>testNonlocalElementDH</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\SimpsonIrregularlySpacedBeamIntegration.h">
+      <Filter>forceBeamColumn</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

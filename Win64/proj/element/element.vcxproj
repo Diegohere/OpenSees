@@ -218,6 +218,7 @@
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\ForceBeamColumnWarping2d.cpp" />
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\NewtonCotesBeamIntegrationUpdated.cpp" />
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\SimpsonBeamIntegration.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\SimpsonIrregularlySpacedBeamIntegration.cpp" />
     <ClCompile Include="..\..\..\SRC\element\fourNodeQuad\EightNodeQuad.cpp" />
     <ClCompile Include="..\..\..\SRC\element\fourNodeQuad\NineNodeQuad.cpp" />
     <ClCompile Include="..\..\..\SRC\element\fourNodeQuad\SixNodeTri.cpp" />
@@ -513,6 +514,7 @@
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\ForceBeamColumnWarping2d.h" />
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\NewtonCotesBeamIntegrationUpdated.h" />
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\SimpsonBeamIntegration.h" />
+    <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\SimpsonIrregularlySpacedBeamIntegration.h" />
     <ClInclude Include="..\..\..\SRC\element\fourNodeQuad\EightNodeQuad.h" />
     <ClInclude Include="..\..\..\SRC\element\fourNodeQuad\NineNodeQuad.h" />
     <ClInclude Include="..\..\..\SRC\element\fourNodeQuad\SixNodeTri.h" />

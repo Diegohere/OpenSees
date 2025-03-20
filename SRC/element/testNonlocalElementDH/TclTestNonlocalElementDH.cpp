@@ -23,13 +23,14 @@
 #include <RadauBeamIntegration.h>
 
 #include <NewtonCotesBeamIntegrationUpdated.h>
+#include <SimpsonIrregularlySpacedBeamIntegration.h>
 
 extern void printCommand(int argc, TCL_Char** argv);
 
 int
 TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* interp,
-	int argc,
-	TCL_Char** argv,
+	int inArgc,
+	TCL_Char** inArgv,
 	Domain* theTclDomain,
 	TclModelBuilder* theTclBuilder)
 {
@@ -67,11 +68,38 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 		return TCL_ERROR;
 	}
 
+
+	// split possible lists present in argv
+	char* List;
+
+	List = Tcl_Merge(inArgc, inArgv);
+	if (List == 0) {
+		opserr << "WARNING - TclModelBuilder_addTestNonlocalElementDH - problem merging list\n";
+		return TCL_ERROR;
+	}
+
+	// remove braces from list
+	for (int i = 0; List[i] != '\0'; i++) {
+		if ((List[i] == '{') || (List[i] == '}'))
+			List[i] = ' ';
+	}
+
+	int argc;
+	TCL_Char** argv;
+
+	if (Tcl_SplitList(interp, List, &argc, &argv) != TCL_OK) {
+		opserr << "WARNING - TclModelBuilder_addTestNonlocalElementDH - problem splitting list\n";
+		return TCL_ERROR;
+	}
+	Tcl_Free((char*)List);
+
+
 	// Check if the number of input arguments is correct
-	if (argc < 10) {
+	if (argc != 12 && argc != 17) {
 		opserr << "WARNING insufficient arguments\n";
 		printCommand(argc, argv);
-		opserr << "Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, sec, numSec, maxNumiters, tolerance, lc\n";
+		opserr << "If standard integration - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, sec, numSec, maxNumiters, tolerance, lc\n";
+		opserr << "If SimpsonIrregularlySpacedBeamIntegration - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, sec, numSec, maxNumiters, tolerance, lc\n";
 		return TCL_ERROR;
 	}
 
@@ -90,6 +118,9 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 	Element* theElement = 0;
 	//Get the characteristic length
 	double lc;
+	// Added for SimpsonIrregularlySpacedBeamIntegration
+	double Lp1; double Lp2; double Le; int nIPs_Lp1; int nIPs_Lp2; int nIPs_Le;
+	int skipInput = 0;
 
 	// Check element tag
 	if (Tcl_GetInt(interp, argv[2], &eleTag) != TCL_OK) {
@@ -203,6 +234,67 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 
 	}
 
+	else if (strcmp(argv[6], "SimpsonIrregularlySpacedBeamIntegration") == 0)
+	{
+		if (Tcl_GetInt(interp, argv[7], &integrSecTag) != TCL_OK) {
+			opserr << "WARNING invalid integrSecTag\n";
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+
+		if (Tcl_GetDouble(interp, argv[8], &Lp1) != TCL_OK) {
+			opserr << "WARNING invalid Lp1\n";
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+
+		if (Tcl_GetInt(interp, argv[9], &nIPs_Lp1) != TCL_OK) {
+			opserr << "WARNING invalid nIPs_Lp1\n";
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+
+		if (Tcl_GetDouble(interp, argv[10], &Lp2) != TCL_OK) {
+			opserr << "WARNING invalid Lp2\n";
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+
+		if (Tcl_GetInt(interp, argv[11], &nIPs_Lp2) != TCL_OK) {
+			opserr << "WARNING invalid nIPs_Lp2\n";
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+
+		if (Tcl_GetDouble(interp, argv[12], &Le) != TCL_OK) {
+			opserr << "WARNING invalid Le\n";
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+
+		if (Tcl_GetInt(interp, argv[13], &nIPs_Le) != TCL_OK) {
+			opserr << "WARNING invalid nIPs_Le\n";
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+
+		SectionForceDeformation* theIntegrSection = theTclBuilder->getSection(integrSecTag);
+		if (theIntegrSection == 0) {
+			opserr << "WARNING integration section not found\n";
+			opserr << "Section: " << integrSecTag;
+			opserr << argv[1] << " element: " << eleTag << endln;
+			return TCL_ERROR;
+		}
+
+		numIntegrPts = nIPs_Lp1 + nIPs_Lp2 + nIPs_Le; // total number of integrations points
+		IntegrSections = new SectionForceDeformation * [numIntegrPts];
+		for (int i = 0; i < numIntegrPts; i++)
+			IntegrSections[i] = theIntegrSection;
+		beamIntegr = new SimpsonIrregularlySpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
+
+		skipInput = 5;
+	}
+
 	else {
 		opserr << "Unknown integration type: " << argv[6] << endln;
 		opserr << argv[1] << " element: " << eleTag << endln;
@@ -210,21 +302,21 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 	}
 
 	// Check maximum number of iteration
-	if (Tcl_GetInt(interp, argv[9], &maxNumIter) != TCL_OK) {
+	if (Tcl_GetInt(interp, argv[9+skipInput], &maxNumIter) != TCL_OK) {
 		opserr << "WARNING invalid maxNumIter\n";
 		opserr << argv[1] << " element: " << eleTag << endln;
 		return TCL_ERROR;
 	}
 
 	// Check tolerance
-	if (Tcl_GetDouble(interp, argv[10], &tolerance) != TCL_OK) {
+	if (Tcl_GetDouble(interp, argv[10 + skipInput], &tolerance) != TCL_OK) {
 		opserr << "WARNING invalid tolerance\n";
 		opserr << argv[1] << " element: " << eleTag << endln;
 		return TCL_ERROR;
 	}
 
 	//Check characteristic length lc
-	if (Tcl_GetDouble(interp, argv[11], &lc) != TCL_OK) {
+	if (Tcl_GetDouble(interp, argv[11 + skipInput], &lc) != TCL_OK) {
 		opserr << "WARNING invalid characteristic length lc\n";
 		opserr << argv[1] << " element: " << eleTag << endln;
 		return TCL_ERROR;
