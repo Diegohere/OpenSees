@@ -28,6 +28,7 @@
 #include <BeamIntegration.h>
 #include <Vector.h>
 #include <cmath>
+#include <iostream>
 
 class Matrix;
 class ElementalLoad;

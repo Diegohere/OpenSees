@@ -104,7 +104,7 @@ void* OPS_SimpsonIrregularlySpacedBeamIntegration(int& integrationTag, ID& secTa
 }
 
 SimpsonIrregularlySpacedBeamIntegration::SimpsonIrregularlySpacedBeamIntegration(double the_Lp1, int the_nIPs_Lp1, double the_Lp2, int the_nIPs_Lp2, double the_Le, int the_nIPs_Le) :
-BeamIntegration(BEAM_INTEGRATION_TAG_Simpson), Lp1(the_Lp1), nIPs_Lp1(the_nIPs_Lp1), Lp2(the_Lp2), nIPs_Lp2(the_nIPs_Lp2), Le(the_Le), nIPs_Le(the_nIPs_Le),
+BeamIntegration(BEAM_INTEGRATION_TAG_Simpson), Lp1(the_Lp1), nIPs_Lp1(the_nIPs_Lp1), Lp2(the_Lp2), nIPs_Lp2(std::max(1,the_nIPs_Lp2)), Le(the_Le), nIPs_Le(the_nIPs_Le),
 wAll(Vector(nIPs_Lp1+nIPs_Lp2+nIPs_Le)), xAll(Vector(nIPs_Lp1 + nIPs_Lp2 + nIPs_Le))
 {
 	// Compute locations and weights of integrations points
@@ -141,7 +141,7 @@ SimpsonIrregularlySpacedBeamIntegration::computeSectionLocations()
     }
 
     double start_xLp2 = 1.0 - Lp2;
-    double distance_xLp2 = Lp2 / (nIPs_Lp2 - 1.0);
+    double distance_xLp2 = Lp2 / (nIPs_Lp2 - 1.0 + 1e-12);
     for (int i = 0; i < nIPs_Lp2; i++)
     {
         xAll[i + nIPs_Lp1 + nIPs_Le] = start_xLp2 + i * distance_xLp2;
