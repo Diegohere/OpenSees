@@ -820,6 +820,8 @@
 #define ELE_TAG_GradientForceBeamColumn3d 223 // by Diego Heredia
 #define ELE_TAG_TestNonlocalElement3dDH 224 // by Diego Heredia
 #define ELE_TAG_TestNonlocalElement2dDH 225 // by Diego Heredia
+#define ELE_TAG_FBCElemSGINUS2d 226 // by Diego Heredia
+#define ELE_TAG_FBCElemSGINUS3d 227 // by Diego Heredia
 
 
 

@@ -144,6 +144,9 @@
     <Filter Include="testNonlocalElementDH">
       <UniqueIdentifier>{52cc67e3-45fd-417f-9056-2211ef518c22}</UniqueIdentifier>
     </Filter>
+    <Filter Include="FBCElemSGINUS">
+      <UniqueIdentifier>{283beaee-541c-488f-833a-3c74897ce5be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\SRC\element\Element.cpp">
@@ -1016,6 +1019,15 @@
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\SimpsonIrregularlySpacedBeamIntegration.cpp">
       <Filter>forceBeamColumn</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS2d.cpp">
+      <Filter>FBCElemSGINUS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS3d.cpp">
+      <Filter>FBCElemSGINUS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\TclFBCElemSGINUS.cpp">
+      <Filter>FBCElemSGINUS</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\element\Element.h">
@@ -1792,6 +1804,12 @@
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\SimpsonIrregularlySpacedBeamIntegration.h">
       <Filter>forceBeamColumn</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS2d.h">
+      <Filter>FBCElemSGINUS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS3d.h">
+      <Filter>FBCElemSGINUS</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="element.rc">
@@ -1804,6 +1822,9 @@
     </None>
     <None Include="..\..\..\SRC\element\testNonlocalElementDH\Makefile">
       <Filter>testNonlocalElementDH</Filter>
+    </None>
+    <None Include="..\..\..\SRC\element\FBCElemSGINUS\Makefile">
+      <Filter>FBCElemSGINUS</Filter>
     </None>
   </ItemGroup>
 </Project>

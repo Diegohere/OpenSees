@@ -211,6 +211,9 @@
     <ClCompile Include="..\..\..\SRC\element\Element.cpp" />
     <ClCompile Include="..\..\..\SRC\element\ElementalLoad.cpp" />
     <ClCompile Include="..\..\..\SRC\element\ExternalElement.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS2d.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS3d.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\TclFBCElemSGINUS.cpp" />
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\ChebyshevBeamIntegration.cpp" />
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\ElasticForceBeamColumnWarping2d.cpp" />
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\ForceBeamColumn2dThermal.cpp" />
@@ -508,6 +511,8 @@
     <ClInclude Include="..\..\..\SRC\element\Element.h" />
     <ClInclude Include="..\..\..\SRC\element\ElementalLoad.h" />
     <ClInclude Include="..\..\..\SRC\element\ExternalElement.h" />
+    <ClInclude Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS2d.h" />
+    <ClInclude Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS3d.h" />
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\ElasticForceBeamColumnWarping2d.h" />
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\ForceBeamColumn2dThermal.h" />
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\ForceBeamColumnCBDI3d.h" />
@@ -747,6 +752,7 @@
     <ResourceCompile Include="element.rc" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\..\SRC\element\FBCElemSGINUS\Makefile" />
     <None Include="..\..\..\SRC\element\gradientForceBeamColumn\Makefile" />
     <None Include="..\..\..\SRC\element\testNonlocalElementDH\Makefile" />
   </ItemGroup>
