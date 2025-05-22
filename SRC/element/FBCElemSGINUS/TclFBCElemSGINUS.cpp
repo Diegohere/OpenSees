@@ -23,7 +23,7 @@
 #include <RadauBeamIntegration.h>
 
 #include <NewtonCotesBeamIntegrationUpdated.h>
-#include <SimpsonIrregularlySpacedBeamIntegration.h>
+#include <SimpsonNonUniformSpacedBeamIntegration.h>
 
 extern void printCommand(int argc, TCL_Char** argv);
 
@@ -99,7 +99,7 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 		opserr << "WARNING insufficient arguments\n";
 		printCommand(argc, argv);
 		opserr << "If standard integration - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, sec, numSec, maxNumiters, tolerance, lc\n";
-		opserr << "If SimpsonIrregularlySpacedBeamIntegration - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, sec, numSec, maxNumiters, tolerance, lc\n";
+		opserr << "If SimpsonNonUniformSpacedBeamIntegration - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, sec, numSec, maxNumiters, tolerance, lc\n";
 		return TCL_ERROR;
 	}
 
@@ -118,7 +118,7 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 	Element* theElement = 0;
 	//Get the characteristic length
 	double lc;
-	// Added for SimpsonIrregularlySpacedBeamIntegration
+	// Added for SimpsonNonUniformSpacedBeamIntegration
 	double Lp1; double Lp2; double Le; int nIPs_Lp1; int nIPs_Lp2; int nIPs_Le;
 	int skipInput = 0;
 
@@ -234,7 +234,7 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 
 	}
 
-	else if (strcmp(argv[6], "SimpsonIrregularlySpacedBeamIntegration") == 0)
+	else if (strcmp(argv[6], "SimpsonNonUniformSpacedBeamIntegration") == 0)
 	{
 		if (Tcl_GetInt(interp, argv[7], &integrSecTag) != TCL_OK) {
 			opserr << "WARNING invalid integrSecTag\n";
@@ -290,7 +290,7 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 		IntegrSections = new SectionForceDeformation * [numIntegrPts];
 		for (int i = 0; i < numIntegrPts; i++)
 			IntegrSections[i] = theIntegrSection;
-		beamIntegr = new SimpsonIrregularlySpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
+		beamIntegr = new SimpsonNonUniformSpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
 
 		skipInput = 5;
 	}

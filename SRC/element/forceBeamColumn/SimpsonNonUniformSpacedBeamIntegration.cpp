@@ -22,11 +22,11 @@
 ** Written by: Diego Heredia 
 */
 
-#include <SimpsonIrregularlySpacedBeamIntegration.h>
+#include <SimpsonNonUniformSpacedBeamIntegration.h>
 #include <elementAPI.h>
 #include <ID.h>
 
-void* OPS_SimpsonIrregularlySpacedBeamIntegration(int& integrationTag, ID& secTags)
+void* OPS_SimpsonNonUniformSpacedBeamIntegration(int& integrationTag, ID& secTags)
 {
   int nArgs = OPS_GetNumRemainingInputArgs();
 
@@ -39,7 +39,7 @@ void* OPS_SimpsonIrregularlySpacedBeamIntegration(int& integrationTag, ID& secTa
   int intData[2+3];
   int numIntData = 2+3;
   if (OPS_GetIntInput(&numIntData,&intData[0]) < 0) {
-    opserr << "SimpsonIrregularlySpacedBeamIntegration - unable to read int data" << endln;
+    opserr << "SimpsonNonUniformSpacedBeamIntegration - unable to read int data" << endln;
     return 0;
   }
   integrationTag = intData[0];
@@ -48,7 +48,7 @@ void* OPS_SimpsonIrregularlySpacedBeamIntegration(int& integrationTag, ID& secTa
   int numDoubleData = 3;
   double doubleData[3];
   if (OPS_GetDoubleInput(&numDoubleData, &doubleData[0]) < 0) {
-      opserr << "SimpsonIrregularlySpacedBeamIntegration - unable to read double data\n";
+      opserr << "SimpsonNonUniformSpacedBeamIntegration - unable to read double data\n";
       return 0;
   }
   double Lp1 = doubleData[0];
@@ -60,7 +60,7 @@ void* OPS_SimpsonIrregularlySpacedBeamIntegration(int& integrationTag, ID& secTa
     numIntData = 1;
     int Nsections;
     if (OPS_GetIntInput(&numIntData,&Nsections) < 0) {
-      opserr << "SimpsonIrregularlySpacedBeamIntegration - Unable to read number of sections" << endln;
+      opserr << "SimpsonNonUniformSpacedBeamIntegration - Unable to read number of sections" << endln;
       return 0;
     }
     if (Nsections < 0)
@@ -82,7 +82,7 @@ void* OPS_SimpsonIrregularlySpacedBeamIntegration(int& integrationTag, ID& secTa
       return 0;
     int *sections = new int[Nsections];
     if (OPS_GetIntInput(&Nsections,sections) < 0) {
-      opserr << "SimpsonIrregularlySpacedBeamIntegration - Unable to read section tags" << endln;
+      opserr << "SimpsonNonUniformSpacedBeamIntegration - Unable to read section tags" << endln;
       return 0;
     }
     if (Nsections > 0) {
@@ -100,11 +100,11 @@ void* OPS_SimpsonIrregularlySpacedBeamIntegration(int& integrationTag, ID& secTa
   int nIPs_Lp2 = intData[3];
   int nIPs_Le = intData[4];
 
-  return new SimpsonIrregularlySpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
+  return new SimpsonNonUniformSpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
 }
 
-SimpsonIrregularlySpacedBeamIntegration::SimpsonIrregularlySpacedBeamIntegration(double the_Lp1, int the_nIPs_Lp1, double the_Lp2, int the_nIPs_Lp2, double the_Le, int the_nIPs_Le) :
-BeamIntegration(BEAM_INTEGRATION_TAG_Simpson), Lp1(the_Lp1), nIPs_Lp1(the_nIPs_Lp1), Lp2(the_Lp2), nIPs_Lp2(std::max(1,the_nIPs_Lp2)), Le(the_Le), nIPs_Le(the_nIPs_Le),
+SimpsonNonUniformSpacedBeamIntegration::SimpsonNonUniformSpacedBeamIntegration(double the_Lp1, int the_nIPs_Lp1, double the_Lp2, int the_nIPs_Lp2, double the_Le, int the_nIPs_Le) :
+BeamIntegration(BEAM_INTEGRATION_TAG_SimpsonNonUniformSpacedBeamIntegration), Lp1(the_Lp1), nIPs_Lp1(the_nIPs_Lp1), Lp2(the_Lp2), nIPs_Lp2(std::max(1,the_nIPs_Lp2)), Le(the_Le), nIPs_Le(the_nIPs_Le),
 wAll(Vector(nIPs_Lp1+nIPs_Lp2+nIPs_Le)), xAll(Vector(nIPs_Lp1 + nIPs_Lp2 + nIPs_Le))
 {
 	// Compute locations and weights of integrations points
@@ -112,19 +112,19 @@ wAll(Vector(nIPs_Lp1+nIPs_Lp2+nIPs_Le)), xAll(Vector(nIPs_Lp1 + nIPs_Lp2 + nIPs_
     computeSectionWeights();
 }
 
-SimpsonIrregularlySpacedBeamIntegration::~SimpsonIrregularlySpacedBeamIntegration()
+SimpsonNonUniformSpacedBeamIntegration::~SimpsonNonUniformSpacedBeamIntegration()
 {
   
 }
 
 BeamIntegration*
-SimpsonIrregularlySpacedBeamIntegration::getCopy(void)
+SimpsonNonUniformSpacedBeamIntegration::getCopy(void)
 {
-	return new SimpsonIrregularlySpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
+	return new SimpsonNonUniformSpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
 }
 
 void 
-SimpsonIrregularlySpacedBeamIntegration::computeSectionLocations()
+SimpsonNonUniformSpacedBeamIntegration::computeSectionLocations()
 {
     double start_xLp1 = 0;
     double distance_xLp1 = Lp1 / (nIPs_Lp1 - 1.0);
@@ -150,7 +150,7 @@ SimpsonIrregularlySpacedBeamIntegration::computeSectionLocations()
 }
 
 void
-SimpsonIrregularlySpacedBeamIntegration::computeSectionWeights()
+SimpsonNonUniformSpacedBeamIntegration::computeSectionWeights()
 {
     int nIPsTot = nIPs_Lp1+ nIPs_Lp2+nIPs_Le;
     int nSubIntervalTot = nIPsTot - 1;
@@ -178,7 +178,7 @@ SimpsonIrregularlySpacedBeamIntegration::computeSectionWeights()
 }
 
 void
-SimpsonIrregularlySpacedBeamIntegration::getSectionLocations(int numSections, double L,
+SimpsonNonUniformSpacedBeamIntegration::getSectionLocations(int numSections, double L,
 double *xi)
 {
     for (int i = 0; i < numSections; i++)
@@ -189,7 +189,7 @@ double *xi)
 }
 
 void
-SimpsonIrregularlySpacedBeamIntegration::getSectionWeights(int numSections, double L,
+SimpsonNonUniformSpacedBeamIntegration::getSectionWeights(int numSections, double L,
 double *wt)
 {
     for (int i = 0; i < numSections; i++)
@@ -200,7 +200,7 @@ double *wt)
 }
 
 void
-SimpsonIrregularlySpacedBeamIntegration::Print(OPS_Stream &s, int flag)
+SimpsonNonUniformSpacedBeamIntegration::Print(OPS_Stream &s, int flag)
 {
 	s << "Simpson" << endln;
 }

@@ -22,8 +22,8 @@
 ** Written by: Diego Heredia
 */
 
-#ifndef SimpsonIrregularlySpacedBeamIntegration_h
-#define SimpsonIrregularlySpacedBeamIntegration_h
+#ifndef SimpsonNonUniformSpacedBeamIntegration_h
+#define SimpsonNonUniformSpacedBeamIntegration_h
 
 #include <BeamIntegration.h>
 #include <Vector.h>
@@ -35,11 +35,11 @@ class ElementalLoad;
 class Channel;
 class FEM_ObjectBroker;
 
-class SimpsonIrregularlySpacedBeamIntegration : public BeamIntegration
+class SimpsonNonUniformSpacedBeamIntegration : public BeamIntegration
 {
  public:
-	 SimpsonIrregularlySpacedBeamIntegration(double Lp1, int nIPs_Lp1, double Lp2, int nIPs_Lp2, double Le, int nIPs_Le);
-	 virtual ~SimpsonIrregularlySpacedBeamIntegration();
+	 SimpsonNonUniformSpacedBeamIntegration(double Lp1, int nIPs_Lp1, double Lp2, int nIPs_Lp2, double Le, int nIPs_Le);
+	 virtual ~SimpsonNonUniformSpacedBeamIntegration();
 
   void getSectionLocations(int nIP, double L, double *xi);
   void getSectionWeights(int nIP, double L, double *wt);
