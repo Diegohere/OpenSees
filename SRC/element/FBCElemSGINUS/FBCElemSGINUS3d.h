@@ -94,9 +94,6 @@ private:
 
 	void computeSectionForces(Vector& sp, int isec); // Section forces due to element loads
 
-	void computeMatrixH();
-	void computeMatrixH_inv();
-
 	void computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Vector deStar_local_Tot[]);
 	void computeE_local(Matrix& e_local_tot);
 	void computeEu_nonlocal(Vector eu_nonlocal_Tot[], Vector eu_local_Tot[]);
@@ -104,15 +101,6 @@ private:
 
 	void initCoefficientMatrixH();
 	void computeCoefficientMatrixH();
-
-	void initPts4Deriv(Matrix& pts4Deriv);
-	void initCoeffsFirstOrderDeriv();
-	void computeFornberg(Vector& delta4Deriv, int m_max, int n, double x0, Vector alphaVector);
-	void computeNumericalDerivativesDx(Vector allSectionValues[], Vector allSectionDerivativesValues[]);
-	void computeNumericalDerivativesDx(Vector allSectionValues, Vector &allSectionDerivativesValues);
-
-
-	//void testFunction(Vector eNonLocalSubdivide[], Vector sTot[]);
 
 
 	/* ----------------------------------------------------------------------------- */
@@ -140,8 +128,8 @@ private:
 	Matrix KelementCommit;               // committed stiffness matrix in the basic system
 	Vector qCommit;               // committed element end forces in the basic system
 
-	Matrix H;
-	Matrix H_inv;
+	Matrix coeffs_H_GI;
+	Matrix coeffs_H;
 
 	Matrix* FSection;                    // array of section flexibility matrices
 	Vector* eNonlocal;                    // array of nonlocal section deformation vectors
@@ -185,15 +173,6 @@ private:
 	double WSofteningTol;
 	//double DeltaWSectionTol = 1e-4;
 	bool isSoftening;
-	double Ac4MatrixHTheory;
-	double Bc4MatrixHTheory;
-	double Ac4MatrixH;
-	double Bc4MatrixH;
-
-	Vector* allSectionFibersSigma11; // Array containing allSectionFibersSigma11
-	int nPts_4Deriv = 2; //Number of points used to compute derivative at each quadrature point
-	Matrix coeffs_firstOrderDeriv; // Coefficients for numerical derivative
-	Vector* allSectionFibersDSigma11Dx; // Array containing derivatives of allSectionFibersSigma11
 
 	bool isTorsion;
 

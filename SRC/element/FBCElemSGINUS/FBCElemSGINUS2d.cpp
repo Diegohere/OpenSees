@@ -122,7 +122,7 @@ maxIters(0), Tol(0), lc(0), initialFlag(0),
 Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
 FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
 numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
-WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0)
+WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHGI(0), Bc4MatrixHGI(0), Ac4MatrixH(0), Bc4MatrixH(0)
 // complete
 {
 	// Set Node Pointers to 0
@@ -140,7 +140,7 @@ FBCElemSGINUS2d::FBCElemSGINUS2d(int tag, int nodeI, int nodeJ, CrdTransf& CT, B
 	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * numSec, 2 * numSec), H_inv(2 * numSec, 2 * numSec),
 	FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
 	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
-	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0)
+	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHGI(0), Bc4MatrixHGI(0), Ac4MatrixH(0), Bc4MatrixH(0)
 	// complete
 {
 	// Pointers to Nodes and Their IDs
@@ -1912,16 +1912,16 @@ FBCElemSGINUS2d::initCoefficientMatrixH()
 
 	double dx = L * (secX[1] - secX[0]);	// spaces between first and second integration points
 
-	Ac4MatrixHTheory = 1 + pow((lc / dx), 2);
-	Bc4MatrixHTheory = 0.5 * (1. - Ac4MatrixHTheory);
+	Ac4MatrixHGI = 1 + pow((lc / dx), 2);
+	Bc4MatrixHGI = 0.5 * (1. - Ac4MatrixHGI);
 
 	double ASection = sections[0]->getSectionArea();
 	//WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
 	WSofteningTol = -1. * ASection * 0.5 * 378. * 1e-6;
 	//WSofteningTol = -1e-6;
 
-	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
-	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;
+	//opserr << "This is Ac4MatrixHGI:" << Ac4MatrixHGI << endln;
+	//opserr << "This is Bc4MatrixHGI:" << Bc4MatrixHGI << endln;
 	//opserr << "This is WSofteningTol:" << WSofteningTol << endln;
 }
 
@@ -1929,7 +1929,7 @@ FBCElemSGINUS2d::initCoefficientMatrixH()
 void
 FBCElemSGINUS2d::computeCoefficientMatrixH()
 {
-	//Ac4MatrixH = Ac4MatrixHTheory;
+	//Ac4MatrixH = Ac4MatrixHGI;
 
 	double xStar = 1. - WSofteningTrial / WSofteningTol;
 	double fXStar = 0.;
@@ -1944,7 +1944,7 @@ FBCElemSGINUS2d::computeCoefficientMatrixH()
 	}
 	double gXStar = fXStar / (fXStar + f1MinusXStar);
 
-	Ac4MatrixH = gXStar * 1 + (1 - gXStar) * Ac4MatrixHTheory;
+	Ac4MatrixH = gXStar * 1 + (1 - gXStar) * Ac4MatrixHGI;
 
 	Bc4MatrixH = 0.5 * (1. - Ac4MatrixH);
 

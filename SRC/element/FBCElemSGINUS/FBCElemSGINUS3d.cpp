@@ -121,12 +121,11 @@ void* OPS_FBCElemSGINUS3d()
 // Constructor 2 (for parallel processing)
 FBCElemSGINUS3d::FBCElemSGINUS3d() : Element(0, ELE_TAG_FBCElemSGINUS3d), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
 maxIters(0), Tol(0), lc(0), initialFlag(0),
-Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(2 * 10, 2 * 10), H_inv(2 * 10, 2 * 10),
+Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), coeffs_H_GI(10, 3), coeffs_H(10, 3),
 FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
 numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
-WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
-isTorsion(false),
-allSectionFibersSigma11(0), allSectionFibersDSigma11Dx(0)
+WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), 
+isTorsion(false)
 // complete
 {
 	// Set Node Pointers to 0
@@ -141,12 +140,11 @@ FBCElemSGINUS3d::FBCElemSGINUS3d(int tag, int nodeI, int nodeJ, CrdTransf& CT, B
 	SectionForceDeformation** sec, int numSec, int maxNumIters, double tolerance, double LC)
 	:Element(tag, ELE_TAG_FBCElemSGINUS3d), connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0),
 	maxIters(maxNumIters), Tol(tolerance), lc(LC), initialFlag(0),
-	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), H(6 * numSec, 6 * numSec), H_inv(6 * numSec, 6 * numSec),
+	Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), coeffs_H_GI(numSec, 3), coeffs_H(numSec, 3),
 	FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
 	numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
-	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), Ac4MatrixHTheory(0), Bc4MatrixHTheory(0), Ac4MatrixH(0), Bc4MatrixH(0),
-	isTorsion(false),
-	allSectionFibersSigma11(0), allSectionFibersDSigma11Dx(0)
+	WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0),
+	isTorsion(false)
 
 	// complete
 {
@@ -239,9 +237,6 @@ FBCElemSGINUS3d::~FBCElemSGINUS3d()
 	if (KelementInitial != 0)
 		delete KelementInitial;
 
-	delete[] allSectionFibersSigma11;
-
-	delete[] allSectionFibersDSigma11Dx;
 }
 
 int
@@ -336,17 +331,6 @@ FBCElemSGINUS3d::setDomain(Domain* theDomain)
 
 		// Initialize values of Ac and Bc for matrix H
 		initCoefficientMatrixH();
-
-		////Determination of matrix H
-		//H.Zero();
-		//this->computeMatrixH();
-
-		////Determination of matrix H_inv
-		//H_inv.Zero();
-		//this->computeMatrixH_inv();
-
-		// Initialize values for numerical derivative
-		initCoeffsFirstOrderDeriv();
 	}
 }
 
@@ -2047,16 +2031,6 @@ FBCElemSGINUS3d::setSectionPointers(int numSec, SectionForceDeformation** secPtr
 		opserr << "FBCElemSGINUS3d::setSectionPointers -- failed to allocate eLocalCommit array";
 	}
 
-	allSectionFibersSigma11 = new Vector[numSections];
-	if (allSectionFibersSigma11 == 0) {
-		opserr << "FBCElemSGINUS3d::setSectionPointers -- failed to allocate allSectionFibersSigma11 array";
-	}
-
-	allSectionFibersDSigma11Dx = new Vector[numSections];
-	if (allSectionFibersDSigma11Dx == 0) {
-		opserr << "FBCElemSGINUS3d::setSectionPointers -- failed to allocate allSectionFibersDSigma11Dx array";
-	}
-
 }
 
 // Method to compute theroy values Ac and Bc for matrix H
@@ -2067,31 +2041,39 @@ FBCElemSGINUS3d::initCoefficientMatrixH()
 	double secX[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, secX);
 
-	double dx = L * (secX[1] - secX[0]);	// spaces between first and second integration points
-
-	Ac4MatrixHTheory = 1 + pow((lc / dx), 2);
-	Bc4MatrixHTheory = 0.5 * (1. - Ac4MatrixHTheory);
-
-	double ASection = sections[0]->getSectionArea();
-	if (ASection < 0)
+	Vector allDx(numSections-1);	// spaces between all integration points
+	for (int i = 0; i < numSections; i++)
 	{
-		ASection = 2500;
+		allDx[i] = L * (secX[i + 1] - secX[i]);
 	}
+
+	double bc_GI = 0.;
+	double ac_GI = 0.;
+	double cc_GI = 0.;
+	coeffs_H_GI(0, 0) = 1.;
+	for (int i = 1; i < numSections-1; i++)
+	{
+		bc_GI = -pow(lc, 2) / (allDx[i - 1] * (allDx[i] + allDx[i - 1]));
+		ac_GI = 1. + pow(lc, 2) / (allDx[i - 1] * allDx[i]);
+		cc_GI = -pow(lc, 2) / (allDx[i] * (allDx[i] + allDx[i - 1]));
+		coeffs_H_GI(i, 0) = bc_GI;
+		coeffs_H_GI(i, 1) = ac_GI;
+		coeffs_H_GI(i, 2) = cc_GI;
+	}
+	coeffs_H_GI(numSections-1, 3) = 1.;
+
+	double ASection = -abs(sections[0]->getSectionArea());
 	//WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
 	WSofteningTol = -1. * ASection * 0.5 * 378. * 1e-6;
 	/*double alphaSoftTol = 1e3;
 	WSofteningTol = alphaSoftTol * WSofteningTol;*/
-
-	//opserr << "This is Ac4MatrixHTheory:" << Ac4MatrixHTheory << endln;
-	//opserr << "This is Bc4MatrixHTheory:" << Bc4MatrixHTheory << endln;
-	//opserr << "This is WSofteningTol:" << WSofteningTol << endln;
 }
 
 // Method to compute updated values Ac using exponential smoothing function and Bc for matrix H
 void
 FBCElemSGINUS3d::computeCoefficientMatrixH()
 {
-	//Ac4MatrixH = Ac4MatrixHTheory;
+	//Ac4MatrixH = Ac4MatrixHGI;
 
 	double xStar = 1. - WSofteningTrial / WSofteningTol;
 	double fXStar = 0.;
@@ -2106,50 +2088,19 @@ FBCElemSGINUS3d::computeCoefficientMatrixH()
 	}
 	double gXStar = fXStar / (fXStar + f1MinusXStar);
 
-	Ac4MatrixH = gXStar * 1 + (1 - gXStar) * Ac4MatrixHTheory;
-
-	Bc4MatrixH = 0.5 * (1. - Ac4MatrixH);
+	coeffs_H(0, 0) = 1.;
+	for (int i = 1; i < numSections - 1; i++)
+	{
+		coeffs_H(i, 0) = gXStar * 0 + (1 - gXStar) * coeffs_H_GI(i, 0);
+		coeffs_H(i, 1) = gXStar * 1 + (1 - gXStar) * coeffs_H_GI(i, 1);
+		coeffs_H(i, 2) = gXStar * 0 + (1 - gXStar) * coeffs_H_GI(i, 2);
+	}
+	coeffs_H(numSections - 1, 3) = 1.;
 
 	//opserr << "This is Ac4MatrixH:" << Ac4MatrixH << endln;
 	//opserr << "This is Bc4MatrixH:" << Bc4MatrixH << endln;
 }
 
-//Method to compute matrix H - NOT USED
-void
-FBCElemSGINUS3d::computeMatrixH()
-{
-	H.Zero(); // initialize matrix H
-
-	int order = sections[0]->getOrder();   // use first section to get the order
-
-	computeCoefficientMatrixH();
-
-	// 2nd Order PDE, Dirichlet BCs
-	for (int i = 0; i < order; i++) {
-		H(i, i) = 1.0;
-		H(order * numSections - i - 1, order * numSections - i - 1) = 1.0;
-	}
-
-	for (int j = 1; j < numSections - 1; j++) {
-		for (int i = 0; i < order; i++) {
-			H(j * order + i, (j - 1) * order + i) = Bc4MatrixH;
-			H(j * order + i, j * order + i) = Ac4MatrixH;
-			H(j * order + i, (j + 1) * order + i) = Bc4MatrixH;
-		}
-	}
-
-	computeMatrixH_inv();
-	//opserr << "This is matrix H:" << H << endln;
-}
-
-//Method to compute H_inv - NOT USED
-void
-FBCElemSGINUS3d::computeMatrixH_inv()
-{
-	H_inv.Zero();
-	if (H.Invert(H_inv) < 0)
-		opserr << "FBCElemSGINUS3d::update() -- could not invert matrix H\n";
-}
 
 //Method to compute deStar_nonlocal[]
 void
@@ -2195,6 +2146,7 @@ FBCElemSGINUS3d::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Vector deS
 		Vector beta4LU(numSections);
 		alpha4LU(0) = 1;
 		beta4LU(0) = 0;
+		// STOPPED HERE 13.06.2025
 		beta4LU(1) = Bc4MatrixH;
 		alpha4LU(1) = Ac4MatrixH;
 		beta4LU(numSections - 1) = 0;
@@ -2235,7 +2187,8 @@ FBCElemSGINUS3d::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Vector deS
 	opserr << "This is deStar_nonlocal_Tot in funtion:" << deStar_nonlocal << endln;*/
 }
 
-//Method to compute e_local[] - NOT USED
+
+//Method to compute e_local[] 
 void
 FBCElemSGINUS3d::computeE_local(Matrix& e_local_tot)
 {
@@ -2281,34 +2234,6 @@ FBCElemSGINUS3d::computeE_local(Matrix& e_local_tot)
 void
 FBCElemSGINUS3d::computeEu_nonlocal(Vector eu_nonlocal_Tot[], Vector eu_local_Tot[])
 {
-	//eu_nonlocal.Zero();
-
-	//Vector euLocal_MatrixFormALLSections = Vector(NEBD * numSections);
-	//Vector euNonLocal_MatrixFormALLSections = Vector(NEBD * numSections);
-
-
-	//// Fill the vector with all the local section deformations
-	//for (int i = 0; i < numSections; i++)
-	//{
-	//	for (int j = 0; j < NEBD; j++)
-	//	{
-	//		euLocal_MatrixFormALLSections(i * NEBD + j) = eu_local_Tot[i](j);
-	//	}
-	//}
-
-	//// Compute the vector with all the nonlocal section deformations
-	//euNonLocal_MatrixFormALLSections = H_inv * euLocal_MatrixFormALLSections;
-
-	////Fill the matrix eu_nonlocal
-	//for (int i = 0; i < numSections; i++)
-	//{
-	//	for (int j = 0; j < NEBD; j++)
-	//	{
-	//		eu_nonlocal_Tot[i](j) = euNonLocal_MatrixFormALLSections(i * NEBD + j);
-	//	}
-	//}
-
-
 	if (abs(WSofteningTrial) == 0.)
 	{
 		for (int i = 0; i < numSections; i++)
@@ -2502,246 +2427,5 @@ FBCElemSGINUS3d::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 	//double test = 0.;
 }
 
-//void
-//FBCElemSGINUS3d::testFunction(Vector eNonLocalSubdivide[], Vector sTot[])
-//{
-//	for (int i = 0; i < numSections; i++)
-//	{
-//		sTot[i] = eNonLocalSubdivide[i];
-//	}
-//
-//	opserr << "This is s_Tot[0] before function:" << s_Tot[0] << endln;
-//	opserr << "This is eNonLocalSubdivide[0] before function:" << eNonLocalSubdivide[0] << endln;
-//	testFunction(eNonLocalSubdivide, s_Tot);
-//	opserr << "This is s_Tot[0] after function:" << s_Tot[0] << endln;
-//}
 
-
-// Method to initialize values for numerical derivative
-void
-FBCElemSGINUS3d::initCoeffsFirstOrderDeriv()
-{
-	if (nPts_4Deriv > numSections)
-	{
-		opserr << "WARNING:: FBCElemSGINUS3d::initCoeffsFirstOrderDeriv: nPts_4Deriv > numSections " << endln;
-		opserr << "This is nPts_4Deriv: " << nPts_4Deriv << endln;
-		opserr << "This is numSections: " << numSections << endln;
-		opserr << "Will use nPts_4Deriv = numSections = " << numSections << endln;
-
-		nPts_4Deriv = numSections;
-	}
-
-	Matrix pts4Deriv = Matrix(nPts_4Deriv, numSections);
-	initPts4Deriv(pts4Deriv);
-	//opserr << "This is pts4Deriv: " << pts4Deriv << endln;
-
-	//get info on integration quadrature rule
-	double L = crdTransf->getInitialLength();
-	double xi[maxNumSections];
-	beamIntegr->getSectionLocations(numSections, L, xi); // between 0 and 1
-	Vector x_quadrature = Vector(numSections);
-	for (int i = 0; i < numSections; i++)
-	{
-		x_quadrature(i) = xi[i] * L; // between 0 and L
-	}
-
-	int m_max = 1; //maximum order of derivative
-
-	coeffs_firstOrderDeriv.resize(numSections, numSections);
-	coeffs_firstOrderDeriv.Zero();
-	// Each column is quadrature point and each column is which quadrature section to use for derivative
-	for (int i = 0; i < numSections; i++)
-	{
-		Vector delta4Deriv = Vector(nPts_4Deriv);
-		Vector x_quadrature_selected = Vector(nPts_4Deriv);
-		for (int j = 0; j < nPts_4Deriv; j++)
-		{
-			x_quadrature_selected(j) = x_quadrature(pts4Deriv(j, i));
-		}
-		//opserr << "This is x_quadrature_selected: " << x_quadrature_selected << endln;
-
-		computeFornberg(delta4Deriv, m_max, nPts_4Deriv, x_quadrature(i), x_quadrature_selected);
-
-		// STOPPED HERE 21.08.2024
-		//TODO: STORE ARRAY IN MATRIX
-		for (int j = 0; j < nPts_4Deriv; j++)
-		{
-			coeffs_firstOrderDeriv(pts4Deriv(j, i), i) = delta4Deriv(j);
-		}
-	}
-	//opserr << "This is coeffs_firstOrderDeriv: " << coeffs_firstOrderDeriv << endln;
-	//int test = 1;
-}
-
-
-// Method to determine the sections used for numerical derivative
-void
-FBCElemSGINUS3d::initPts4Deriv(Matrix& pts4Deriv)
-{
-	for (int i = 0; i < numSections; i++)
-	{
-		////Only Fornberg
-		//// For left boundary points:
-		//if (i < ceil(nPts_4Deriv / 2.0)) {
-		//	for (int j = 0; j < nPts_4Deriv; ++j) {
-		//		pts4Deriv(j, i) = j;
-		//	}
-		//}
-		//// For right boundary points:
-		//else if (i >= numSections - ceil(nPts_4Deriv / 2.0)) {
-		//	for (int j = 0; j < nPts_4Deriv; ++j) {
-		//		pts4Deriv(j, i) = numSections - nPts_4Deriv + j;
-		//	}
-		//}
-		//// For interior points (centered stencil):
-		//else {
-		//	for (int j = 0; j < nPts_4Deriv; ++j) {
-		//		pts4Deriv(j, i) = i - floor(nPts_4Deriv / 2.0) + j;
-		//	}
-		//}
-		if (nPts_4Deriv == 2) {
-			// For central finite difference:
-			if (i > 0 && i < numSections - 1) {
-				pts4Deriv(0, i) = i - 1; // Previous point
-				pts4Deriv(1, i) = i + 1; // Next point
-			}
-			else {
-				// Handle boundary cases:
-				// For left boundary points:
-				if (i == 0) {
-					pts4Deriv(0, i) = 0; // First point
-					pts4Deriv(1, i) = 1; // Next point
-				}
-				// For right boundary points:
-				else if (i == numSections - 1) {
-					pts4Deriv(0, i) = numSections - 2; // Previous point
-					pts4Deriv(1, i) = numSections - 1; // Last point
-				}
-			}
-		}
-		else {
-			// For cases where nPts_4Deriv > 2:
-			// For left boundary points:
-			if (i < ceil(nPts_4Deriv / 2.0)) {
-				for (int j = 0; j < nPts_4Deriv; ++j) {
-					pts4Deriv(j, i) = j;
-				}
-			}
-			// For right boundary points:
-			else if (i >= numSections - ceil(nPts_4Deriv / 2.0)) {
-				for (int j = 0; j < nPts_4Deriv; ++j) {
-					pts4Deriv(j, i) = numSections - nPts_4Deriv + j;
-				}
-			}
-			// For interior points (centered stencil):
-			else {
-				for (int j = 0; j < nPts_4Deriv; ++j) {
-					pts4Deriv(j, i) = i - floor(nPts_4Deriv / 2.0) + j;
-				}
-			}
-		}
-	}
-	//opserr << "This is pts4Deriv: " << pts4Deriv << endln;
-}
-
-
-// Method to compute the Fornberg algorithm from Fornberg 1988
-void
-FBCElemSGINUS3d::computeFornberg(Vector& delta4Deriv, int m_max, int n, double x0, Vector alphaVector)
-{
-	// Initilization
-	Matrix* allOrder_delta4Deriv;
-	allOrder_delta4Deriv = new Matrix[m_max + 1];
-	for (int m = 0; m < m_max + 1; m++)
-	{
-		allOrder_delta4Deriv[m] = Matrix(n, n);
-	}
-	allOrder_delta4Deriv[0](0, 0) = 1;
-	double c1 = 1;
-
-	// Algorithm
-	for (int p = 1; p < n; ++p) {
-		double c2 = 1.0;
-
-		for (int q = 0; q < p; ++q) {
-			double c3 = alphaVector[p] - alphaVector[q];
-			c2 *= c3;
-
-			for (int m = 0; m <= std::min(p, m_max); ++m) {
-				if (m == 0) {
-					allOrder_delta4Deriv[m](p, q) = (alphaVector[p] - x0) / c3 * allOrder_delta4Deriv[m](p - 1, q);
-				}
-				else {
-					allOrder_delta4Deriv[m](p, q) = (alphaVector[p] - x0) / c3 * allOrder_delta4Deriv[m](p - 1, q) - m / c3 * allOrder_delta4Deriv[m - 1](p - 1, q);
-				}
-			}
-		}
-
-		for (int m = 0; m <= std::min(p, m_max); ++m) {
-			if (m == 0) {
-				allOrder_delta4Deriv[m](p, p) = c1 / c2 * (-(alphaVector[p - 1] - x0) * allOrder_delta4Deriv[m](p - 1, p - 1));
-			}
-			else {
-				allOrder_delta4Deriv[m](p, p) = c1 / c2 * (m * allOrder_delta4Deriv[m - 1](p - 1, p - 1) - (alphaVector[p - 1] - x0) * allOrder_delta4Deriv[m](p - 1, p - 1));
-			}
-		}
-
-		c1 = c2;
-	}
-
-	// Only need the coefficients for 1st order derivative
-	for (int i = 0; i < n; i++)
-	{
-		delta4Deriv(i) = allOrder_delta4Deriv[m_max](n - 1, i);
-	}
-	/*opserr << "This isallOrder_delta4Deriv[m_max]: " << allOrder_delta4Deriv[m_max] << endln;
-	opserr << "This is delta4Deriv: " << delta4Deriv << endln;*/
-
-	//Free dynamically alocated memory
-	delete[] allOrder_delta4Deriv;
-}
-
-
-// Method to compute the numerical derivatives Dx
-void
-FBCElemSGINUS3d::computeNumericalDerivativesDx(Vector allSectionValues[], Vector allSectionDerivativesValues[])
-{
-	//opserr << "This is coeffs_firstOrderDeriv: " << coeffs_firstOrderDeriv << endln;
-	for (int i = 0; i < numSections; i++)
-	{
-		allSectionDerivativesValues[i] = allSectionValues[i];
-		allSectionDerivativesValues[i].Zero();
-		/*opserr << "This is allSectionValues[i]: " << allSectionValues[i] << endln;
-		opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;
-		opserr << "Enter loop " << endln;*/
-		for (int j = 0; j < numSections; j++)
-		{
-			allSectionDerivativesValues[i] += coeffs_firstOrderDeriv(j, i) * allSectionValues[j];
-			/*opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;
-			opserr << "This is allSectionValues[j]: " << allSectionValues[j] << endln;*/
-		}
-		//opserr << "End loop " << endln;
-	}
-}
-
-
-//// Method to compute the numerical derivatives Dx
-//void
-//FBCElemSGINUS3d::computeNumericalDerivativesDx(Vector allSectionValues, Vector &allSectionDerivativesValues)
-//{
-//	for (int i = 0; i < numSections; i++)
-//	{
-//		allSectionDerivativesValues[i] = 0.;
-//		/*opserr << "This is allSectionValues[i]: " << allSectionValues[i] << endln;
-//		opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;
-//		opserr << "Enter loop "  << endln;*/
-//		for (int j = 0; j < numSections; j++)
-//		{
-//			allSectionDerivativesValues[i] += coeffs_firstOrderDeriv(j, i) * allSectionValues[j];
-//			/*opserr << "This is allSectionDerivativesValues[i]: " << allSectionDerivativesValues[i] << endln;
-//			opserr << "This is allSectionValues[j]: " << allSectionValues[j] << endln;*/
-//		}
-//		//opserr << "End loop " << endln;
-//	}
-//}
 
