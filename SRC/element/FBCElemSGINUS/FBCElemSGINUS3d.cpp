@@ -2060,7 +2060,8 @@ FBCElemSGINUS3d::initCoefficientMatrixH()
 		coeffs_H_GI(i, 1) = ac_GI;
 		coeffs_H_GI(i, 2) = cc_GI;
 	}
-	coeffs_H_GI(numSections-1, 3) = 1.;
+	coeffs_H_GI(numSections-1, 2) = 1.;
+	//opserr << "This is coeffs_H_GI:" << coeffs_H_GI << endln;
 
 	double ASection = -abs(sections[0]->getSectionArea());
 	//WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
@@ -2095,10 +2096,9 @@ FBCElemSGINUS3d::computeCoefficientMatrixH()
 		coeffs_H(i, 1) = gXStar * 1 + (1 - gXStar) * coeffs_H_GI(i, 1);
 		coeffs_H(i, 2) = gXStar * 0 + (1 - gXStar) * coeffs_H_GI(i, 2);
 	}
-	coeffs_H(numSections - 1, 3) = 1.;
+	coeffs_H(numSections - 1, 2) = 1.;
 
-	//opserr << "This is Ac4MatrixH:" << Ac4MatrixH << endln;
-	//opserr << "This is Bc4MatrixH:" << Bc4MatrixH << endln;
+	//opserr << "This is coeffs_H:" << coeffs_H << endln;
 }
 
 
