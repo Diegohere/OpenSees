@@ -176,10 +176,10 @@ private:
 
 	bool isTorsion;
 
-	// Added fpr debug purpose
-	double Bc4MatrixH = 0.;
-	double Ac4MatrixH = 1.;
-	Matrix H;
+	//// Added fpr debug purpose
+	//double Bc4MatrixH = 0.;
+	//double Ac4MatrixH = 1.;
+	//Matrix H;
 
 	//static Vector s[];  // array of section forces
 	//static Matrix deStar_local;  // matrix of e_star_local for all sections of element

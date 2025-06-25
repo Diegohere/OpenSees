@@ -108,6 +108,8 @@
 	
 	set lc [expr 1.0*$d];
 	# set integration "Simpson 1 21"
+	
+	
 	set Lp1 [expr 2.0*$d/$L];
 	set nIPs_Lp1 8;
 	# set Lp2 [expr 1.5*$d/$L];

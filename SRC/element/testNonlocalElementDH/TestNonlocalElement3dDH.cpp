@@ -2227,7 +2227,11 @@ TestNonlocalElement3dDH::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Ve
 				deStar_nonlocal_Tot[j](i) = (y4LU(j) - Bc4MatrixH * deStar_nonlocal_Tot[j + 1](i)) / alpha4LU(j);
 			}
 		}
-
+		/*for (int j = 0; j < numSections; j++) {
+			opserr << "Section:" << j << endln;
+			opserr << "This is deStar_local_Tot:" << deStar_local_Tot[j] << endln;
+			opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot[j] << endln;
+		}*/
 	}
 
 	//todo
@@ -2354,7 +2358,11 @@ TestNonlocalElement3dDH::computeEu_nonlocal(Vector eu_nonlocal_Tot[], Vector eu_
 				eu_nonlocal_Tot[j](i) = (y4LU(j) - Bc4MatrixH * eu_nonlocal_Tot[j + 1](i)) / alpha4LU(j);
 			}
 		}
-
+		/*for (int j = 0; j < numSections; j++) {
+			opserr << "Section:" << j << endln;
+			opserr << "This is eu_local_Tot:" << eu_local_Tot[j] << endln;
+			opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot[j] << endln;
+		}*/
 	}
 }
 

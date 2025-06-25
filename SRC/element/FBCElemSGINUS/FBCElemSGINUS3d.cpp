@@ -830,9 +830,12 @@ FBCElemSGINUS3d::update(void)
 					this->computeDeStar_nonlocal(deStar_nonlocal_Tot, deStar_local_Tot);
 
 					//todo
-					/*opserr << "This is deStar_local_Tot:" << deStar_local_Tot << endln;
-					opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot << endln;
-					opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot << endln;*/
+					/*for (int i = 0; i < numSections; i++) {
+						opserr << "Section:" << i << endln;
+						opserr << "This is deStar_local_Tot:" << deStar_local_Tot[i] << endln;
+						opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot[i] << endln;
+						opserr << "This is eu_local_Tot:" << eu_local_Tot[i] << endln;
+					}*/
 
 					for (i = 0; i < numSections; i++)
 					{
@@ -2063,7 +2066,7 @@ FBCElemSGINUS3d::initCoefficientMatrixH()
 	coeffs_H_GI(numSections-1, 2) = 1.;
 	//opserr << "This is coeffs_H_GI:" << coeffs_H_GI << endln;
 
-	double ASection = -abs(sections[0]->getSectionArea());
+	double ASection = abs(sections[0]->getSectionArea());
 	//WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
 	WSofteningTol = -1. * ASection * 0.5 * 378. * 1e-6;
 	/*double alphaSoftTol = 1e3;
@@ -2146,45 +2149,38 @@ FBCElemSGINUS3d::computeDeStar_nonlocal(Vector deStar_nonlocal_Tot[], Vector deS
 		Vector beta4LU(numSections);
 		alpha4LU(0) = 1;
 		beta4LU(0) = 0;
-		// STOPPED HERE 13.06.2025
-		beta4LU(1) = Bc4MatrixH;
-		alpha4LU(1) = Ac4MatrixH;
+		for (int j = 1; j < numSections - 1; j++)
+		{
+			beta4LU(j) = coeffs_H(j, 0) / alpha4LU(j - 1);
+			alpha4LU(j) = coeffs_H(j, 1) - beta4LU(j) * coeffs_H(j - 1, 2);
+		}
 		beta4LU(numSections - 1) = 0;
 		alpha4LU(numSections - 1) = 1;
-
-		int i;
-		int j;
-
-		for (j = 2; j < numSections - 1; j++)
-		{
-			beta4LU(j) = Bc4MatrixH / alpha4LU(j - 1);
-			alpha4LU(j) = Ac4MatrixH - beta4LU(j) * Bc4MatrixH;
-		}
 
 		// Boundary conditions
 		deStar_nonlocal_Tot[0] = deStar_local_Tot[0];
 		deStar_nonlocal_Tot[numSections - 1] = deStar_local_Tot[numSections - 1];
 
 		Vector y4LU(numSections);
-		for (i = 0; i < NEBD; i++)
+		for (int i = 0; i < NEBD; i++)
 		{
 			y4LU(0) = deStar_local_Tot[0](i);
-			for (j = 1; j < numSections; j++)
+			for (int j = 1; j < numSections; j++)
 			{
 				y4LU(j) = deStar_local_Tot[j](i) - beta4LU(j) * y4LU(j - 1);
 			}
 
-			for (j = numSections - 2; j > 0; j--)
+			for (int j = numSections - 2; j > 0; j--)
 			{
-				deStar_nonlocal_Tot[j](i) = (y4LU(j) - Bc4MatrixH * deStar_nonlocal_Tot[j + 1](i)) / alpha4LU(j);
+				deStar_nonlocal_Tot[j](i) = (y4LU(j) - coeffs_H(j, 2) * deStar_nonlocal_Tot[j + 1](i)) / alpha4LU(j);
 			}
 		}
-
+		/*for (int j = 0; j < numSections; j++) {
+			opserr << "Section:" << j << endln;
+			opserr << "This is deStar_local_Tot:" << deStar_local_Tot[j] << endln;
+			opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot[j] << endln;
+		}*/
 	}
-
-	//todo
-	/*opserr << "This is deStar_local_Tot in function:" << deStar_local << endln;
-	opserr << "This is deStar_nonlocal_Tot in funtion:" << deStar_nonlocal << endln;*/
 }
 
 
@@ -2193,38 +2189,50 @@ void
 FBCElemSGINUS3d::computeE_local(Matrix& e_local_tot)
 {
 	e_local_tot.Zero();
-	Vector eNonLocal_SectionI_temp = Vector(NEBD);
-	Vector eNonLocal_MatrixFormALLSections = Vector(NEBD * numSections);
-	Vector eLocal_MatrixFormALLSections = Vector(NEBD * numSections);
+	//Vector eNonLocal_SectionI_temp = Vector(NEBD);
+	//Vector eNonLocal_MatrixFormALLSections = Vector(NEBD * numSections);
+	//Vector eLocal_MatrixFormALLSections = Vector(NEBD * numSections);
 
-	// Fill the vector with all the nonlocal section deformations
-	for (int i = 0; i < numSections; i++)
-	{
-		eNonLocal_SectionI_temp = eNonLocalSubdivide[i];
-		//opserr << "This is eNonLocal_SectionI_temp:" << eNonLocal_SectionI_temp << endln;
+	//// Fill the vector with all the nonlocal section deformations
+	//for (int i = 0; i < numSections; i++)
+	//{
+	//	eNonLocal_SectionI_temp = eNonLocalSubdivide[i];
+	//	//opserr << "This is eNonLocal_SectionI_temp:" << eNonLocal_SectionI_temp << endln;
 
-		for (int j = 0; j < NEBD; j++)
-		{
-			eNonLocal_MatrixFormALLSections(i * NEBD + j) = eNonLocal_SectionI_temp(j);
-			//opserr << "This is eNonLocal_MatrixFormALLSections:" << eNonLocal_MatrixFormALLSections << endln;
-		}
-	}
+	//	for (int j = 0; j < NEBD; j++)
+	//	{
+	//		eNonLocal_MatrixFormALLSections(i * NEBD + j) = eNonLocal_SectionI_temp(j);
+	//		//opserr << "This is eNonLocal_MatrixFormALLSections:" << eNonLocal_MatrixFormALLSections << endln;
+	//	}
+	//}
 
 	//opserr << "This is eNonLocal_MatrixFormALLSections:" << eNonLocal_MatrixFormALLSections << endln; 
 
 	// Compute the vector with all the local section deformations
-	eLocal_MatrixFormALLSections = H * eNonLocal_MatrixFormALLSections;
-
-	//opserr << "This is eLocal_MatrixFormALLSections:" << eLocal_MatrixFormALLSections << endln; 
-
-	//Fill the matrix e_local_tot
-	for (int i = 0; i < numSections; i++)
+	//eLocal_MatrixFormALLSections = H * eNonLocal_MatrixFormALLSections;
+	for (int i = 1; i < numSections - 1; i++)
 	{
 		for (int j = 0; j < NEBD; j++)
 		{
-			e_local_tot(j, i) = eLocal_MatrixFormALLSections(i * NEBD + j);
+			int global_idx = i * NEBD + j;
+			e_local_tot(j, i) = coeffs_H(i, 0) * eNonLocalSubdivide[i - 1](j) + coeffs_H(i, 1) * eNonLocalSubdivide[i](j) + coeffs_H(i, 2) * eNonLocalSubdivide[i + 1](j);
 		}
 	}
+	for (int j = 0; j < NEBD; j++) // Boundary conditions
+	{
+		e_local_tot(j, 0) = eNonLocalSubdivide[0](j);
+		e_local_tot(j, numSections - 1) = eNonLocalSubdivide[numSections - 1](j);
+	}
+	//opserr << "This is eLocal_MatrixFormALLSections:" << eLocal_MatrixFormALLSections << endln; 
+
+	////Fill the matrix e_local_tot
+	//for (int i = 0; i < numSections; i++)
+	//{
+	//	for (int j = 0; j < NEBD; j++)
+	//	{
+	//		e_local_tot(j, i) = eLocal_MatrixFormALLSections(i * NEBD + j);
+	//	}
+	//}
 
 	/*opserr << "This is e_local_tot:" << e_local_tot << endln;
 	double test = 0.;*/
@@ -2247,40 +2255,43 @@ FBCElemSGINUS3d::computeEu_nonlocal(Vector eu_nonlocal_Tot[], Vector eu_local_To
 		Vector beta4LU(numSections);
 		alpha4LU(0) = 1;
 		beta4LU(0) = 0;
-		beta4LU(1) = Bc4MatrixH;
-		alpha4LU(1) = Ac4MatrixH;
+		for (int j = 1; j < numSections - 1; j++)
+		{
+			beta4LU(j) = coeffs_H(j, 0) / alpha4LU(j - 1);
+			alpha4LU(j) = coeffs_H(j, 1) - beta4LU(j) * coeffs_H(j - 1, 2);
+		}
 		beta4LU(numSections - 1) = 0;
 		alpha4LU(numSections - 1) = 1;
-
-		int i;
-		int j;
-
-		for (j = 2; j < numSections - 1; j++)
-		{
-			beta4LU(j) = Bc4MatrixH / alpha4LU(j - 1);
-			alpha4LU(j) = Ac4MatrixH - beta4LU(j) * Bc4MatrixH;
-		}
 
 		// Boundary conditions
 		eu_nonlocal_Tot[0] = eu_local_Tot[0];
 		eu_nonlocal_Tot[numSections - 1] = eu_local_Tot[numSections - 1];
 
 		Vector y4LU(numSections);
-		for (i = 0; i < NEBD; i++)
+		for (int i = 0; i < NEBD; i++)
 		{
 			y4LU(0) = eu_local_Tot[0](i);
-			for (j = 1; j < numSections; j++)
+			for (int j = 1; j < numSections; j++)
 			{
 				y4LU(j) = eu_local_Tot[j](i) - beta4LU(j) * y4LU(j - 1);
 			}
 
-			for (j = numSections - 2; j > 0; j--)
+			for (int j = numSections - 2; j > 0; j--)
 			{
-				eu_nonlocal_Tot[j](i) = (y4LU(j) - Bc4MatrixH * eu_nonlocal_Tot[j + 1](i)) / alpha4LU(j);
+				eu_nonlocal_Tot[j](i) = (y4LU(j) - coeffs_H(j, 2) * eu_nonlocal_Tot[j + 1](i)) / alpha4LU(j);
 			}
 		}
-
+		/*for (int j = 0; j < numSections; j++) {
+			opserr << "Section:" << j << endln;
+			opserr << "This is eu_local_Tot:" << eu_local_Tot[j] << endln;
+			opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot[j] << endln;
+		}*/
 	}
+	/*for (int j = 0; j < numSections; j++) {
+		opserr << "Section:" << j << endln;
+		opserr << "This is eu_local_Tot:" << eu_local_Tot[j] << endln;
+		opserr << "This is eu_nonlocal_Tot:" << eu_nonlocal_Tot[j] << endln;
+	}*/
 }
 
 //Method to compute nonlocal element flexibility matrix
@@ -2313,11 +2324,7 @@ FBCElemSGINUS3d::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 	}
 	opserr << "This sum(wt):" << sumWt << endln;*/
 
-	int i;
-	int j;
-	int k;
-
-	for (i = 0; i < numSections; i++)
+	for (int i = 0; i < numSections; i++)
 	{
 		//compute matrix b
 		b.Zero();
@@ -2342,9 +2349,9 @@ FBCElemSGINUS3d::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 
 		//opserr << "This matrix Fsection_interm:" << Fsection_interm << endln;
 
-		for (j = 0; j < NEBD; j++) //loop to over the lines of Fsection_interm
+		for (int j = 0; j < NEBD; j++) //loop to over the lines of Fsection_interm
 		{
-			for (k = 0; k < NEBD; k++) //loop to over the columns of Fsection_interm
+			for (int k = 0; k < NEBD; k++) //loop to over the columns of Fsection_interm
 			{
 				//Fsection_Tot(i * NEBD + j, i * NEBD + k) = Fsection_interm(j, k);
 				Fsection_Tot(i * NEBD + j, i * NEBD + k) = FSectionSubdivide[i](j, k);
@@ -2364,21 +2371,18 @@ FBCElemSGINUS3d::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 		Vector beta4LU(numSections);
 		alpha4LU(0) = 1;
 		beta4LU(0) = 0;
-		beta4LU(1) = Bc4MatrixH;
-		alpha4LU(1) = Ac4MatrixH;
+		for (int j = 1; j < numSections - 1; j++)
+		{
+			beta4LU(j) = coeffs_H(j, 0) / alpha4LU(j - 1);
+			alpha4LU(j) = coeffs_H(j, 1) - beta4LU(j) * coeffs_H(j - 1, 2);
+		}
 		beta4LU(numSections - 1) = 0;
 		alpha4LU(numSections - 1) = 1;
 
-		for (j = 2; j < numSections - 1; j++)
-		{
-			beta4LU(j) = Bc4MatrixH / alpha4LU(j - 1);
-			alpha4LU(j) = Ac4MatrixH - beta4LU(j) * Bc4MatrixH;
-		}
-
 		// Boundary conditions
-		for (i = 0; i < NEBD; i++)
+		for (int i = 0; i < NEBD; i++)
 		{
-			for (j = 0; j < NEBD; j++)
+			for (int j = 0; j < NEBD; j++)
 			{
 				Hinv_multFsection_Tot(i, j) = Fsection_Tot(i, j);
 				Hinv_multFsection_Tot(NEBD * numSections - 1 - i, NEBD * numSections - 1 - j) = Fsection_Tot(NEBD * numSections - 1 - i, NEBD * numSections - 1 - j);
@@ -2387,19 +2391,19 @@ FBCElemSGINUS3d::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 
 		// Thomas algorithm
 		Vector y4LU(NEBD * numSections);
-		for (i = 0; i < NEBD * numSections; i++)
+		for (int i = 0; i < NEBD * numSections; i++)
 		{
-			for (k = 0; k < NEBD; k++)
+			for (int k = 0; k < NEBD; k++)
 			{
 				y4LU(k) = Fsection_Tot(k, i);
 			}
-			for (j = NEBD; j < NEBD * numSections; j++)
+			for (int j = NEBD; j < NEBD * numSections; j++)
 			{
 				y4LU(j) = Fsection_Tot(j, i) - beta4LU(j / NEBD) * y4LU(j - NEBD);
 			}
-			for (j = NEBD * numSections - NEBD - 1; j > NEBD - 1; j--)
+			for (int j = NEBD * numSections - NEBD - 1; j > NEBD - 1; j--)
 			{
-				Hinv_multFsection_Tot(j, i) = (y4LU(j) - Bc4MatrixH * Hinv_multFsection_Tot(j + NEBD, i)) / alpha4LU(j / NEBD);
+				Hinv_multFsection_Tot(j, i) = (y4LU(j) - coeffs_H(j / NEBD, 2) * Hinv_multFsection_Tot(j + NEBD, i)) / alpha4LU(j / NEBD);
 			}
 		}
 
