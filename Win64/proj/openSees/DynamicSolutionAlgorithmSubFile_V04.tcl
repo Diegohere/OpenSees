@@ -19,18 +19,18 @@
  # - Broyden Algorithm
 
  # I added these solution algorithm (date: 20/11/2023)
- if {$ok != 0} {
+ if {$ok != 0 && $krylovflag == 0} {
      puts "Initial Test Failed - Trying KrylovNewton Algorithm..."
-	 eval "test $alt_test $currentTolerance [expr $nr_iter_1] 0"
+	 eval "test $main_test $currentTolerance [expr $nr_iter_1] 0"
      algorithm KrylovNewton
      set ok [analyze $nr_analyse $currentdt $dt_anal_min1 $dt_anal_max $nr_iter1]
 
  }
- 
+ set krylovflag 0;
 
  if {$ok != 0} {
      puts "That Failed - Trying NewtonLineSearch (InitialInterpolation) Algorithm..."
-     eval "test $alt_test $currentTolerance [expr $nr_iter_1] 0"
+     eval "test $main_test $currentTolerance [expr $nr_iter_1] 0"
      algorithm NewtonLineSearch 0.75
      set ok [analyze $nr_analyse $currentdt $dt_anal_min1 $dt_anal_max $nr_iter1]
 
@@ -38,14 +38,14 @@
 
  if {$ok != 0} {
      puts "That Failed - Trying NewtonLineSearch (Bisection) Algorithm..."
-     eval "test $alt_test $currentTolerance [expr $nr_iter_1] 0"
+     eval "test $main_test $currentTolerance [expr $nr_iter_1] 0"
      algorithm NewtonLineSearch -type Bisection 0.75;
      set ok [analyze $nr_analyse $currentdt $dt_anal_min1 $dt_anal_max $nr_iter1]
  }
  
  if {$ok != 0} {
      puts "That Failed - Trying NewtonLineSearch (Secant) Algorithm..."
-     eval "test $alt_test $currentTolerance [expr $nr_iter_1] 0"
+     eval "test $main_test $currentTolerance [expr $nr_iter_1] 0"
      algorithm NewtonLineSearch -type Secant 0.75;
      set ok [analyze $nr_analyse $currentdt $dt_anal_min1 $dt_anal_max $nr_iter1]
 

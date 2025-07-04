@@ -128,7 +128,7 @@
 	set nIPs_Lp2 1;
 	set Le [expr (1-$Lp1-$Lp2)];
 	set nIPs_Le 1;
-	# set integration "SimpsonIrregularlySpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
+	# set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
 	element FBCElemSGINUS 12 1 2 $ColTransfTag $integration 20 1e-5 $lc
 
 ############################################################################

@@ -1024,7 +1024,21 @@ TestNonlocalElement3dDH::update(void)
 						{
 							WDot_cumulativeSoft += WDot_isec;
 						}
-						else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
+						/*else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
+						{
+							elasticUnload += 1;
+							WDot_cumulativeElasticUnload += WDot_isec;
+						}*/
+						// Try to fix issue oscillations 04/07/2025
+						int component_unload = 0;
+						for (int iComp = 0; iComp < NEBD; iComp++)
+						{
+							if (eLocalSubdivide[i](iComp) * eLocalCommit[i](iComp) > 0 && fabs(eLocalSubdivide[i](iComp)) <= fabs(eLocalCommit[i](iComp)))
+							{
+								component_unload += 1;
+							}
+						}
+						if (component_unload == NEBD)
 						{
 							elasticUnload += 1;
 							WDot_cumulativeElasticUnload += WDot_isec;

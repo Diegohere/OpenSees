@@ -673,6 +673,9 @@ FBCElemSGINUS3d::update(void)
 			qTrial = q;
 			KelementTrial = Kelement;
 
+			// Try to fix issue oscillations 04/07/2025
+			int isIllCondition = 0;
+
 			for (i = 0; i < numSections; i++)
 			{
 				eNonLocalSubdivide[i] = eNonlocal[i];
@@ -876,7 +879,12 @@ FBCElemSGINUS3d::update(void)
 							const Matrix& Ksection = sections[i]->getSectionTangent();
 							//opserr << "This is Ksection: " << Ksection << endln;
 
-							int isIllCondition = Ksection.checkIllCondition(1e-8);
+							// Try to fix issue oscillations 04/07/2025
+							//int isIllCondition = Ksection.checkIllCondition(1e-8);
+							if (isIllCondition == 0) {// The matrix is not ill-conditioned 
+								isIllCondition = Ksection.checkIllCondition(1e-8);
+							}
+
 							if (isIllCondition == 0) {// The matrix is not ill-conditioned 
 								FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 							}
@@ -905,6 +913,8 @@ FBCElemSGINUS3d::update(void)
 
 								// Increase the maximum number of iterations because Modified Newton
 								numItersMax = 10 * maxIters;
+
+								//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 							}
 						}
 
@@ -1011,7 +1021,21 @@ FBCElemSGINUS3d::update(void)
 						{
 							WDot_cumulativeSoft += WDot_isec;
 						}
-						else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
+						/*else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
+						{
+							elasticUnload += 1;
+							WDot_cumulativeElasticUnload += WDot_isec;
+						}*/
+						// Try to fix issue oscillations 04/07/2025
+						int component_unload = 0;
+						for (int iComp = 0; iComp < NEBD; iComp++)
+						{
+							if (eLocalSubdivide[i](iComp)* eLocalCommit[i](iComp) > 0 && fabs(eLocalSubdivide[i](iComp))<=fabs(eLocalCommit[i](iComp)))
+							{
+								component_unload += 1;
+							}
+						}
+						if (component_unload==NEBD)
 						{
 							elasticUnload += 1;
 							WDot_cumulativeElasticUnload += WDot_isec;
@@ -1058,8 +1082,11 @@ FBCElemSGINUS3d::update(void)
 
 					qTrial += dq;
 
+					double dW = dv ^ dq;
+
 					// check for convergence of this interval
-					if (dv.Norm() < Tol)
+					//if (dv.Norm() < Tol)
+					if (fabs(dW) < Tol) 
 					{
 						// set the target displacement
 						dvToDo -= dvTrial;
