@@ -444,7 +444,8 @@ NDShearFiberSection3d::~NDShearFiberSection3d()
 //      0  0 0 (1+dPsiSYdy)       dPsiSZdy -z
 //      0  0 0       dPsiSYdz (1+dPsiSZdz)  y]
 int
-NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const Vector& deformsCommited, const Vector& sectionFibersDSigma11Dx)
+//NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const Vector& deformsCommited, const Vector& sectionFibersDSigma11Dx)
+NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
 {
   int res = 0;
 
@@ -466,11 +467,11 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const 
   static double zLocs[10000];
   static double fiberArea[10000];
 
-  // Check to determine inelasticFlag
-  if (abs(deformsCommited(1))>0. || abs(deformsCommited(2))>0.)
-  {
-      inelasticFlag = 1;
-  }
+  //// Check to determine inelasticFlag
+  //if (abs(deformsCommited(1))>0. || abs(deformsCommited(2))>0.)
+  //{
+  //    inelasticFlag = 1;
+  //}
 
   //if (inelasticFlag==0)
   //{
@@ -491,46 +492,46 @@ NDShearFiberSection3d::setTrialSectionDeformation (const Vector &deforms, const 
   //    }
   //}
 
-  // Determine quantities for inelastic shear problem
-  if (inelasticFlag==1)
-  {
-      /*d2ThetaZDX2 = d2ThetaZDX2_input;
-      d2ThetaYDX2 = d2ThetaYDX2_input;*/
+  //// Determine quantities for inelastic shear problem
+  //if (inelasticFlag==1)
+  //{
+  //    /*d2ThetaZDX2 = d2ThetaZDX2_input;
+  //    d2ThetaYDX2 = d2ThetaYDX2_input;*/
 
-      eCommited = deformsCommited;
+  //    eCommited = deformsCommited;
 
-      sectionFibersDSigma11DxCommited = sectionFibersDSigma11Dx;
-      
-      //sCommited = forceCommited;
+  //    sectionFibersDSigma11DxCommited = sectionFibersDSigma11Dx;
+  //    
+  //    //sCommited = forceCommited;
 
-      double denomZ = 0.;
-      double denomY = 0.;
-      for (int i = 0; i < numFibers; i++)
-      {
-          double y = matData[3 * i];
-          double z = matData[3 * i + 1];
-          double A = matData[3 * i + 2];
+  //    double denomZ = 0.;
+  //    double denomY = 0.;
+  //    for (int i = 0; i < numFibers; i++)
+  //    {
+  //        double y = matData[3 * i];
+  //        double z = matData[3 * i + 1];
+  //        double A = matData[3 * i + 2];
 
-          NDMaterial* theMat = theMaterials[i];
-          const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
+  //        NDMaterial* theMat = theMaterials[i];
+  //        const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
 
-          denomZ += A * (pow(y, 2) * convergedConsistentTangentModulus(0, 0));
-          denomY += A * (pow(z, 2) * convergedConsistentTangentModulus(0, 0));
-      }
+  //        denomZ += A * (pow(y, 2) * convergedConsistentTangentModulus(0, 0));
+  //        denomY += A * (pow(z, 2) * convergedConsistentTangentModulus(0, 0));
+  //    }
 
-      /*double d2ThetaZDX2_test = -sCommited(3) / denomZ;
-      double d2ThetaYDX2_test = sCommited(4) / denomY;*/
+  //    /*double d2ThetaZDX2_test = -sCommited(3) / denomZ;
+  //    double d2ThetaYDX2_test = sCommited(4) / denomY;*/
 
-      /*double verif_z = abs(d2ThetaZDX2_test - d2ThetaZDX2) / d2ThetaZDX2;
-      double verif_y = abs(d2ThetaYDX2_test - d2ThetaYDX2) / d2ThetaYDX2;*/
+  //    /*double verif_z = abs(d2ThetaZDX2_test - d2ThetaZDX2) / d2ThetaZDX2;
+  //    double verif_y = abs(d2ThetaYDX2_test - d2ThetaYDX2) / d2ThetaYDX2;*/
 
-      /*d2ThetaZDX2 = -sCommited(3) / denomZ;
-      d2ThetaYDX2 = sCommited(4) / denomY;*/
+  //    /*d2ThetaZDX2 = -sCommited(3) / denomZ;
+  //    d2ThetaYDX2 = sCommited(4) / denomY;*/
 
-      //opserr << "This is verif_z: " << verif_z << endln;
+  //    //opserr << "This is verif_z: " << verif_z << endln;
 
-      compute_gradPsi_FiberCenter();
-  }
+  //    compute_gradPsi_FiberCenter();
+  //}
 
   if (sectionIntegr != 0) {
     sectionIntegr->getFiberLocations(numFibers, yLocs, zLocs);
@@ -1806,56 +1807,76 @@ NDShearFiberSection3d::compute_gradPsi_FiberCenter()
     /*Matrix testDiff = (gradf_theory_globalCentroid - gradPhi_sy_globalCentroid);
     opserr << "This is testDiff:" << testDiff << endln;*/
 
-    if (inelasticFlag == 0)// if fiber-based element is completely elastic
+    // Step 3: Compute integral dTilda
+    double dTilda_sy = 0.;
+    double dTilda_sz = 0.;
+    for (int elem = 0; elem < numFibers; ++elem)
     {
-        // Step 3: Compute integral dTilda
-        double dTilda_sy = 0.;
-        double dTilda_sz = 0.;
-        for (int elem = 0; elem < numFibers; ++elem)
-        {
-            double A = matData[3 * elem + 2];
-            dTilda_sy += A * (pow(gradPhi_sy_globalCentroid(elem, 0), 2) + pow(gradPhi_sy_globalCentroid(elem, 1), 2));
-            dTilda_sz += A * (pow(gradPhi_sz_globalCentroid(elem, 0), 2) + pow(gradPhi_sz_globalCentroid(elem, 1), 2));
-        }
-
-        // Step 4: Compute derivatives of shear function Psi
-        gradPsi_sy_globalCentroid = -Iz / dTilda_sy * gradPhi_sy_globalCentroid;
-        gradPsi_sz_globalCentroid = -Iy / dTilda_sz * gradPhi_sz_globalCentroid;
-
-        for (int elem = 0; elem < numFibers; ++elem)
-        {
-            gradPsi_sy_globalCentroid(elem, 0) -= 1.;
-            gradPsi_sz_globalCentroid(elem, 1) -= 1.;
-        }
+        double A = matData[3 * elem + 2];
+        dTilda_sy += A * (pow(gradPhi_sy_globalCentroid(elem, 0), 2) + pow(gradPhi_sy_globalCentroid(elem, 1), 2));
+        dTilda_sz += A * (pow(gradPhi_sz_globalCentroid(elem, 0), 2) + pow(gradPhi_sz_globalCentroid(elem, 1), 2));
     }
-    else
+
+    // Step 4: Compute derivatives of shear function Psi
+    gradPsi_sy_globalCentroid = -Iz / dTilda_sy * gradPhi_sy_globalCentroid;
+    gradPsi_sz_globalCentroid = -Iy / dTilda_sz * gradPhi_sz_globalCentroid;
+
+    for (int elem = 0; elem < numFibers; ++elem)
     {
-        // Step 4: Compute derivatives of shear function Psi
-        /*gradPsi_sy_globalCentroid = gradPhi_sy_globalCentroid;
-        gradPsi_sz_globalCentroid = gradPhi_sz_globalCentroid;*/
-        if (abs(eCommited(3)) > tol)
-        {
-            gradPsi_sy_globalCentroid = gradPhi_sy_globalCentroid;
-        }
-        if (abs(eCommited(4)) > tol)
-        {
-            gradPsi_sz_globalCentroid = gradPhi_sz_globalCentroid;
-        }
-
-        for (int elem = 0; elem < numFibers; elem++)
-        {
-            if (abs(eCommited(3)) > tol)
-            {
-                gradPsi_sy_globalCentroid(elem, 0) -= 1.;
-            }
-            if (abs(eCommited(4)) > tol)
-            {
-                gradPsi_sz_globalCentroid(elem, 1) -= 1.;
-            }
-        }
-    /*opserr << "gradPsi_sy_globalCentroid:  " << gradPsi_sy_globalCentroid << endln;
-    opserr << "gradPsi_sz_globalCentroid:  " << gradPsi_sz_globalCentroid << endln;*/
+        gradPsi_sy_globalCentroid(elem, 0) -= 1.;
+        gradPsi_sz_globalCentroid(elem, 1) -= 1.;
     }
+
+    //if (inelasticFlag == 0)// if fiber-based element is completely elastic
+    //{
+    //    // Step 3: Compute integral dTilda
+    //    double dTilda_sy = 0.;
+    //    double dTilda_sz = 0.;
+    //    for (int elem = 0; elem < numFibers; ++elem)
+    //    {
+    //        double A = matData[3 * elem + 2];
+    //        dTilda_sy += A * (pow(gradPhi_sy_globalCentroid(elem, 0), 2) + pow(gradPhi_sy_globalCentroid(elem, 1), 2));
+    //        dTilda_sz += A * (pow(gradPhi_sz_globalCentroid(elem, 0), 2) + pow(gradPhi_sz_globalCentroid(elem, 1), 2));
+    //    }
+
+    //    // Step 4: Compute derivatives of shear function Psi
+    //    gradPsi_sy_globalCentroid = -Iz / dTilda_sy * gradPhi_sy_globalCentroid;
+    //    gradPsi_sz_globalCentroid = -Iy / dTilda_sz * gradPhi_sz_globalCentroid;
+
+    //    for (int elem = 0; elem < numFibers; ++elem)
+    //    {
+    //        gradPsi_sy_globalCentroid(elem, 0) -= 1.;
+    //        gradPsi_sz_globalCentroid(elem, 1) -= 1.;
+    //    }
+    //}
+    //else
+    //{
+    //    // Step 4: Compute derivatives of shear function Psi
+    //    /*gradPsi_sy_globalCentroid = gradPhi_sy_globalCentroid;
+    //    gradPsi_sz_globalCentroid = gradPhi_sz_globalCentroid;*/
+    //    if (abs(eCommited(3)) > tol)
+    //    {
+    //        gradPsi_sy_globalCentroid = gradPhi_sy_globalCentroid;
+    //    }
+    //    if (abs(eCommited(4)) > tol)
+    //    {
+    //        gradPsi_sz_globalCentroid = gradPhi_sz_globalCentroid;
+    //    }
+
+    //    for (int elem = 0; elem < numFibers; elem++)
+    //    {
+    //        if (abs(eCommited(3)) > tol)
+    //        {
+    //            gradPsi_sy_globalCentroid(elem, 0) -= 1.;
+    //        }
+    //        if (abs(eCommited(4)) > tol)
+    //        {
+    //            gradPsi_sz_globalCentroid(elem, 1) -= 1.;
+    //        }
+    //    }
+    ///*opserr << "gradPsi_sy_globalCentroid:  " << gradPsi_sy_globalCentroid << endln;
+    //opserr << "gradPsi_sz_globalCentroid:  " << gradPsi_sz_globalCentroid << endln;*/
+    //}
     //opserr << "This is connectivity_matrix:" << connectivity_matrix << endln;
     //opserr << "This is coordinate_matrix:" << coordinate_matrix << endln;
 
@@ -2023,48 +2044,50 @@ NDShearFiberSection3d::compute_element_quantities(const int elem, Matrix coordin
     //opserr << "This is f_sy_element" << f_sy_element << endln;
 
     // Element load vector for shear warping function
-    if (inelasticFlag==0) // if fiber-based element is completely elastic
-    {
-        // Use elastic shear distribution
-        f_sy_element = -weights * (N ^ yCoords_elements) * N * Jdet;
-        f_sz_element = -weights * (N ^ zCoords_elements) * N * Jdet;
-    }
-    else
-    {
-        // Use inelastic shear distribution
-        NDMaterial* theMat = theMaterials[elem];
+    //if (inelasticFlag==0) // if fiber-based element is completely elastic
+    //{
+    //    // Use elastic shear distribution
+    //    f_sy_element = -weights * (N ^ yCoords_elements) * N * Jdet;
+    //    f_sz_element = -weights * (N ^ zCoords_elements) * N * Jdet;
+    //}
+    //else
+    //{
+    //    // Use inelastic shear distribution
+    //    NDMaterial* theMat = theMaterials[elem];
 
-        Matrix& strainDecomposition = theMat->getStrainDecomposition();
-        Vector inelasticStrain_termY(2);
-        inelasticStrain_termY(0) = (strainDecomposition(1, 1) + strainDecomposition(1, 2)) / eCommited(3);
-        inelasticStrain_termY(1) = (strainDecomposition(2, 1) + strainDecomposition(2, 2)) / eCommited(3);
-        Vector inelasticStrain_termZ(2);
-        inelasticStrain_termZ(0) = (strainDecomposition(1, 1) + strainDecomposition(1, 2)) / eCommited(4);
-        inelasticStrain_termZ(1) = (strainDecomposition(2, 1) + strainDecomposition(2, 2)) / eCommited(4);
+    //    Matrix& strainDecomposition = theMat->getStrainDecomposition();
+    //    Vector inelasticStrain_termY(2);
+    //    inelasticStrain_termY(0) = (strainDecomposition(1, 1) + strainDecomposition(1, 2)) / eCommited(3);
+    //    inelasticStrain_termY(1) = (strainDecomposition(2, 1) + strainDecomposition(2, 2)) / eCommited(3);
+    //    Vector inelasticStrain_termZ(2);
+    //    inelasticStrain_termZ(0) = (strainDecomposition(1, 1) + strainDecomposition(1, 2)) / eCommited(4);
+    //    inelasticStrain_termZ(1) = (strainDecomposition(2, 1) + strainDecomposition(2, 2)) / eCommited(4);
 
-        const Matrix& initialTangentModulus = theMat->getInitialTangent();
+    //    const Matrix& initialTangentModulus = theMat->getInitialTangent();
 
-        /*double y = N ^ yCoords_elements;
-        double z = N ^ zCoords_elements;*/
+    //    /*double y = N ^ yCoords_elements;
+    //    double z = N ^ zCoords_elements;*/
 
-        Matrix Bt = Matrix(4, 2);
-        Bt.addMatrixTranspose(0., B, 1.0);
+    //    Matrix Bt = Matrix(4, 2);
+    //    Bt.addMatrixTranspose(0., B, 1.0);
 
-        const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
-        //if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0, 0) < 0.99)
-        /*if (abs(inelasticStrain_termY(0)) >1.0 || abs(inelasticStrain_termY(1)) > 1.0)*/
-        if (abs(eCommited(3)) > 1e-2 && abs((strainDecomposition(1, 1) + strainDecomposition(1, 2)))>0. )
-        {
-            Vector firstTerm = Bt * inelasticStrain_termY;
-            Vector secondTerm = N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)));
-            /*opserr << "This is firstTerm" << firstTerm << endln;
-            opserr << "This is secondTerm" << secondTerm << endln;*/
-            int test = 1;
-        }
+    //    const Matrix& convergedConsistentTangentModulus = theMat->getConvergedTangent();
+    //    //if (convergedConsistentTangentModulus(0, 0) / initialTangentModulus(0, 0) < 0.99)
+    //    /*if (abs(inelasticStrain_termY(0)) >1.0 || abs(inelasticStrain_termY(1)) > 1.0)*/
+    //    if (abs(eCommited(3)) > 1e-2 && abs((strainDecomposition(1, 1) + strainDecomposition(1, 2)))>0. )
+    //    {
+    //        Vector firstTerm = Bt * inelasticStrain_termY;
+    //        Vector secondTerm = N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)));
+    //        /*opserr << "This is firstTerm" << firstTerm << endln;
+    //        opserr << "This is secondTerm" << secondTerm << endln;*/
+    //        int test = 1;
+    //    }
 
-        f_sy_element = weights * (Bt * inelasticStrain_termY + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)))) * Jdet;
-        f_sz_element = weights * (Bt * inelasticStrain_termZ + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(4)))) * Jdet;
-    }
+    //    f_sy_element = weights * (Bt * inelasticStrain_termY + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(3)))) * Jdet;
+    //    f_sz_element = weights * (Bt * inelasticStrain_termZ + N * (sectionFibersDSigma11DxCommited(elem) / (initialTangentModulus(1, 1) * eCommited(4)))) * Jdet;
+    //}
+    f_sy_element = -weights * (N ^ yCoords_elements) * N * Jdet;
+    f_sz_element = -weights * (N ^ zCoords_elements) * N * Jdet;
     
 }
 

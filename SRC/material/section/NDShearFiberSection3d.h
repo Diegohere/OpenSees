@@ -32,7 +32,8 @@ class NDShearFiberSection3d : public SectionForceDeformation
 
     const char *getClassType(void) const {return "NDShearFiberSection3d";};
 
-    int   setTrialSectionDeformation(const Vector &deforms, const Vector &deformsCommited, const Vector& sectionFibersDSigma11Dx);
+    /*int   setTrialSectionDeformation(const Vector &deforms, const Vector &deformsCommited, const Vector& sectionFibersDSigma11Dx);*/
+    int   setTrialSectionDeformation(const Vector& deforms);
     const Vector &getSectionDeformation(void);
 
     const Vector &getStressResultant(void);

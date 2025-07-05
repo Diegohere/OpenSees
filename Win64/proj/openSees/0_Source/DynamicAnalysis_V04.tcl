@@ -83,7 +83,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		set okcollapse 1; break;
 	}
 	# test $main_test $tol_0 $nr_iter_2 $show_iter
-	test $main_test $tol_0 $nr_iter_1 $show_iter
+	test $alt_test $tol_0 $nr_iter_1 $show_iter
 	algorithm KrylovNewton
 	set ok [analyze $nr_analyse $dt_analysis $dt_anal_min1 $dt_anal_max $nr_iter1];
 	# if {$ok != 0} {

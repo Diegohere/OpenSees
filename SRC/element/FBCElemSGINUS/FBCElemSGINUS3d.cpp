@@ -673,8 +673,8 @@ FBCElemSGINUS3d::update(void)
 			qTrial = q;
 			KelementTrial = Kelement;
 
-			// Try to fix issue oscillations 04/07/2025
-			int isIllCondition = 0;
+			//// Try to fix issue oscillations 04/07/2025
+			//int isIllCondition = 0;
 
 			for (i = 0; i < numSections; i++)
 			{
@@ -880,10 +880,10 @@ FBCElemSGINUS3d::update(void)
 							//opserr << "This is Ksection: " << Ksection << endln;
 
 							// Try to fix issue oscillations 04/07/2025
-							//int isIllCondition = Ksection.checkIllCondition(1e-8);
-							if (isIllCondition == 0) {// The matrix is not ill-conditioned 
-								isIllCondition = Ksection.checkIllCondition(1e-8);
-							}
+							int isIllCondition = Ksection.checkIllCondition(1e-16);
+							//if (isIllCondition == 0) {// The matrix is not ill-conditioned 
+							//	isIllCondition = Ksection.checkIllCondition(1e-8);
+							//}
 
 							if (isIllCondition == 0) {// The matrix is not ill-conditioned 
 								FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
@@ -1082,11 +1082,11 @@ FBCElemSGINUS3d::update(void)
 
 					qTrial += dq;
 
-					double dW = dv ^ dq;
+					//double dW = dv ^ dq;
 
 					// check for convergence of this interval
-					//if (dv.Norm() < Tol)
-					if (fabs(dW) < Tol) 
+					if (dv.Norm() < Tol)
+					//if (fabs(dW) < Tol) 
 					{
 						// set the target displacement
 						dvToDo -= dvTrial;

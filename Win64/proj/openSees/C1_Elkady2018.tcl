@@ -91,17 +91,34 @@
 	nDMaterial HLBModel 2 191454.0 0.3 378.0 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $h $tw $sigmaC0_Web $alphaRegularization_Web web A992Gr50;
 
 	
-	set NFlange_LoadingDir 1;
-	set NFlange_TranverseDir 4;
-	set NWeb_LoadingDir 10;
-	set NWeb_TranverseDir 1;	
+	# set NFlange_LoadingDir 1;
+	# set NFlange_TranverseDir 4;
+	# set NWeb_LoadingDir 10;
+	# set NWeb_TranverseDir 1;	
 	
-	section NDFiberTestNonlocal 1 -GJ $GJ {;	
-	#			 matTag  umSubdivY  numSubdivZ  yI  	zI  	yJ    zJ
-	patch rect 1 $NFlange_LoadingDir $NFlange_TranverseDir [expr -$d/2]               [expr -$bf/2]                    [expr -($d/2-$tf)]             [expr $bf/2];	#Bottom flange
-	patch rect 2 $NWeb_LoadingDir $NWeb_TranverseDir            [expr -($d/2-$tf)] [expr -$tw/2] [expr ($d/2-$tf)] [expr $tw/2];									#Web
-	patch rect 1 $NFlange_LoadingDir $NFlange_TranverseDir [expr ($d/2-$tf)]             [expr -$bf/2]                    [expr $d/2]             [expr $bf/2];		#Top flange
+	# section NDFiberTestNonlocal 1 -GJ $GJ {;	
+	# #			 matTag  umSubdivY  numSubdivZ  yI  	zI  	yJ    zJ
+	# patch rect 1 $NFlange_LoadingDir $NFlange_TranverseDir [expr -$d/2]               [expr -$bf/2]                    [expr -($d/2-$tf)]             [expr $bf/2];	#Bottom flange
+	# patch rect 2 $NWeb_LoadingDir $NWeb_TranverseDir            [expr -($d/2-$tf)] [expr -$tw/2] [expr ($d/2-$tf)] [expr $tw/2];									#Web
+	# patch rect 1 $NFlange_LoadingDir $NFlange_TranverseDir [expr ($d/2-$tf)]             [expr -$bf/2]                    [expr $d/2]             [expr $bf/2];		#Top flange
 
+	# }
+	
+	set NFlange_yDir 1;
+	set NFlange_zDir 4;
+	set NWeb_yDir 10;
+	set NWeb_zDir 1;
+	set NIntersection_yDir [expr $NFlange_yDir]
+	set NIntersection_zDir [expr $NWeb_zDir]
+	
+	section NDFiberShear 1 -GJ $GJ {;	
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr -$d/2]               [expr -$bf/2]                    [expr -($d/2-$tf)]             [expr -$tw/2];	#left part bottom flange
+		patch rect 1 $NIntersection_yDir $NIntersection_zDir [expr -$d/2]               [expr -$tw/2]                    [expr -($d/2-$tf)]             [expr $tw/2];	#intersection bottom flange/web
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr -$d/2]               [expr $tw/2]                    [expr -($d/2-$tf)]             [expr $bf/2];	#right part bottom flange
+		patch rect 1 $NWeb_yDir $NWeb_zDir            [expr -($d/2-$tf)] [expr -$tw/2] [expr ($d/2-$tf)] [expr $tw/2];									#web
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr ($d/2-$tf)]             [expr -$bf/2]                    [expr $d/2]             [expr -$tw/2];		#left part top flange
+		patch rect 1 $NIntersection_yDir $NIntersection_zDir [expr ($d/2-$tf)]             [expr -$tw/2]                    [expr $d/2]             [expr $tw/2];		#intersection top flange/web
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr ($d/2-$tf)]             [expr $tw/2]                    [expr $d/2]             [expr $bf/2];		#right part top flange
 	}
 	
 	
@@ -111,13 +128,13 @@
 	# element testNonlocalElementDH 12 1 2 $ColTransfTag $integration 20 1e-5 $lc
 	
 	set Lp1 [expr 2.0*$d/$L];
-	set nIPs_Lp1 3;
+	set nIPs_Lp1 5;
 	set Lp2 $Lp1;
 	set nIPs_Lp2 $nIPs_Lp1;
 	set Le [expr (1-$Lp1-$Lp2)];
 	set nIPs_Le 1;
 	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
-	element FBCElemSGINUS 12 1 2 $ColTransfTag $integration 20 1e-8 $lc
+	element FBCElemSGINUS 12 1 2 $ColTransfTag $integration 20 1e-6 $lc
 
 ############################################################################
 #              Recorders					                			   
@@ -129,10 +146,13 @@ set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
 
 # Record displacements 
 	recorder Node -file $dataDir/C1_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_Disp.txt -node 2 -dof 1 2 3 4 5 6 disp;
+	# recorder Node -file $dataDir/C1_Elkady2018_equalSpace_21IPs_Disp.txt -node 2 -dof 1 2 3 4 5 6 disp;
 	
 # Record reactions
 	recorder Node -file $dataDir/C1_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
 	recorder Node -file $dataDir/C1_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RTop.txt -node 2 -dof 1 2 3 4 5 6 reaction;
+	# recorder Node -file $dataDir/C1_Elkady2018_equalSpace_21IPs_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
+	# recorder Node -file $dataDir/C1_Elkady2018_equalSpace_21IPs_RTop.txt -node 2 -dof 1 2 3 4 5 6 reaction;
 	
 # Record local section deformations
    # recorder Element -file $dataDir/C1_Elkady2018_lc10DIP17_curvatureLoc.txt -ele 12 LocalSectionCurvature;
