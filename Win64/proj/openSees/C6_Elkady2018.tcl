@@ -3,14 +3,14 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results4Paper_C6_Elkady2018;			# name of output folder
+	set dataDir results_C6_Elkady2018;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
 	#source DisplayPlane.tcl;
 	
 	set Source "0_Source";
-	source $Source/DynamicAnalysis_V02.tcl;
+	source $Source/DynamicAnalysis_V04.tcl;
 
 ###################################################################################################
 #          Define Section Properties and Elements													  
@@ -28,7 +28,7 @@
 	set bSurTFlange [expr $bf/(2*$tf)];
 	set bSurTWeb [expr $h/$tw];
 	
-	set sigmaC0_Web [expr 1.2*370.5703];
+	set sigmaC0_Web [expr 1.15*370.5703];
 	set sigmaC0_Flange [expr 1.0* 511.1520];
 	
 	set alphaRegularization_Web 1.0;							# Factor for regularization web 
@@ -59,7 +59,8 @@
 # define nodes and assign masses to beam-column intersections of frame
 	# command:  node nodeID xcoord ycoord 
 	node 1 0.0 0.0 0.0;
-	node 2 0.0 $L 0.0;
+	node 2 0.0 0.0 0.0; #Node for spring
+	node 3 0.0 $L 0.0;
 	
 # Pin constraints for same nodes
 	#equalDOF 3 2 1 2 6; 
@@ -68,7 +69,10 @@
 	# command:  fix nodeID dxFixity dyFixity rzFixity
 	# fixity values: 1 = constrained; 0 = unconstrained
 	fix 1 1 1 1 1 1 1;
-	fix 2 0 0 0 1 1 0;
+	fix 3 0 0 1 1 1 0;
+	
+#Constraints for zero length
+	equalDOF 1 2 1 2 3 4 5 
 	
 ###################################################################################################
 #          Define Beam-Column Elements							  
@@ -85,73 +89,122 @@
 	set GJ 	[expr $G*$J];  			# torsional stiffness 
 	
 	#nDMaterial ElasticIsotropic 1 $E $nu
-	nDMaterial LocalBucklingFlangePlate 1 205903.0 0.3 368.0 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bf4MaterialLaw $tf $sigmaC0_Flange $alphaRegularization_Flange;
-	nDMaterial LocalBucklingWebPlate 2 202923.0 0.3 378.0 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $h $tw $sigmaC0_Web $alphaRegularization_Web;
-	
-	set NFlange_LoadingDir 1;
-	set NFlange_TranverseDir 4;
-	set NWeb_LoadingDir 10;
-	set NWeb_TranverseDir 1;	
-	
-	section NDFiberTestNonlocal 1 -GJ $GJ {;	
-	#			 matTag  umSubdivY  numSubdivZ  yI  	zI  	yJ    zJ
-	patch rect 1 $NFlange_LoadingDir $NFlange_TranverseDir [expr -$d/2]               [expr -$bf/2]                    [expr -($d/2-$tf)]             [expr $bf/2];	#Bottom flange
-	patch rect 2 $NWeb_LoadingDir $NWeb_TranverseDir            [expr -($d/2-$tf)] [expr -$tw/2] [expr ($d/2-$tf)] [expr $tw/2];									#Web
-	patch rect 1 $NFlange_LoadingDir $NFlange_TranverseDir [expr ($d/2-$tf)]             [expr -$bf/2]                    [expr $d/2]             [expr $bf/2];		#Top flange
+	# nDMaterial LocalBucklingFlangePlate 1 189507.0 0.3 368.0 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bf4MaterialLaw $tf $sigmaC0_Flange $alphaRegularization_Flange;
+	# nDMaterial LocalBucklingWebPlate 2 191454.0 0.3 378.0 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $h $tw $sigmaC0_Web $alphaRegularization_Web;
+	nDMaterial HLBModel 1 205903.0 0.3 368.0 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $bf4MaterialLaw $tf $sigmaC0_Flange $alphaRegularization_Flange flange A992Gr50;
+	nDMaterial HLBModel 2 202923.0 0.3 378.0 141.47 15.2 135.95 211.16 2 25621 235.12 942.18 3.16 $h $tw $sigmaC0_Web $alphaRegularization_Web web A992Gr50;
 
+	
+	# set NFlange_LoadingDir 1;
+	# set NFlange_TranverseDir 4;
+	# set NWeb_LoadingDir 10;
+	# set NWeb_TranverseDir 1;	
+	
+	# section NDFiberTestNonlocal 1 -GJ $GJ {;	
+	# #			 matTag  umSubdivY  numSubdivZ  yI  	zI  	yJ    zJ
+	# patch rect 1 $NFlange_LoadingDir $NFlange_TranverseDir [expr -$d/2]               [expr -$bf/2]                    [expr -($d/2-$tf)]             [expr $bf/2];	#Bottom flange
+	# patch rect 2 $NWeb_LoadingDir $NWeb_TranverseDir            [expr -($d/2-$tf)] [expr -$tw/2] [expr ($d/2-$tf)] [expr $tw/2];									#Web
+	# patch rect 1 $NFlange_LoadingDir $NFlange_TranverseDir [expr ($d/2-$tf)]             [expr -$bf/2]                    [expr $d/2]             [expr $bf/2];		#Top flange
+
+	# }
+	
+	set NFlange_yDir 1;
+	set NFlange_zDir 4;
+	set NWeb_yDir 10;
+	set NWeb_zDir 1;
+	set NIntersection_yDir [expr $NFlange_yDir]
+	set NIntersection_zDir [expr $NWeb_zDir]
+	
+	section NDFiberShear 1 -GJ $GJ {;	
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr -$d/2]               [expr -$bf/2]                    [expr -($d/2-$tf)]             [expr -$tw/2];	#left part bottom flange
+		patch rect 1 $NIntersection_yDir $NIntersection_zDir [expr -$d/2]               [expr -$tw/2]                    [expr -($d/2-$tf)]             [expr $tw/2];	#intersection bottom flange/web
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr -$d/2]               [expr $tw/2]                    [expr -($d/2-$tf)]             [expr $bf/2];	#right part bottom flange
+		patch rect 2 $NWeb_yDir $NWeb_zDir            [expr -($d/2-$tf)] [expr -$tw/2] [expr ($d/2-$tf)] [expr $tw/2];									#web
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr ($d/2-$tf)]             [expr -$bf/2]                    [expr $d/2]             [expr -$tw/2];		#left part top flange
+		patch rect 1 $NIntersection_yDir $NIntersection_zDir [expr ($d/2-$tf)]             [expr -$tw/2]                    [expr $d/2]             [expr $tw/2];		#intersection top flange/web
+		patch rect 1 $NFlange_yDir $NFlange_zDir [expr ($d/2-$tf)]             [expr $tw/2]                    [expr $d/2]             [expr $bf/2];		#right part top flange
 	}
+	
+	
+	set lc [expr 1.0*$d];
+	
+	# set integration "Simpson 1 21"
+	# element testNonlocalElementDH 23 2 3 $ColTransfTag $integration 20 1e-5 $lc
+	
+	set Lp1 [expr 2.0*$d/$L];
+	set nIPs_Lp1 5;
+	set Lp2 $Lp1;
+	set nIPs_Lp2 $nIPs_Lp1;
+	set Le [expr (1-$Lp1-$Lp2)];
+	set nIPs_Le 1;
+	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
+	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 20 1e-8 $lc
 
-	
-	#set integration "NewtonCotes 1 5"
-	#element  forceBeamColumn 12 1 2 $ColTransfTag $integration -iter 30 1e-5
-	#set lc [expr 2.5*$bf];
-	#element gradientForceBeamColumn 12 1 2 $ColTransfTag Simpson 1 11  20 1e-6 $lc
-	
-	#set lc [expr 1.5*$bf];
-	set lc [expr 0.0*$d];
-	element testNonlocalElementDH 12 1 2 $ColTransfTag Simpson 1 9 20 1e-8 $lc
-	
+# Zero length element definition
+	 uniaxialMaterial Elastic 3 976617499682.016
+	element zeroLength 12 1 2 -mat 3 -dir 6
+
 ############################################################################
 #              Recorders					                			   
 ############################################################################
 
 puts "Recorders ..."
 
-#lc20bfLcSurDx4
+set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
+
 # Record displacements 
-	recorder Node -file $dataDir/C6_Elkady2018_lc0DIP9_Disp.txt -node 2 -dof 1 2 3 4 5 6 disp;
+	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_Disp.txt -node 3 -dof 1 2 3 4 5 6 disp;
+	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_Disp.txt -node 3 -dof 1 2 3 4 5 6 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/C6_Elkady2018_lc0DIP9_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RTop.txt -node 3 -dof 1 2 3 4 5 6 reaction;
+	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
+	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RTop.txt -node 3 -dof 1 2 3 4 5 6 reaction;
 	
 # Record local section deformations
-   recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_curvatureLoc.txt -ele 12 LocalSectionCurvature;
+   # recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_curvatureLoc.txt -ele 12 LocalSectionCurvature;
+   
+# Record moment distribution
+   # recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_momentDistribution.txt -ele 12 momentDistribution;
+   
+      # Record local section deformations
+   # recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_nonlocalCurvatureDistribution.txt -ele 12 NonlocalSectionCurvature;
+   
+# Record moment distribution
+   #recorder Element -file $dataDir/C6_Elkady2018_momentDistribution.txt -ele 12 momentDistribution;
+   
+# Record element global forces
+   # recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_globalForce.txt -ele 12 forces;
+   
+   # Record element basic displacements
+   # recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_basicDeformations.txt -ele 12 basicDeformation;
 	
 # Record stress and strains for fibers
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY300Z41.txt -ele 12 section 1 fiber 300.35 40.50 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY300Z41.txt -ele 12 section 1 fiber 300.35 40.50 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY258Z0.txt -ele 12 section 1 fiber 258.03 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY258Z0.txt -ele 12 section 1 fiber 258.03 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY201Z0.txt -ele 12 section 1 fiber 200.69 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY201Z0.txt -ele 12 section 1 fiber 200.69 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY143Z0.txt -ele 12 section 1 fiber 143.35 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY143Z0.txt -ele 12 section 1 fiber 143.35 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY86Z0.txt -ele 12 section 1 fiber 86.01 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY86Z0.txt -ele 12 section 1 fiber 86.01 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY29Z0.txt -ele 12 section 1 fiber 28.67 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY29Z0.txt -ele 12 section 1 fiber 28.67 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY-29Z0.txt -ele 12 section 1 fiber -28.67 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY-29Z0.txt -ele 12 section 1 fiber -28.67 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY-86Z0.txt -ele 12 section 1 fiber -86.01 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY-86Z0.txt -ele 12 section 1 fiber -86.01 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY-143Z0.txt -ele 12 section 1 fiber -143.35 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY-143Z0.txt -ele 12 section 1 fiber -143.35 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY-201Z0.txt -ele 12 section 1 fiber -200.69 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY-201Z0.txt -ele 12 section 1 fiber -200.69 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY-258Z0.txt -ele 12 section 1 fiber -258.03 0.00 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY-258Z0.txt -ele 12 section 1 fiber -258.03 0.00 strain; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_stressFiberY-300Z41.txt -ele 12 section 1 fiber -300.35 40.50 stress; 
-#recorder Element -file $dataDir/C6_Elkady2018_lc0DIP9_strainFiberY-300Z41.txt -ele 12 section 1 fiber -300.35 40.50 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY300Z41.txt -ele 12 section 1 fiber 300.35 40.50 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY300Z41.txt -ele 12 section 1 fiber 300.35 40.50 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY258Z0.txt -ele 12 section 1 fiber 258.03 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY258Z0.txt -ele 12 section 1 fiber 258.03 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY201Z0.txt -ele 12 section 1 fiber 200.69 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY201Z0.txt -ele 12 section 1 fiber 200.69 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY143Z0.txt -ele 12 section 1 fiber 143.35 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY143Z0.txt -ele 12 section 1 fiber 143.35 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY86Z0.txt -ele 12 section 1 fiber 86.01 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY86Z0.txt -ele 12 section 1 fiber 86.01 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY29Z0.txt -ele 12 section 1 fiber 28.67 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY29Z0.txt -ele 12 section 1 fiber 28.67 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-29Z0.txt -ele 12 section 1 fiber -28.67 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-29Z0.txt -ele 12 section 1 fiber -28.67 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-86Z0.txt -ele 12 section 1 fiber -86.01 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-86Z0.txt -ele 12 section 1 fiber -86.01 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-143Z0.txt -ele 12 section 1 fiber -143.35 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-143Z0.txt -ele 12 section 1 fiber -143.35 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-201Z0.txt -ele 12 section 1 fiber -200.69 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-201Z0.txt -ele 12 section 1 fiber -200.69 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-258Z0.txt -ele 12 section 1 fiber -258.03 0.00 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-258Z0.txt -ele 12 section 1 fiber -258.03 0.00 strain; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_stressFiberY-300Z41.txt -ele 12 section 1 fiber -300.35 40.50 stress; 
+#recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_strainFiberY-300Z41.txt -ele 12 section 1 fiber -300.35 40.50 strain; 
 
 
 
@@ -180,7 +233,7 @@ set startT [clock seconds]
 
 # define GRAVITY -------------------------------------------------------------
 pattern Plain 1 Linear {
-	load 2 0 [expr -0.2*11082000] 0 0 0 0
+	load 3 0 [expr -0.2*11082000] 0 0 0 0
 
 }
 
@@ -189,7 +242,7 @@ set Tol 1.0e-10;			# convergence tolerance for test
 constraints Plain;     		# how it handles boundary conditions
 numberer Plain;			# renumber dof's to minimize band-width (optimization), if you want to
 system  BandGeneral;		# how to store and solve the system of equations in the analysis
-test RelativeNormUnbalance $Tol 20 2; 		# determine if convergence has been achieved at the end of an iteration step
+test RelativeNormUnbalance $Tol 20; 		# determine if convergence has been achieved at the end of an iteration step
 algorithm Newton;			# use Newton's solution algorithm: updates tangent stiffness at every iteration
 set NstepGravity 10;  		# apply gravity in 1 steps
 set DGravity [expr 1./$NstepGravity]; 	# first load increment;
@@ -221,7 +274,7 @@ set tStart [clock seconds];
 	# #algorithm NewtonLineSearch;					# use Newton's solution algorithm: updates tangent stiffness at every iteration
 	# algorithm KrylovNewton 
 	
-	  set CtrlNode 2;
+	  set CtrlNode 3;
   set CtrlDOFLatX 1;
   set CtrlDOFLatZ 3;
   set CtrlDOFRotZ 6;
@@ -239,7 +292,7 @@ set lateralDispXSeries "Series -dt $dt -filePath $lateralDispXFile -factor [expr
 set lateralDispZSeries "Series -dt $dt -filePath $lateralDispZFile -factor [expr 1]";
 set topRotationZSeries "Series -dt $dt -filePath $topRotationFile -factor [expr 1]";
 set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
-set FloorNodes [list  1 2 ]; 
+set FloorNodes [list  1 3 ]; 
 
 
 	# pattern UniformExcitation 2 $CtrlDOFLatX -disp $lateralDispXSeries;
@@ -247,16 +300,18 @@ set FloorNodes [list  1 2 ];
 	# pattern UniformExcitation 4 $CtrlDOFRotZ -disp $topRotationZSeries;
 	pattern MultipleSupport 2  {
 		groundMotion 1 Plain -disp  $lateralDispXSeries 
-		#groundMotion 2 Plain -disp  $lateralDispZSeries 
-		#groundMotion 3 Plain -disp  $topRotationZSeries 
+		groundMotion 2 Plain -disp  $lateralDispZSeries 
+		groundMotion 3 Plain -disp  $topRotationZSeries 
 	    imposedMotion $CtrlNode  $CtrlDOFLatX 1	
-		#imposedMotion $CtrlNode  $CtrlDOFLatZ 2	
-		#imposedMotion $CtrlNode  $CtrlDOFRotZ 3	
+		imposedMotion $CtrlNode  $CtrlDOFLatZ 2	
+		imposedMotion $CtrlNode  $CtrlDOFRotZ 3	
 	};	# end pattern
 	
 	
-	DynamicAnalysis_V02        $dt  1.0  $GMtime    1       0.8    $FloorNodes     3900.0      3900.0;
-	
+	# DynamicAnalysis_V02        $dt  1.0  $GMtime    1       0.8    $FloorNodes     3900.0      3900.0;
+	set nbNodesTot 1 ; 
+DynamicAnalysis_V04        $dt  1.0  $GMtime    1       0.8    $FloorNodes     3900.0000      3900.0000 $nbNodesTot;
+
 	
 		
 set tFinish [clock seconds];

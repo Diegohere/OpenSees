@@ -659,8 +659,9 @@ FBCElemSGINUS3d::update(void)
 	dvToDo = dv;
 	dvTrial = dvToDo;
 
-	static double factor = 2;
+	static double factor =10;
 
+	// Try fix oscillation issue after elastic unloading
 	maxSubdivisions = 20;
 
 	while (converged == false && numSubdivide <= maxSubdivisions)
@@ -880,7 +881,7 @@ FBCElemSGINUS3d::update(void)
 							//opserr << "This is Ksection: " << Ksection << endln;
 
 							// Try to fix issue oscillations 04/07/2025
-							int isIllCondition = Ksection.checkIllCondition(1e-16);
+							int isIllCondition = Ksection.checkIllCondition(1e-8);
 							//if (isIllCondition == 0) {// The matrix is not ill-conditioned 
 							//	isIllCondition = Ksection.checkIllCondition(1e-8);
 							//}
@@ -911,11 +912,20 @@ FBCElemSGINUS3d::update(void)
 								opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
 								opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
 
+								//FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+
 								// Increase the maximum number of iterations because Modified Newton
 								numItersMax = 10 * maxIters;
 
+								//fixTangents(i) = 1;
+
 								//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 							}
+							const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
+							double alphaTangent = 0.5;
+							FSectionSubdivide[i] = alphaTangent * Fsection_elastic + (1.0 - alphaTangent) * FSectionSubdivide[i];
+
+							numItersMax = 20 * maxIters;
 						}
 
 						// calculate section residual deformations de = FSection * (s - sr);
@@ -1115,7 +1125,6 @@ FBCElemSGINUS3d::update(void)
 							eLocal[k] = eLocalSubdivide[k];
 							FSection[k] = FSectionSubdivide[k];
 							sr[k] = srSubdivide[k];
-
 						}
 
 						// break out of j & l loops
