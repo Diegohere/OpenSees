@@ -207,9 +207,13 @@ extern void* OPS_GradientForceBeamColumn3d();
 extern void* OPS_TestNonlocalElement3dDH();
 extern void* OPS_TestNonlocalElement2dDH();
 
-// Added by Diego Heredia 22.05.2024
+// Added by Diego Heredia 22.05.2025
 extern void* OPS_FBCElemSGINUS3d();
 extern void* OPS_FBCElemSGINUS2d();
+
+// Added by Diego Heredia 16.07.2025
+extern void* OPS_FBCElemKNSGINUS3d();
+extern void* OPS_FBCElemKNSGINUS2d();
 
 
 extern int TclModelBuilder_addFeapTruss(ClientData clientData, Tcl_Interp *interp,  int argc,
@@ -409,6 +413,11 @@ TclModelBuilder_addTestNonlocalElementDH(ClientData clientData, Tcl_Interp* inte
 // Added by Diego Heredia on 22.05.2025 (EPFL)
 extern int
 TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp, int argc, TCL_Char** argv,
+    Domain*, TclModelBuilder*);
+
+// Added by Diego Heredia on 16.07.2025 (EPFL)
+extern int
+TclModelBuilder_addFBCElemKNSGINUS(ClientData clientData, Tcl_Interp* interp, int argc, TCL_Char** argv,
     Domain*, TclModelBuilder*);
 
 
@@ -1882,6 +1891,13 @@ TclModelBuilderElementCommand(ClientData clientData, Tcl_Interp *interp,
     // Added by Diego Heredia on 22.05.2025
     else if (strcmp(argv[1], "FBCElemSGINUS") == 0) {
     int result = TclModelBuilder_addFBCElemSGINUS(clientData, interp, argc, argv,
+        theTclDomain, theTclBuilder);
+    return result;
+    }
+
+    // Added by Diego Heredia on 16.07.2025
+    else if (strcmp(argv[1], "FBCElemKNSGINUS") == 0) {
+    int result = TclModelBuilder_addFBCElemKNSGINUS(clientData, interp, argc, argv,
         theTclDomain, theTclBuilder);
     return result;
     }

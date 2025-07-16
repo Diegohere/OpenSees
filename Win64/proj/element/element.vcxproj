@@ -211,6 +211,9 @@
     <ClCompile Include="..\..\..\SRC\element\Element.cpp" />
     <ClCompile Include="..\..\..\SRC\element\ElementalLoad.cpp" />
     <ClCompile Include="..\..\..\SRC\element\ExternalElement.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\FBCElemKNSGINUS\FBCElemKNSGINUS2d.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\FBCElemKNSGINUS\FBCElemKNSGINUS3d.cpp" />
+    <ClCompile Include="..\..\..\SRC\element\FBCElemKNSGINUS\TclFBCElemKNSGINUS.cpp" />
     <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS2d.cpp" />
     <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS3d.cpp" />
     <ClCompile Include="..\..\..\SRC\element\FBCElemSGINUS\TclFBCElemSGINUS.cpp" />
@@ -511,6 +514,8 @@
     <ClInclude Include="..\..\..\SRC\element\Element.h" />
     <ClInclude Include="..\..\..\SRC\element\ElementalLoad.h" />
     <ClInclude Include="..\..\..\SRC\element\ExternalElement.h" />
+    <ClInclude Include="..\..\..\SRC\element\FBCElemKNSGINUS\FBCElemKNSGINUS2d.h" />
+    <ClInclude Include="..\..\..\SRC\element\FBCElemKNSGINUS\FBCElemKNSGINUS3d.h" />
     <ClInclude Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS2d.h" />
     <ClInclude Include="..\..\..\SRC\element\FBCElemSGINUS\FBCElemSGINUS3d.h" />
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\ElasticForceBeamColumnWarping2d.h" />

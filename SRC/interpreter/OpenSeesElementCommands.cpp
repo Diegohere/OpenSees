@@ -239,6 +239,8 @@ void* OPS_TestNonlocalElement2dDH();
 void* OPS_TestNonlocalElement3dDH();
 void* OPS_FBCElemSGINUS2d();
 void* OPS_FBCElemSGINUS3d();
+void* OPS_FBCElemKNSGINUS2d();
+void* OPS_FBCElemKNSGINUS3d();
 
 namespace {
 
@@ -538,6 +540,18 @@ namespace {
 	  }
   }
 
+  static void* OPS_FBCElemKNSGINUS()
+  {
+	  int ndm = OPS_GetNDM();
+	  if (ndm == 2) {
+		  return OPS_FBCElemKNSGINUS2d();
+	  }
+	  else if (ndm == 3)
+	  {
+		  return OPS_FBCElemKNSGINUS3d();
+	  }
+  }
+
 
 
   static void* OPS_DispBeamColumn3dID()
@@ -744,6 +758,7 @@ namespace {
 	functionMap.insert(std::make_pair("gradientForceBeamColumn", &OPS_GradientForceBeamColumn)); // Added by Diego Heredia
 	functionMap.insert(std::make_pair("TestNonlocalElementDH", &OPS_TestNonlocalElementDH)); // Added by Diego Heredia
 	functionMap.insert(std::make_pair("FBCElemSGINUS", &OPS_FBCElemSGINUS)); // Added by Diego Heredia
+	functionMap.insert(std::make_pair("FBCElemKNSGINUS", &OPS_FBCElemKNSGINUS)); // Added by Diego Heredia
 	return 0;
     }
 }

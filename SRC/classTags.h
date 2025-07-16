@@ -822,6 +822,8 @@
 #define ELE_TAG_TestNonlocalElement2dDH 225 // by Diego Heredia
 #define ELE_TAG_FBCElemSGINUS2d 226 // by Diego Heredia
 #define ELE_TAG_FBCElemSGINUS3d 227 // by Diego Heredia
+#define ELE_TAG_FBCElemKNSGINUS2d 228 // by Diego Heredia
+#define ELE_TAG_FBCElemKNSGINUS3d 229 // by Diego Heredia
 
 
 

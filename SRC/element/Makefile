@@ -55,6 +55,7 @@ all:         $(OBJS)
 	@$(CD) $(FE)/element/CEqElement; $(MAKE);
 	@$(CD) $(FE)/element/gradientForceBeamColumn; $(MAKE);
 	@$(CD) $(FE)/element/testNonlocalElementDH; $(MAKE);
+	@$(CD) $(FE)/element/FBCElemKNSGINUS; $(MAKE);
 
 # Miscellaneous
 tidy:	
@@ -108,6 +109,7 @@ spotless: clean
 	@$(CD) $(FE)/element/CEqElement; $(MAKE) wipe;
 	@$(CD) $(FE)/element/gradientForceBeamColumn; $(MAKE) wipe;
 	@$(CD) $(FE)/element/testNonlocalElementDH; $(MAKE) wipe;
+	@$(CD) $(FE)/element/FBCElemKNSGINUS; $(MAKE) wipe;
 
 wipe: spotless
 

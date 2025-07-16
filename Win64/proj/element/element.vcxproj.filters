@@ -147,6 +147,9 @@
     <Filter Include="FBCElemSGINUS">
       <UniqueIdentifier>{283beaee-541c-488f-833a-3c74897ce5be}</UniqueIdentifier>
     </Filter>
+    <Filter Include="FBCElemKNSGINUS">
+      <UniqueIdentifier>{c0bba1dd-28c8-42ac-bfbf-dff8721253be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\SRC\element\Element.cpp">
@@ -1028,6 +1031,15 @@
     <ClCompile Include="..\..\..\SRC\element\forceBeamColumn\SimpsonNonUniformSpacedBeamIntegration.cpp">
       <Filter>forceBeamColumn</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\FBCElemKNSGINUS\FBCElemKNSGINUS2d.cpp">
+      <Filter>FBCElemKNSGINUS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\FBCElemKNSGINUS\FBCElemKNSGINUS3d.cpp">
+      <Filter>FBCElemKNSGINUS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\FBCElemKNSGINUS\TclFBCElemKNSGINUS.cpp">
+      <Filter>FBCElemKNSGINUS</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\element\Element.h">
@@ -1809,6 +1821,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\element\forceBeamColumn\SimpsonNonUniformSpacedBeamIntegration.h">
       <Filter>forceBeamColumn</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\FBCElemKNSGINUS\FBCElemKNSGINUS2d.h">
+      <Filter>FBCElemKNSGINUS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\FBCElemKNSGINUS\FBCElemKNSGINUS3d.h">
+      <Filter>FBCElemKNSGINUS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
