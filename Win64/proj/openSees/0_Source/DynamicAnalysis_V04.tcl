@@ -195,7 +195,7 @@ while {$controlTime < $TmaxAnalysis && $okcollapse == 0 && $ok == 0} {
 		set controlTime [getTime];
 	}
 	if {$ok != 0} {
-		set fileID [open $Result/ConvergenceState.txt w];   # Create/Open ConvergenceState.txt file (writing permission)
+		set fileID [open $ConvergenceState.txt w];   # Create/Open ConvergenceState.txt file (writing permission)
 		puts -nonewline $fileID 1;               # Write value of 1 in case the analysis does not converge
 		close $fileID;                           # Close ConvergenceState.txt file
 		break

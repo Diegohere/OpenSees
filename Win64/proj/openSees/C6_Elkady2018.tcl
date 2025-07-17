@@ -132,13 +132,14 @@
 	# element testNonlocalElementDH 23 2 3 $ColTransfTag $integration 20 1e-5 $lc
 	
 	set Lp1 [expr 2.0*$d/$L];
-	set nIPs_Lp1 5;
+	set nIPs_Lp1 3;
 	set Lp2 $Lp1;
 	set nIPs_Lp2 $nIPs_Lp1;
 	set Le [expr (1-$Lp1-$Lp2)];
 	set nIPs_Le 1;
 	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
-	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 20 1e-8 $lc
+	# element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 20 1e-8 $lc
+	element FBCElemKNSGINUS 23 2 3 $ColTransfTag $integration 500 1e-8 $lc
 
 # Zero length element definition
 	 uniaxialMaterial Elastic 3 976617499682.016

@@ -103,6 +103,9 @@ private:
 	void initCoefficientMatrixH();
 	void computeCoefficientMatrixH();
 
+	int computeElemResidual(Vector& vu, Vector& qTrial, Vector& dq, double* xi, double* wt, double L, Vector s_Tot[], Vector deStar_local_Tot[], Vector deStar_nonlocal_Tot[],
+		Vector eu_local_Tot[], Vector eu_nonlocal_Tot[]);
+
 
 	/* ----------------------------------------------------------------------------- */
 	/* Members                                                                       */
