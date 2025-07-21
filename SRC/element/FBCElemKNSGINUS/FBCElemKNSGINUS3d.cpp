@@ -654,6 +654,13 @@ FBCElemKNSGINUS3d::update(void)
 
 	maxSubdivisions = 20;
 
+	// Initialize the Krylov Newton subspaces
+	Vector ADeltaQ[nKN_max + 1];
+	Vector DeltaQ[nKN_max + 1];
+
+	// Initialize the preconditioned residual
+	Vector precondResid(NEBD);
+
 	while (converged == false && numSubdivide <= maxSubdivisions)
 	{
 		qTrial = q;
@@ -665,6 +672,10 @@ FBCElemKNSGINUS3d::update(void)
 			eLocalSubdivide[i] = eLocal[i];
 			FSectionSubdivide[i] = FSection[i];
 			srSubdivide[i] = sr[i];
+
+			// Added 20.07.2025
+			eu_local_Tot[i].Zero();
+			eu_nonlocal_Tot[i].Zero();
 
 			//opserr << "This is FSectionSubdivide:" << FSectionSubdivide[i] << endln;
 		}
@@ -681,33 +692,153 @@ FBCElemKNSGINUS3d::update(void)
 		if (initialFlag != 2)
 		{
 			// Compute the unbalanced element deformation vector
-			if (computeElemResidual(vu, qTrial, dq, xi,  wt, L, s_Tot, deStar_local_Tot,  deStar_nonlocal_Tot, eu_local_Tot, eu_nonlocal_Tot) < 0)
+			if (computeElemResidual(vu, qTrial, dq, xi, wt, L, s_Tot, deStar_local_Tot, deStar_nonlocal_Tot, eu_local_Tot, eu_nonlocal_Tot) < 0)
 			{
 				opserr << "FBCElemKNSGINUS3d::update() -- Issue computing element residual\n";
 				return -1;
 			}
 
-			// set the maximum number of iteration
+			// Set the Krylov-Newton subspace dimension
+			int nKN = nKN_max + 1;
+
+			// Set the maximum number of iteration
 			int numItersMax = maxIters;
 
 			for (j = 0; j < numItersMax; j++)
 			{
+				// Refresh tangent and clear subspace
+				if (nKN > nKN_max)
+				{
+					for (i = 0; i < numSections; i++) {
+						//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+						//Compute section flexibility using decompostion and pseudoInverse
+						const Matrix& Ksection = sections[i]->getSectionTangent();
+						//opserr << "This is Ksection: " << Ksection << endln;
 
-				// dv = -vin - dvTrial  + vu +v
-				dv.addVector(0.0, vu, -1.0);
-				/*dv -= dvTrial;
-				dv += vu;
-				dv += v;*/
+						int isIllCondition = Ksection.checkIllCondition(1e-8);
 
-				// dq = Kelement * dv;
-				dq.addMatrixVector(0.0, KelementTrial, dv, 1.0);
+						if (isIllCondition == 0) {// The matrix is not ill-conditioned 
+							FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+						}
+						else // The matrix singular (ill-conditioned)
+						{
+							const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
+							const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
+							Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
+							Matrix Ksection_intermed1_inverse = Matrix(6, 6);
+							Ksection_intermed1.Invert(Ksection_intermed1_inverse);
+							Matrix Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
+							/*opserr << "This is Ksection: " << Ksection << endln;
+							opserr << "This is Ksection_intermed1: " << Ksection_intermed1 << endln;
+							opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
+							opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
+							Matrix Fsection_plastic = Matrix(6, 6);
+							if (Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, 1e-2) < 0)
+							{
+								return -1; // matrix has nan (modified DH 18.03.2025)
+							}
+							FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
+							//opserr << "This is Ksection: " << Ksection << endln;
+							/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
+							opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
+							opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
 
+							//FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+
+							// Increase the maximum number of iterations because Modified Newton
+							//numItersMax = 10 * maxIters;
+
+							//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+						}
+						/*const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
+						double alphaTangent = 0.5;
+						FSectionSubdivide[i] = alphaTangent * Fsection_elastic + (1.0 - alphaTangent) * FSectionSubdivide[i];*/
+						//numItersMax = 20 * maxIters;
+						FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+						//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+					}
+					//Compute Felement_nonlocal
+					computeFelement_nonlocal(Felement);
+					//opserr << "This is Felement:" << Felement << endln;
+
+					// Compute element stiffness matrix 	  
+					if (Felement.Solve(I, KelementTrial) < 0) {
+						opserr << "FBCElemKNSGINUS3d::update() -- could not invert flexibility\n";
+						//opserr << "This is Felement:" <<Felement<<endln;
+					}
+
+					// Clear the subspaces
+					for (int nn = 0; nn < nKN_max + 1; nn++)
+					{
+						ADeltaQ[nn] = Vector(NEBD);
+						DeltaQ[nn] = Vector(NEBD);
+						//opserr << "This is ADeltaQ :" << ADeltaQ[nn] << endln;
+					}
+
+					// Set the Krylov-Newton subspace dimension
+					nKN = 0;
+				}
+
+				// Compute the preconditioned residual
+				//precondResid.addMatrixVector(0.0, KelementTrial, vu, 1.0);
+				precondResid.addMatrixVector(0.0, KelementTrial, vu, -1.0);
+				//opserr << "This is precondResid:" << precondResid << endln;
+
+				// Add new Krylov direction to the subspace basis
+				ADeltaQ[nKN] = precondResid;
+
+				// Least square analysis
+				if (nKN > 0)
+				{
+					// Update the subspace basis
+					/*opserr << "This is ADeltaQ[nKN]:" << ADeltaQ[nKN] << endln;
+					opserr << "This is precondResid:" << precondResid << endln;*/
+					ADeltaQ[nKN-1] = ADeltaQ[nKN-1] - precondResid;
+
+					// Initialize the vector for least square coefficients 
+					Vector leastSquareCoeffsC(nKN);
+
+					// Solve for least square coefficients
+					/*opserr << "This is ADeltaQ[0]:" << ADeltaQ[0] << endln;
+					opserr << "This is ADeltaQ[1]:" << ADeltaQ[1] << endln;
+					opserr << "This is ADeltaQ[2]:" << ADeltaQ[2] << endln;
+					opserr << "This is ADeltaQ[3]:" << ADeltaQ[3] << endln;*/
+					if (solveLeastSquare(leastSquareCoeffsC, ADeltaQ, precondResid, nKN)<0)
+					{
+						opserr << "FBCElemKNSGINUS3d::update() -- Issue solving least square\n";
+						j = (numItersMax - 1);
+						//return -1;
+					}
+
+					// Update the the preconditioned residual
+					for (int nn = 0; nn < nKN; nn++)
+					{
+						double c = leastSquareCoeffsC(nn);
+						precondResid.addVector(1.0, DeltaQ[nn], c);     // precondResid += c * DeltaQ[nn]
+						precondResid.addVector(1.0, ADeltaQ[nn], -c);    // precondResid -= c * ADeltaQ[nn]
+					}
+				}
+
+				// Set the increment in the element basic forces
+				dq = precondResid;
+
+				// Update the element basic force vector
 				qTrial += dq;
 
-				//double dW = dv ^ dq;
+				// Add new Krylov direction to the subspace basis
+				DeltaQ[nKN] = dq;
+
+				// Compute the unbalanced element deformation vector
+				/*if (computeElemResidual(vu, qTrial, dq, xi, wt, L, s_Tot, deStar_local_Tot, deStar_nonlocal_Tot, eu_local_Tot, eu_nonlocal_Tot) < 0)
+				{
+					opserr << "FBCElemKNSGINUS3d::update() -- Issue computing element residual\n";
+					return -1;
+				}*/
+
+				nKN += 1;
 
 				// check for convergence of this interval
-				if (dv.Norm() < Tol)
+				if (vu.Norm() < Tol)
 					//if (fabs(dW) < Tol) 
 				{
 					// set the target displacement
@@ -747,7 +878,8 @@ FBCElemKNSGINUS3d::update(void)
 					if (computeElemResidual(vu, qTrial, dq, xi, wt, L, s_Tot, deStar_local_Tot, deStar_nonlocal_Tot, eu_local_Tot, eu_nonlocal_Tot) < 0)
 					{
 						opserr << "FBCElemKNSGINUS3d::update() -- Issue computing element residual\n";
-						return -1;
+						j = (numItersMax - 1);
+						//return -1;
 					}
 
 					// if we have failed to converge  - reduce step size by the factor specified
@@ -772,23 +904,23 @@ FBCElemKNSGINUS3d::update(void)
 		return -1;
 	}
 
-	// Set the initial flexibility matrix
-	if (initialFlag == 0)
-	{
-		for (i = 0; i < numSections; i++)
-		{
-			FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
-			FSection[i] = FSectionSubdivide[i];
-		}
-		computeFelement_nonlocal(Felement);
-		// calculate element stiffness matrix  
-		if (Felement.Solve(I, KelementTrial) < 0) {
-			opserr << "FBCElemKNSGINUS3d::update() -- could not invert flexibility\n";
-			//opserr << "This is Felement:" <<Felement<<endln;
-		}
-		Kelement = KelementTrial;
-		//opserr << "This is Kelement: " << Kelement << endln;
-	}
+	//// Set the initial flexibility matrix
+	//if (initialFlag == 0)
+	//{
+	//	for (i = 0; i < numSections; i++)
+	//	{
+	//		FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+	//		FSection[i] = FSectionSubdivide[i];
+	//	}
+	//	computeFelement_nonlocal(Felement);
+	//	// calculate element stiffness matrix  
+	//	if (Felement.Solve(I, KelementTrial) < 0) {
+	//		opserr << "FBCElemKNSGINUS3d::update() -- could not invert flexibility\n";
+	//		//opserr << "This is Felement:" <<Felement<<endln;
+	//	}
+	//	Kelement = KelementTrial;
+	//	//opserr << "This is Kelement: " << Kelement << endln;
+	//}
 
 	initialFlag = 1;
 
@@ -2367,6 +2499,46 @@ FBCElemKNSGINUS3d::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 	//opserr << "This matrix B_Q:" << B_Q << endln;
 	//opserr << "This matrix Felement_nonlocal:" << Felement_nonlocal << endln;
 	//double test = 0.;
+}
+
+
+// Method to solve the least square proble
+int
+FBCElemKNSGINUS3d::solveLeastSquare(Vector& betaHat, Vector X[], Vector& b, int nKN)
+{
+	// Step 1: Build the matrix X andX^T using the list of vector
+	Matrix XMatrix(NEBD, nKN);
+	Matrix XTMatrix(nKN, NEBD);
+	for (int i = 0; i < nKN; i++)
+	{
+		for (int j = 0; j < NEBD; j++)
+		{
+			XMatrix(j, i) = X[i](j);
+			XTMatrix(i, j) = X[i](j);
+		}
+	}
+	//opserr << "This is XMatrix:" << XMatrix << endln;
+	//opserr << "This is XTMatrix:" << XTMatrix << endln;
+
+	// Step 2: Compute (X^T*X)
+	Matrix XTX(nKN, nKN);
+	XTX.addMatrixTransposeProduct(0., XMatrix, XMatrix, 1.);
+	//opserr << "This is XTX:" << XTX << endln;
+
+	// Step 3: Compute X^T*b
+	Vector XTb = XTMatrix * b;
+	//opserr << "This is XTb:" << XTb << endln;
+
+	// Step 4: Solve for betaHat
+	if (XTX.Solve(XTb, betaHat) < 0)
+	{
+		//opserr << "FBCElemKNSGINUS3d::Could not solve least square problem\n";
+		return -1;
+	}
+
+	//opserr << "This is vector betaHat: " << betaHat << endln;
+
+	return 0;
 }
 
 

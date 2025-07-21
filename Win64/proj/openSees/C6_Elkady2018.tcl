@@ -138,7 +138,6 @@
 	set Le [expr (1-$Lp1-$Lp2)];
 	set nIPs_Le 1;
 	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
-	# element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 20 1e-8 $lc
 	element FBCElemKNSGINUS 23 2 3 $ColTransfTag $integration 500 1e-8 $lc
 
 # Zero length element definition

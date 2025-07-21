@@ -106,6 +106,8 @@ private:
 	int computeElemResidual(Vector& vu, Vector& qTrial, Vector& dq, double* xi, double* wt, double L, Vector s_Tot[], Vector deStar_local_Tot[], Vector deStar_nonlocal_Tot[],
 		Vector eu_local_Tot[], Vector eu_nonlocal_Tot[]);
 
+	int solveLeastSquare(Vector& betaHat, Vector X[], Vector& b, int nKN);
+
 
 	/* ----------------------------------------------------------------------------- */
 	/* Members                                                                       */
@@ -177,6 +179,8 @@ private:
 	double WSofteningTol;
 	//double DeltaWSectionTol = 1e-4;
 	bool isSoftening;
+
+	enum { nKN_max = 0 }; // maximum Krylov-Newton subspace dimension
 
 	bool isTorsion;
 
