@@ -180,7 +180,7 @@ private:
 	//double DeltaWSectionTol = 1e-4;
 	bool isSoftening;
 
-	enum { nKN_max = 0 }; // maximum Krylov-Newton subspace dimension
+	enum { nKN_max = 3 }; // maximum Krylov-Newton subspace dimension
 
 	bool isTorsion;
 

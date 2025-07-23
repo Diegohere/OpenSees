@@ -652,7 +652,8 @@ FBCElemKNSGINUS3d::update(void)
 
 	static double factor = 10;
 
-	maxSubdivisions = 20;
+	//maxSubdivisions = 20;
+	maxSubdivisions = 1;
 
 	// Initialize the Krylov Newton subspaces
 	Vector ADeltaQ[nKN_max + 1];
@@ -837,9 +838,20 @@ FBCElemKNSGINUS3d::update(void)
 
 				nKN += 1;
 
+				//double dW = vu ^ dq;
+
 				// check for convergence of this interval
-				if (vu.Norm() < Tol)
-					//if (fabs(dW) < Tol) 
+				//if (vu.Norm() < Tol)
+				//if (fabs(dW) < Tol) 
+				//if ((dq.Norm() / (qCommit.Norm() + 0.01 * Tol) < Tol) && (vu.Norm() / (vin.Norm() + 0.01 * Tol) < Tol))
+				/*double normalizedResid_disp = 0.;
+				double normalizedResid_force = 0.;
+				for (int cc = 0; cc < NEBD; cc++)
+				{
+					normalizedResid_disp += abs(vu(cc) / (vin(cc) + 1e-12));
+					normalizedResid_force += abs(dq(cc) / (qTrial(cc) + 1e-12));
+				}*/
+				if ((vu.Norm() <Tol) && (dq.Norm() < 100000*Tol))
 				{
 					// set the target displacement
 					dvToDo -= dvTrial;
@@ -2506,37 +2518,75 @@ FBCElemKNSGINUS3d::computeFelement_nonlocal(Matrix& Felement_nonlocal)
 int
 FBCElemKNSGINUS3d::solveLeastSquare(Vector& betaHat, Vector X[], Vector& b, int nKN)
 {
+	//// Test least square function
+	//// Matrix A (6x3)
+	//Matrix Atest(6, 3);
+	//Atest(0, 0) = 1; Atest(0, 1) = 0; Atest(0, 2) = 2;
+	//Atest(1, 0) = 0; Atest(1, 1) = 1; Atest(1, 2) = 3;
+	//Atest(2, 0) = 1; Atest(2, 1) = 1; Atest(2, 2) = 4;
+	//Atest(3, 0) = 2; Atest(3, 1) = 0; Atest(3, 2) = 0;
+	//Atest(4, 0) = 0; Atest(4, 1) = 2; Atest(4, 2) = 1;
+	//Atest(5, 0) = 3; Atest(5, 1) = 1; Atest(5, 2) = 1;
+
+	//// Vector b (6x1)
+	//Vector bTest(6);
+	//bTest(0) = 7;
+	//bTest(1) = 8;
+	//bTest(2) = 12;
+	//bTest(3) = 5;
+	//bTest(4) = 9;
+	//bTest(5) = 10;
+
+	//// Allocate x
+	//Vector xTest(3);
+
+	//Atest.solve_leastSquare(bTest, xTest);
+
+	//opserr << "This is xTest:" << xTest << endln;
+
+
 	// Step 1: Build the matrix X andX^T using the list of vector
 	Matrix XMatrix(NEBD, nKN);
-	Matrix XTMatrix(nKN, NEBD);
+	//Matrix XTMatrix(nKN, NEBD);
 	for (int i = 0; i < nKN; i++)
 	{
+		//opserr << "This is X:" << X[i] << endln;
 		for (int j = 0; j < NEBD; j++)
 		{
 			XMatrix(j, i) = X[i](j);
-			XTMatrix(i, j) = X[i](j);
+			//XTMatrix(i, j) = X[i](j);
 		}
 	}
 	//opserr << "This is XMatrix:" << XMatrix << endln;
 	//opserr << "This is XTMatrix:" << XTMatrix << endln;
 
-	// Step 2: Compute (X^T*X)
-	Matrix XTX(nKN, nKN);
-	XTX.addMatrixTransposeProduct(0., XMatrix, XMatrix, 1.);
+	//// Step 2: Compute (X^T*X)
+	//Matrix XTX(nKN, nKN);
+	//XTX.addMatrixTransposeProduct(0., XMatrix, XMatrix, 1.);
 	//opserr << "This is XTX:" << XTX << endln;
 
-	// Step 3: Compute X^T*b
-	Vector XTb = XTMatrix * b;
+	//// Step 3: Compute X^T*b
+	//Vector XTb = XTMatrix * b;
+	//opserr << "This is b:" << b << endln;
 	//opserr << "This is XTb:" << XTb << endln;
 
-	// Step 4: Solve for betaHat
-	if (XTX.Solve(XTb, betaHat) < 0)
+	//// Step 4: Solve for betaHat
+	//if (XTX.Solve(XTb, betaHat) < 0)
+	//{
+	//	//opserr << "FBCElemKNSGINUS3d::Could not solve least square problem\n";
+	//	return -1;
+	//}
+
+	//opserr << "This is b:" << b << endln;
+
+	// Step 2: Solve least square
+	if (XMatrix.solve_leastSquare(b, betaHat) < 0)
 	{
-		//opserr << "FBCElemKNSGINUS3d::Could not solve least square problem\n";
+		opserr << "FBCElemKNSGINUS3d::Could not solve least square problem\n";
 		return -1;
 	}
 
-	//opserr << "This is vector betaHat: " << betaHat << endln;
+	//opserr << "This is vector betaHat solve: " << betaHat << endln;
 
 	return 0;
 }

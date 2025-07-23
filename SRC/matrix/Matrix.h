@@ -90,6 +90,9 @@ class Matrix
     int computePseudoInverseSymmetric(Matrix& APlus, const double tol);
     // Check if a symmetric matrix is ill-conditioned (if 1/condNumber >tol)
     int checkIllCondition(double tol) const;
+    // Added by Diego Heredia 22.07.2025
+    // Solve the least square problem Ax=b using QR decomposition
+    int solve_leastSquare(const Vector& b, Vector& x);
 
     // overloaded operators 
     inline double &operator()(int row, int col);

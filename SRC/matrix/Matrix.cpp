@@ -352,6 +352,11 @@ extern "C" int  DGETRI(int* N, double* A, int* LDA,
 extern "C" void DGEEV(char* jobvl, char* jobvr, int* n, double* a,
 	int* lda, double* wr, double* wi, double* vl, int* ldvl,
 	double* vr, int* ldvr, double* work, int* lwork, int* info);
+// Added by Diego Heredia 22/07/2025
+extern "C" int DGELS(char* T, int* M, int* N, int* NRHS,
+	double* A, int* LDA, double* B, int* LDB,
+	double* WORK, int* LWORK, int* INFO);
+
 
 //#endif
 #else
@@ -378,6 +383,10 @@ extern "C" int dgerfs_(char* TRANS, int* N, int* NRHS, double* A, int* LDA,
 extern "C" void dgeev_(char* jobvl, char* jobvr, int* n, double* A, int* lda,
 	double* w, double* vl, int* ldvl, double* vr, int* ldvr,
 	double* work, int* lwork, int* info);
+// Added by Diego Heredia 22.07.2025
+extern "C" int dgels_(char* T, int* M, int* N, int* NRHS,
+	double* A, int* LDA, double* B, int* LDB,
+	double* WORK, int* LWORK, int* INFO);
 
 #endif
 
@@ -1332,6 +1341,89 @@ int Matrix::checkIllCondition(double tol) const
 		}
 	}
 #endif
+}
+
+
+
+// Solve the least square problem Ax=b using QR decomposition
+int 
+Matrix::solve_leastSquare(const Vector& b, Vector& x)
+{
+	// Check matrix size 
+	if (numRows < numCols) {
+		opserr << "Matrix::solve_leastSquare - underdetermined system (rows < cols) not supported\n";
+		return -1;
+	}
+
+	if (b.Size() != numRows) {
+		opserr << "Matrix::solve_leastSquare - RHS vector has incorrect size\n";
+		return -1;
+	}
+
+	int ldb = std::max(numRows, numCols);
+
+	// copy the data 
+	double* A_copy = new (nothrow) double[dataSize];
+	//opserr << "This is A.data: " << endln;
+	for (int i = 0; i < dataSize; i++)
+	{
+		//opserr <<  data[i] << endln;
+		A_copy[i] = data[i];
+	}
+	double* b_copy=new double[ldb];
+	for (int i = 0; i < numRows; i++)
+	{
+		b_copy[i] = b(i);
+	}
+
+	// Workspace query
+	int lwork = -1;
+	double work_query;
+	int info = 0;
+	char trans = 'N'; // No transpose
+	int nrhs = 1; // The number of right hand side vectors
+
+	// Query and allocate the optimal workspace
+#ifdef _WIN32
+	DGELS(&trans, &numRows, &numCols, &nrhs, A_copy, &numRows, b_copy, &ldb,
+		&work_query, &lwork, &info);
+#else
+	dgels_(&trans, &numRows, &numCols, &nrhs, A_copy, &numRows, b_copy, &ldb,
+		&work_query, &lwork, &info);
+#endif
+
+	lwork = (int)work_query;
+	double* work = new (nothrow) double[lwork];
+
+	// Solve least square problem
+#ifdef _WIN32
+	DGELS(&trans, &numRows, &numCols, &nrhs, A_copy, &numRows, b_copy, &ldb,
+		work, &lwork, &info);
+#else
+	dgels_(&trans, &numRows, &numCols, &nrhs, A_copy, &numRows, b_copy, &ldb,
+		work, &lwork, &info);
+#endif
+
+	if (info != 0) {
+		// Free dynamically alocated memory
+		delete[] A_copy;
+		delete[] b_copy;
+		delete[] work;
+
+		opserr << "Matrix::solve_leastSquare - DGELS solve failed with info = " << info << endln;
+		return -1;
+	}
+
+	// Extract solution x
+	for (int i = 0; i < numCols; ++i)
+		x(i) = b_copy[i];
+
+	// Free dynamically alocated memory
+	delete[] A_copy;
+	delete[] b_copy;
+	delete[] work;
+
+	return 0;
 }
 
 

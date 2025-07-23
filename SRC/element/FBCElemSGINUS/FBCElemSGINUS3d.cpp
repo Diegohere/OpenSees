@@ -661,7 +661,6 @@ FBCElemSGINUS3d::update(void)
 
 	static double factor =10;
 
-	// Try fix oscillation issue after elastic unloading
 	maxSubdivisions = 20;
 
 	while (converged == false && numSubdivide <= maxSubdivisions)
@@ -683,6 +682,10 @@ FBCElemSGINUS3d::update(void)
 				eLocalSubdivide[i] = eLocal[i];
 				FSectionSubdivide[i] = FSection[i];
 				srSubdivide[i] = sr[i];
+
+				// Added 23.07.2025
+				eu_local_Tot[i].Zero();
+				eu_nonlocal_Tot[i].Zero();
 
 				//opserr << "This is FSectionSubdivide:" << FSectionSubdivide[i] << endln;
 			}
@@ -921,11 +924,11 @@ FBCElemSGINUS3d::update(void)
 
 								//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 							}
-							const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
+							/*const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
 							double alphaTangent = 0.5;
 							FSectionSubdivide[i] = alphaTangent * Fsection_elastic + (1.0 - alphaTangent) * FSectionSubdivide[i];
 
-							numItersMax = 20 * maxIters;
+							numItersMax = 20 * maxIters;*/
 						}
 
 						// calculate section residual deformations de = FSection * (s - sr);
@@ -1092,11 +1095,11 @@ FBCElemSGINUS3d::update(void)
 
 					qTrial += dq;
 
-					//double dW = dv ^ dq;
+					double dW = dv ^ dq;
 
 					// check for convergence of this interval
-					if (dv.Norm() < Tol)
-					//if (fabs(dW) < Tol) 
+					//if (dv.Norm() < Tol)
+					if (fabs(dW) < Tol) 
 					{
 						// set the target displacement
 						dvToDo -= dvTrial;
