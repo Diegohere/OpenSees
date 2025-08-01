@@ -378,7 +378,9 @@ FBCElemKNSGINUS3d::revertToLastCommit(void)
 		eNonlocal[i] = eNonlocalCommit[i];
 		eLocal[i] = eLocalCommit[i];
 
-		sections[i]->setTrialSectionDeformation(eNonlocal[i]);
+		// Modified DH 24.07.2025
+		//sections[i]->setTrialSectionDeformation(eNonlocal[i]);
+		sections[i]->setTrialSectionDeformation(eLocal[i]);
 		//sections[i]->setTrialSectionDeformation(eNonlocal[i], eNonlocalCommit[i], allSectionFibersDSigma11Dx[i]);
 		//sr[i] = sections[i]->getStressResultant();
 		sr[i] = srCommit[i];

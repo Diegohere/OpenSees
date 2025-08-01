@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_C6_Elkady2018;			# name of output folder
+	set dataDir results_C6_Elkady2018_vu_resize12;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -132,14 +132,14 @@
 	# element testNonlocalElementDH 23 2 3 $ColTransfTag $integration 20 1e-5 $lc
 	
 	set Lp1 [expr 2.0*$d/$L];
-	set nIPs_Lp1 3;
+	set nIPs_Lp1 9;
 	set Lp2 $Lp1;
 	set nIPs_Lp2 $nIPs_Lp1;
 	set Le [expr (1-$Lp1-$Lp2)];
 	set nIPs_Le 1;
 	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
-	# element FBCElemKNSGINUS 23 2 3 $ColTransfTag $integration 500 1e-8 $lc
-	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 500 1e-8 $lc
+	# set integration "Simpson 1 21"
+	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-8 $lc
 
 # Zero length element definition
 	 uniaxialMaterial Elastic 3 976617499682.016
@@ -154,14 +154,14 @@ puts "Recorders ..."
 set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
 
 # Record displacements 
-	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_Disp.txt -node 3 -dof 1 2 3 4 5 6 disp;
-	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_Disp.txt -node 3 -dof 1 2 3 4 5 6 disp;
+	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_Disp.txt -time -node 3 -dof 1 2 3 4 5 6 disp;
+	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_Disp.txt -time -node 3 -dof 1 2 3 4 5 6 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
-	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RTop.txt -node 3 -dof 1 2 3 4 5 6 reaction;
-	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RBase.txt -node 1 -dof 1 2 3 4 5 6 reaction;
-	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RTop.txt -node 3 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RBase.txt -time -node 1 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
+	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RBase.txt -time -node 1 -dof 1 2 3 4 5 6 reaction;
+	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
 	
 # Record local section deformations
    # recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_curvatureLoc.txt -ele 12 LocalSectionCurvature;
@@ -222,11 +222,19 @@ set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
 #######################################################################################
 
 #Add the file paths
-set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize50.txt"
-set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize50.txt"
-set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize50.txt"
+# set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize50.txt"
+# set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize50.txt"
+# set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize50.txt"
+# set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize25.txt"
+# set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize25.txt"
+# set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize25.txt"
+set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize12.txt"
+set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize12.txt"
+set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize12.txt"
 #set TotalNumberOfSteps 1144;	# number of steps in ground motion for resize 100
-set TotalNumberOfSteps 2265;	# number of steps in ground motion for resize 50
+# set TotalNumberOfSteps 2265;	# number of steps in ground motion for resize 50
+# set TotalNumberOfSteps 4514;	# number of steps in ground motion for resize 25
+set TotalNumberOfSteps 9386;	# number of steps in ground motion for resize 12
 
 
 # Start timer

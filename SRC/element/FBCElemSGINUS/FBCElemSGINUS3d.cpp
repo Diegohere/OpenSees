@@ -377,7 +377,9 @@ FBCElemSGINUS3d::revertToLastCommit(void)
 		eNonlocal[i] = eNonlocalCommit[i];
 		eLocal[i] = eLocalCommit[i];
 
-		sections[i]->setTrialSectionDeformation(eNonlocal[i]);
+		// Modified DH 24.07.2025
+		//sections[i]->setTrialSectionDeformation(eNonlocal[i]);
+		sections[i]->setTrialSectionDeformation(eLocal[i]);
 		//sections[i]->setTrialSectionDeformation(eNonlocal[i], eNonlocalCommit[i], allSectionFibersDSigma11Dx[i]);
 		//sr[i] = sections[i]->getStressResultant();
 		sr[i] = srCommit[i];
@@ -920,8 +922,6 @@ FBCElemSGINUS3d::update(void)
 								// Increase the maximum number of iterations because Modified Newton
 								numItersMax = 10 * maxIters;
 
-								//fixTangents(i) = 1;
-
 								//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 							}
 							/*const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
@@ -1095,11 +1095,22 @@ FBCElemSGINUS3d::update(void)
 
 					qTrial += dq;
 
-					double dW = dv ^ dq;
+					//double dW = dv ^ dq;
 
 					// check for convergence of this interval
-					//if (dv.Norm() < Tol)
-					if (fabs(dW) < Tol) 
+					if (dv.Norm() < Tol)
+					//if (fabs(dW) < Tol) 
+					//if ((vu.Norm() < Tol) && (dq.Norm() < 100000 * Tol))
+					//if (abs(vu^q)<Tol)
+					/*double normalizedResid_disp = 0.;
+					double normalizedResid_force = 0.;
+					for (int cc = 0; cc < NEBD; cc++)
+					{
+						normalizedResid_disp += abs(vu(cc) / (vin(cc) + 1e-6));
+						normalizedResid_force += abs(dq(cc) / (q(cc) + 1e-6));
+					}
+					if ((normalizedResid_disp<Tol)&& (normalizedResid_force < Tol))*/
+					//if (dq.Norm()< 100000 * Tol)
 					{
 						// set the target displacement
 						dvToDo -= dvTrial;
