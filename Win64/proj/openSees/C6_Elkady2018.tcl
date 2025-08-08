@@ -3,7 +3,8 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_C6_Elkady2018_vu_resize12;			# name of output folder
+	# set dataDir results_C6_Elkady2018_vuIllCondTol1e8ElasticOnly_resize12;			# name of output folder
+	set dataDir results_C6_Elkady2018_vuIllCondTol1e8ElasticOnly_resize12;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -132,11 +133,11 @@
 	# element testNonlocalElementDH 23 2 3 $ColTransfTag $integration 20 1e-5 $lc
 	
 	set Lp1 [expr 2.0*$d/$L];
-	set nIPs_Lp1 9;
+	set nIPs_Lp1 8;
 	set Lp2 $Lp1;
 	set nIPs_Lp2 $nIPs_Lp1;
 	set Le [expr (1-$Lp1-$Lp2)];
-	set nIPs_Le 1;
+	set nIPs_Le 7;
 	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
 	# set integration "Simpson 1 21"
 	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-8 $lc
