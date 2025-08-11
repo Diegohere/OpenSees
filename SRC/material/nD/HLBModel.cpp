@@ -830,7 +830,9 @@ int HLBModel::timeIntegration() {
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
 		iterationNumber_timeIntegration++;
 
-		if (isnan(strainTrial(0) + strainTrial(1) + strainTrial(2)))
+		//if (isnan(strainTrial(0) + strainTrial(1) + strainTrial(2)))
+		// Modified 11/08/2025
+		if ((isnan(strainTrial(0) + strainTrial(1) + strainTrial(2))) || (abs(strainTrial(0)>2.0)))
 		//if (isnan(strainTrial(0) + strainTrial(1) + strainTrial(2) + stressTrial(0) + stressTrial(1) + stressTrial(2)))
 		{
 			iterationNumber_timeIntegration = MAXIMUM_ITERATIONS_TIMEINTEGRATION + 1;
