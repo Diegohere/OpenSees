@@ -4,7 +4,7 @@
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
 	# set dataDir results_C6_Elkady2018_vuIllCondTol1e8ElasticOnly_resize12;			# name of output folder
-	set dataDir results_C6_Elkady2018_precondAsCriterionTol1e10_resize12;			# name of output folder
+	set dataDir results_C6_Elkady2018_precondTol1e16_resize12Generated;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -229,9 +229,15 @@ set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
 # set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize25.txt"
 # set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize25.txt"
 # set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize25.txt"
-set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize12.txt"
-set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize12.txt"
-set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize12.txt"
+# set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize12.txt"
+# set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize12.txt"
+# set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize12.txt"
+# set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize12_lowPassFiltered2.txt"
+# set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize12_lowPassFiltered2.txt"
+# set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize12_lowPassFiltered2.txt"
+set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize12_generated.txt"
+set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize12_generated.txt"
+set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize12_generated.txt"
 #set TotalNumberOfSteps 1144;	# number of steps in ground motion for resize 100
 # set TotalNumberOfSteps 2265;	# number of steps in ground motion for resize 50
 # set TotalNumberOfSteps 4514;	# number of steps in ground motion for resize 25

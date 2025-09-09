@@ -356,6 +356,8 @@ extern "C" void DGEEV(char* jobvl, char* jobvr, int* n, double* a,
 extern "C" int DGELS(char* T, int* M, int* N, int* NRHS,
 	double* A, int* LDA, double* B, int* LDB,
 	double* WORK, int* LWORK, int* INFO);
+// Added by Diego Heredia 19/08/2025
+extern "C" int DPOTRF(char* UPLO, int* N, double* A, int* LDA, int* INFO);
 
 
 //#endif
@@ -387,6 +389,8 @@ extern "C" void dgeev_(char* jobvl, char* jobvr, int* n, double* A, int* lda,
 extern "C" int dgels_(char* T, int* M, int* N, int* NRHS,
 	double* A, int* LDA, double* B, int* LDB,
 	double* WORK, int* LWORK, int* INFO);
+// Added by Diego Heredia 19/08/2025
+extern "C" int DPOTRF(char* UPLO, int* N, double* A, int* LDA, int* INFO);
 
 #endif
 
@@ -1122,6 +1126,10 @@ int Matrix::computePseudoInverseSymmetric(Matrix& APlus, const double tol)
 			{
 				QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] / Lambda[j];
 			}
+			/*else
+			{
+				int test = 1;
+			}*/
 		}
 	}
 	//opserr << "This is QMultInvLambda: " << QMultLambda << endln;
@@ -1424,6 +1432,314 @@ Matrix::solve_leastSquare(const Vector& b, Vector& x)
 	delete[] work;
 
 	return 0;
+}
+
+
+// Added by Diego Heredia 19/09/2025
+int
+Matrix::computeCholeskyDecomp(Matrix& L)
+{
+	// copy the data
+	L = *this;
+
+	double* Lptr = L.data;
+
+	char UPLO = 'L';
+	int N = numCols;
+	int LDA = numCols;
+	int info;
+
+#ifdef _WIN32
+	DPOTRF(&UPLO, &N, Lptr, &LDA, &info);
+#else
+	dpotrf_(&UPLO, &N, Lptr, &LDA, &info);
+#endif
+
+	if (info != 0) {
+		opserr << "Matrix::solve_computeCholeskyDecomp - DPOTRF solve failed with info = " << info << endln;
+		return -1;
+	}
+
+	for (int j = 0; j < N; ++j) {
+		for (int i = 0; i < j; ++i) {          // i < j == strictly upper part
+			Lptr[i + j * LDA] = 0.0;             // A(i,j) in column-major
+		}
+	}
+
+	return 0;
+}
+
+
+// Shifts the matrix such that cond(A)>=1/tol
+int
+Matrix::shiftSmoothRegularization(Matrix& AShifted, double tol)
+{
+	// Check if nan 
+	for (int i = 0; i < numCols * numCols; i++)
+	{
+		if (isnan(data[i]))
+		{
+			return -1;
+		}
+	}
+
+	// Returns 0 if failled shift
+	int isfailDGEEV = 0;
+
+	// Check if matrix is square
+	if (numRows != numCols) {
+		opserr << "compute_Eigen_decomposition - the matrix of dimensions [" << numRows << "," << numCols << "] is not square\n";
+		return -1;
+	}
+
+	// copy the data 
+	double* A_copy = new (nothrow) double[numCols * numCols];
+	//opserr << "This is A.data: " << endln;
+	for (int i = 0; i < numCols * numCols; i++)
+	{
+		//opserr <<  data[i] << endln;
+		A_copy[i] = data[i];
+	}
+	int numColsCopy = numCols;  // Copy the value of numCols
+
+	// Step 1: Compute (right) eigen vectors and eigen values of A using LAPACKE_dgeev
+	Vector Lambda(numCols);
+	Matrix Q(numRows, numCols);
+
+	int lda = numCols;
+	int ldvl = numCols;
+	int ldvr = numCols;
+	double* wi = new (nothrow) double[numCols];
+	double* vl = new (nothrow) double[ldvl * numCols];
+
+	char jobvl = 'N'; // Do notCompute the left eigen vectors
+	char jobvr = 'N'; //  Do notCompute the right eigen vectors
+	double wkopt;
+	double* work;
+	int lwork = -1;
+	int info;
+#ifdef _WIN32
+	// Query and allocate the optimal workspace
+	DGEEV(&jobvl, &jobvr, &numColsCopy, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
+		&wkopt, &lwork, &info);
+	lwork = (int)wkopt;
+	work = new (nothrow) double[lwork];
+
+	// Solve the eigen problem
+	DGEEV(&jobvl, &jobvr, &numColsCopy, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
+		work, &lwork, &info);
+
+	// Free dynamically alocated memory
+	delete[] A_copy;
+	delete[] wi;
+	delete[] vl;
+	delete[] work;
+
+
+	// Step 2: Compute the eigenvalues
+	isfailDGEEV = -abs(info);
+	if (isfailDGEEV < 0) // if fail DGEEV
+	{
+		return -1;
+	}
+	else
+	{
+		double maxAbsEig = Lambda(0);  
+		double minAbsEig = Lambda(0);
+
+		// Loop through eigenvalues to find the max and min
+		for (int i = 1; i < numCols; i++) {
+			double absEig = abs(Lambda(i));
+			if (absEig > maxAbsEig) {
+				maxAbsEig = absEig;
+			}
+			if (absEig < minAbsEig) {
+				minAbsEig = absEig;
+			}
+		}
+		if (minAbsEig>=tol*maxAbsEig) // no need to shift
+		{
+			AShifted = *this;
+		}
+		else // we need to shift
+		{
+			double maxEig = Lambda(0);  // Initializing to the algebraic value of the first eigenvalue
+			double minEig = Lambda(0);  // Initializing to the algebraic value of the first eigenvalue
+
+			// Loop through eigenvalues to find the max and min
+			for (int i = 1; i < numCols; i++) {
+				double eig = Lambda(i);
+				if (eig > maxEig) {
+					maxEig = eig;
+				}
+				if (eig < minEig) {
+					minEig = eig;
+				}
+			}
+
+			//Step 3: Compute the shifting value
+			double tau = 1.1 * tol;
+			Vector candidates(40);
+			int m = 0;
+			// 3.1 kinks: 0 and -lambda_i (only when >=0)
+			candidates(m) = 0.0;
+			m++;
+			for (int i = 0; i < numCols; i = i + 1) {
+				if (Lambda(i) < 0.0)
+				{
+					double c = -Lambda(i);
+					if (m < candidates.Size())
+					{
+						candidates(m) = c;
+						m++;
+					}
+				}
+			}
+			// 3.2 intersections: |lambda_p + nu| = tau_use * |lambda_q + nu| with q in {0, n-1}, p in 0..n-1
+			for (int p = 0; p < numCols; ++p) {
+				double lambda_p = Lambda(p);
+				for (int qsel = 0; qsel < 2; ++qsel) {
+					double lambda_q = (qsel == 0 ? minEig : maxEig);
+					// nu1 = (tau*lambda_q - lambda_p) / (1 - tau)
+					double den1 = 1.0 - tau;
+					if (den1 > 0.0) {
+						double num1 = tau * lambda_q - lambda_p;
+						double nu1 = num1 / den1;
+						if (nu1 >= 0.0 && m < candidates.Size()) candidates(m++) = nu1;
+					}
+					// nu2 = (-tau*lambda_q - lambda_p) / (1 + tau)
+					double den2 = 1.0 + tau; // always > 0
+					double num2 = -tau * lambda_q - lambda_p;
+					double nu2 = num2 / den2;
+					if (nu2 >= 0.0 && m < candidates.Size()) candidates(m++) = nu2;
+				}
+			}
+			// 3.3 In-place insertion sort on candidates[0..m-1]
+			for (int i = 1; i < m; ++i) {
+				double x = candidates(i);
+				int j = i - 1;
+				while (j >= 0 && candidates(j) > x) {
+					candidates(j + 1) = candidates(j);
+					--j;
+				}
+				candidates(j + 1) = x;
+			}
+			// 3.4 Dedupe with relative tolerance 
+			int k = 0;
+			for (int i = 0; i < m; ++i) {
+				if (k == 0) {
+					candidates(k++) = candidates(i);
+					continue;
+				}
+				double a = candidates(i);
+				double b = candidates(k - 1);
+				double scale = (fabs(a) > fabs(b) ? fabs(a) : fabs(b));
+				double eps = 1e-14 * (scale > 1.0 ? scale : 1.0);
+				if (fabs(a - b) <= eps) continue; // skip near-duplicate
+				candidates(k++) = a;
+			}
+			m = k;
+			// 3.5 Scan candidates in ascending order; pick minimal feasible nu 
+			double nu = candidates(m - 1); // conservative fallback
+			for (int idx = 0; idx < m; ++idx) {
+				double c = candidates(idx);
+
+				// Compute min/max absolute eigenvalues after shift
+				double minAbs = 1e300;
+				double maxAbs = 0.0;
+				for (int i = 0; i < numCols; ++i) {
+					double v = abs(Lambda(i) + c);
+					if (v < minAbs) minAbs = v;
+					if (v > maxAbs) maxAbs = v;
+				}
+				if (minAbs <= 1e-300) continue; // singular or too close; not acceptable
+
+				double condAbs = maxAbs / (minAbs > 1e-300 ? minAbs : 1e-300);
+
+				if (condAbs <= 1.0 / (1.1 * tol)) {
+					nu = c;
+					break; // minimal adequate shift found
+				}
+			}
+			// 3.6 Output
+			double nu_out = (nu >= 0.0 ? nu : 0.0);
+
+			//Step 4: Do the shift
+			// copy the data
+			AShifted = *this;
+			Matrix I(numCols, numCols);
+			for (int i = 0; i < numCols; i++)
+			{
+				I(i, i) = 1.0;
+			}
+			AShifted += (nu * I);
+		}
+
+
+		// If successful shift
+		return 0;
+	}
+
+
+#else
+	dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+		&wkopt, &lwork, &info);
+	lwork = (int)wkopt;
+	work = new (nothrow) double[lwork];
+
+	// Solve the eigen problem
+	dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+		work, &lwork, &info);
+
+	// Free dynamically alocated memory
+	delete[] A_copy;
+	delete[] wi;
+	delete[] vl;
+	delete[] work;
+
+
+	// Step 2: Compute the eigenvalues
+	isfailDGEEV = -abs(info);
+	if (isfailDGEEV < 0) // if fail DGEEV
+	{
+		return -1;
+	}
+	else
+	{
+		double maxAbsEig = abs(Lambda(0));  // Initializing to the absolute value of the first eigenvalue
+		double minAbsEig = abs(Lambda(0));  // Initializing to the absolute value of the first eigenvalue
+
+		// Loop through eigenvalues to find the max and min
+		for (int i = 1; i < numCols; i++) {
+			double absEig = abs(Lambda(i));
+			if (absEig > maxAbsEig) {
+				maxAbsEig = absEig;
+			}
+			if (absEig < minAbsEig) {
+				minAbsEig = absEig;
+			}
+		}
+
+		//Step 3: Do the shift
+		double nu = 1.1*(tol * maxAbsEig - minAbsEig); //1.1* so that it passes the pseudoInverse function
+		if (nu < 0.)
+		{
+			nu = 0.;
+		}
+		// copy the data
+		AShifted = *this;
+		Matrix I(numCols, numCols);
+		for (int i = 0; i < numCols; i++)
+		{
+			I(i, i) = 1.0;
+		}
+		AShifted += (nu * I);
+
+
+		// If successful shift
+		return 0;
+	}
+#endif
 }
 
 

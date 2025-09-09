@@ -598,11 +598,11 @@ AnalysisModel::updateDomain(double newTime, double dT)
 	return -1;
     }
 
-    //// Added by Diego Heredia 24.07.2025 to debug simulation selected time
-    //if (newTime>=1845)
-    //{
-    //    int test = 0;
-    //}
+    // Added by Diego Heredia 24.07.2025 to debug simulation selected time
+    /*if (newTime>=8026)
+    {
+        int test = 0;
+    }*/
 
     // invoke the method
 

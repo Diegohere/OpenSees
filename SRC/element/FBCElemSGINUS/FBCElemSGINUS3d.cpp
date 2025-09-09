@@ -124,7 +124,7 @@ maxIters(0), Tol(0), lc(0), initialFlag(0),
 Kelement(NEBD, NEBD), q(NEBD), KelementCommit(NEBD, NEBD), qCommit(NEBD), coeffs_H_GI(10, 3), coeffs_H(10, 3),
 FSection(0), eNonlocal(0), sr(0), eNonlocalCommit(0), eLocalCommit(0), eLocal(0), srCommit(0),
 numEleLoads(0), sizeEleLoads(0), eleLoads(0), eleLoadFactors(0), load(NEGD), KelementInitial(0),
-WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0), 
+WSofteningCommit(0), WSofteningTrial(0), WSofteningTol(0),
 isTorsion(false)
 // complete
 {
@@ -179,6 +179,26 @@ FBCElemSGINUS3d::FBCElemSGINUS3d(int tag, int nodeI, int nodeJ, CrdTransf& CT, B
 
 	//get copy of sections
 	this->setSectionPointers(numSec, sec);
+
+	/*Matrix A(6, 6);
+	A(0, 0) = 1.0e-08;  A(0, 1) = 9.0e-05;  A(0, 2) = 3.0e-05;  A(0, 3) = 5.0e-05;  A(0, 4) = -2.0e-05; A(0, 5) = 1.0e-05;
+	A(1, 0) = 9.0e-05;  A(1, 1) = 2.25;     A(1, 2) = -0.45;    A(1, 3) = 1.41;     A(1, 4) = 0.30;     A(1, 5) = -0.27;
+	A(2, 0) = 3.0e-05;  A(2, 1) = -0.45;    A(2, 2) = 1.66;     A(2, 3) = -1.10;    A(2, 4) = -0.08;    A(2, 5) = 0.87;
+	A(3, 0) = 5.0e-05;  A(3, 1) = 1.41;     A(3, 2) = -1.10;    A(3, 3) = 3.07;     A(3, 4) = -1.09;    A(3, 5) = -0.48;
+	A(4, 0) = -2.0e-05; A(4, 1) = 0.30;     A(4, 2) = -0.08;    A(4, 3) = -1.09;    A(4, 4) = 3.01;     A(4, 5) = -1.23;
+	A(5, 0) = 1.0e-05;  A(5, 1) = -0.27;    A(5, 2) = 0.87;     A(5, 3) = -0.48;    A(5, 4) = -1.23;    A(5, 5) = 3.36;
+
+	double tolTest = 1e-8;
+	Matrix AShifted(6, 6);
+	A.shiftSmoothRegularization(AShifted, tolTest);
+	opserr << "This is matrix A: " << A << endln;
+	opserr << "This is matrix AShifted: " << AShifted << endln;
+	A.checkIllCondition(tolTest);
+	AShifted.checkIllCondition(tolTest);
+
+	Matrix AShiftedPlus(6, 6);
+	AShifted.computePseudoInverseSymmetric(AShiftedPlus, tolTest);
+	opserr << "This is matrix AShiftedPlus: " << AShiftedPlus << endln;*/
 }
 
 // Destructor
@@ -661,7 +681,7 @@ FBCElemSGINUS3d::update(void)
 	dvToDo = dv;
 	dvTrial = dvToDo;
 
-	static double factor =10;
+	static double factor = 10;
 
 	//maxSubdivisions = 20;
 	maxSubdivisions = 1;
@@ -887,45 +907,46 @@ FBCElemSGINUS3d::update(void)
 							//opserr << "This is Ksection: " << Ksection << endln;
 
 
-							//// Using the elastic and plastic decomposition for pseudoinverse
-							//int isIllCondition = Ksection.checkIllCondition(1e-8);
-							////if (isIllCondition == 0) {// The matrix is not ill-conditioned 
-							////	isIllCondition = Ksection.checkIllCondition(1e-8);
-							////}
-
+							// Using the elastic and plastic decomposition for pseudoinverse
+							double illCondTol = 1e-8;
+							int isIllCondition = Ksection.checkIllCondition(illCondTol);
 							//if (isIllCondition == 0) {// The matrix is not ill-conditioned 
-							//	FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+							//	isIllCondition = Ksection.checkIllCondition(1e-8);
 							//}
-							//else // The matrix singular (ill-conditioned)
-							//{
-							//	const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
-							//	const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
-							//	Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
-							//	Matrix Ksection_intermed1_inverse = Matrix(6, 6);
-							//	Ksection_intermed1.Invert(Ksection_intermed1_inverse);
-							//	Matrix Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
-							//	/*opserr << "This is Ksection: " << Ksection << endln;
-							//	opserr << "This is Ksection_intermed1: " << Ksection_intermed1 << endln;
-							//	opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
-							//	opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
-							//	Matrix Fsection_plastic = Matrix(6, 6);
-							//	if (Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, 1e-2) < 0)
-							//	{
-							//		return -1; // matrix has nan (modified DH 18.03.2025)
-							//	}
-							//	FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
-							//	//opserr << "This is Ksection: " << Ksection << endln;
-							//	/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
-							//	opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
-							//	opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
 
-							//	//FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+							if (isIllCondition == 0) {// The matrix is not ill-conditioned 
+								FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+							}
+							else // The matrix singular (ill-conditioned)
+							{
+								const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
+								const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
+								Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
+								Matrix Ksection_intermed1_inverse = Matrix(6, 6);
+								Ksection_intermed1.Invert(Ksection_intermed1_inverse);
+								Matrix Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
+								/*opserr << "This is Ksection: " << Ksection << endln;
+								opserr << "This is Ksection_intermed1: " << Ksection_intermed1 << endln;
+								opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
+								opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
+								Matrix Fsection_plastic = Matrix(6, 6);
+								if (Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, illCondTol) < 0)
+								{
+									return -1; // matrix has nan (modified DH 18.03.2025)
+								}
+								FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
+								//opserr << "This is Ksection: " << Ksection << endln;
+								/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
+								opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
+								opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
 
-							//	// Increase the maximum number of iterations because Modified Newton
-							//	numItersMax = 10 * maxIters;
+								//FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
 
-							//	//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-							//}
+								// Increase the maximum number of iterations because Modified Newton
+								numItersMax = 10 * maxIters;
+
+								//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+							}
 							///*const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
 							//double alphaTangent = 0.5;
 							//FSectionSubdivide[i] = alphaTangent * Fsection_elastic + (1.0 - alphaTangent) * FSectionSubdivide[i];
@@ -934,24 +955,24 @@ FBCElemSGINUS3d::update(void)
 
 
 
-							// Using the preconditioning: want to solve (C^-1*Ksec)*eu=C^-1*su
-							// Use C=Kel as preconditioner
-							const Matrix preconditioner_CMinus1 = sections[i]->getInitialFlexibility();
-							//opserr << "This is preconditioner_CMinus1: " << preconditioner_CMinus1 << endln;
-							Matrix Ksection_withPrecond = preconditioner_CMinus1*Ksection;
+							//// Using the preconditioning: want to solve (C^-1*Ksec)*eu=C^-1*su
+							//// Use C=Kel as preconditioner
+							//const Matrix preconditioner_CMinus1 = sections[i]->getInitialFlexibility();
+							////opserr << "This is preconditioner_CMinus1: " << preconditioner_CMinus1 << endln;
+							//Matrix Ksection_withPrecond = preconditioner_CMinus1*Ksection;
 
-							// Construct matrix K for pseudo-inverse computation (because Ksection_withPrecond is not symmetric)
-							//K=[0, Ksection_withPrecond; Ksection_withPrecond, 0]
-							Matrix Ksym4PseudoInver = Matrix(12, 12);
-							for (int i = 0; i < 6; ++i) {
-								for (int j = 0; j < 6; ++j) {
-									Ksym4PseudoInver(i, j + 6) = Ksection_withPrecond(i, j); // [0, Ksection_withPrecond]
-									Ksym4PseudoInver(j + 6, i) = Ksection_withPrecond(i, j); // [Ksection_withPrecond^T, 0]
-								}
-							}
+							//// Construct matrix K for pseudo-inverse computation (because Ksection_withPrecond is not symmetric)
+							////K=[0, Ksection_withPrecond; Ksection_withPrecond, 0]
+							//Matrix Ksym4PseudoInver = Matrix(12, 12);
+							//for (int i = 0; i < 6; ++i) {
+							//	for (int j = 0; j < 6; ++j) {
+							//		Ksym4PseudoInver(i, j + 6) = Ksection_withPrecond(i, j); // [0, Ksection_withPrecond]
+							//		Ksym4PseudoInver(j + 6, i) = Ksection_withPrecond(i, j); // [Ksection_withPrecond^T, 0]
+							//	}
+							//}
 							//// Pseudoinverse of K using your symmetric-only routine
 							//Matrix Ksym4PseudoInver_plus(12, 12);
-							//double tol4IllCond = 1e-6;
+							//double tol4IllCond = 1e-12;
 							//if (Ksym4PseudoInver.computePseudoInverseSymmetric(Ksym4PseudoInver_plus, tol4IllCond) < 0) {
 							//	return -1;
 							//}
@@ -963,38 +984,62 @@ FBCElemSGINUS3d::update(void)
 							//		Fsection_withPrecond(i, j) = Ksym4PseudoInver_plus(i + 6, j); 
 							//	}
 							//}
-							/*opserr << "This is Ksym4PseudoInver: " << Ksym4PseudoInver << endln;
-							opserr << "This is Ksym4PseudoInver_plus: " << Ksym4PseudoInver_plus << endln;
-							opserr << "This is Fsection_withPrecond: " << Fsection_withPrecond << endln;*/
-
+							///*opserr << "This is Ksym4PseudoInver: " << Ksym4PseudoInver << endln;
+							//opserr << "This is Ksym4PseudoInver_plus: " << Ksym4PseudoInver_plus << endln;
+							//opserr << "This is Fsection_withPrecond: " << Fsection_withPrecond << endln;*/
 
 							//FSectionSubdivide[i] = Fsection_withPrecond * preconditioner_CMinus1;
-							//opserr << "This is Ksection: " << Ksection << endln;
-							//opserr << "This is FSectionSubdivide: " << FSectionSubdivide[i] << endln;
-							/*Matrix Fsection_theory = sections[i]->getSectionFlexibility();
-							Matrix Diff_Fsection = Fsection_theory - FSectionSubdivide[i];
-							if (abs(Diff_Fsection(0,0))>1e-12)
-							{
-								opserr << "This is Ksection: " << Ksection << endln;
-								opserr << "This is preconditioner_CMinus1: " << preconditioner_CMinus1 << endln;
-								opserr << "This is Ksection_withPrecond: " << Ksection_withPrecond << endln;
-								opserr << "This is Fsection_withPrecond: " << Fsection_withPrecond << endln;
-								opserr << "This is Fsection_theory: " << Fsection_theory << endln;
-								int test = 0;
-							}*/
+							///*opserr << "This is Ksection: " << Ksection << endln;
+							//opserr << "This is FSectionSubdivide: " << FSectionSubdivide[i] << endln;*/
+							///*Matrix Fsection_theory = sections[i]->getSectionFlexibility();
+							//Matrix Diff_Fsection = Fsection_theory - FSectionSubdivide[i];
+							//if (abs(Diff_Fsection(0,0))>1e-12)
+							//{
+							//	opserr << "This is Ksection: " << Ksection << endln;
+							//	opserr << "This is preconditioner_CMinus1: " << preconditioner_CMinus1 << endln;
+							//	opserr << "This is Ksection_withPrecond: " << Ksection_withPrecond << endln;
+							//	opserr << "This is Fsection_withPrecond: " << Fsection_withPrecond << endln;
+							//	opserr << "This is Fsection_theory: " << Fsection_theory << endln;
+							//	int test = 0;
+							//}*/
 
-							// Check if ill-conditioned to increase the num iteration
-							int isIllCondition = Ksym4PseudoInver.checkIllCondition(1e-6);
-							if (isIllCondition == 0)
-							{
-								FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-							}
-							else
-							{
-								FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
-								numItersMax = 10 * maxIters; // Increase the maximum number of iterations because Modified Newton
+							//// Check if ill-conditioned to increase the num iteration
+							//int isIllCondition = Ksym4PseudoInver.checkIllCondition(1e-12);
+							//if (isIllCondition == 0)
+							//{
+							//	FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+							//}
+							//else
+							//{
+							//	FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+							//	numItersMax = 10 * maxIters; // Increase the maximum number of iterations because Modified Newton
+							//}
 
-							}
+							//// Approach Cholesky Preconditioner + shift
+							//Matrix preconditioner_C = sections[i]->getInitialTangent();
+							//Matrix L_preconditioner_C(6, 6);
+							//preconditioner_C.computeCholeskyDecomp(L_preconditioner_C);
+							//Matrix L_preconditioner_C_Inv(6, 6);
+							//L_preconditioner_C.Invert(L_preconditioner_C_Inv);
+							//Matrix L_preconditioner_C_Inv_T(6, 6);
+							//L_preconditioner_C_Inv_T.addMatrixTranspose(0.0, L_preconditioner_C_Inv, 1.0);
+							//Matrix S = L_preconditioner_C_Inv * Ksection * L_preconditioner_C_Inv_T;
+							//Matrix S_shifted(6, 6);
+							//double tolIllCond = 1e-2;
+							//S.shiftSmoothRegularization(S_shifted, tolIllCond);
+							//Matrix S_shifted_inv(6, 6);
+							//S_shifted.computePseudoInverseSymmetric(S_shifted_inv, tolIllCond);
+							//FSectionSubdivide[i] = L_preconditioner_C_Inv_T * S_shifted_inv * L_preconditioner_C_Inv;
+							///*opserr << "This is Ksection: " << Ksection << endln;
+							//opserr << "This is preconditioner_C: " << preconditioner_C << endln;
+							//opserr << "This is L_preconditioner_C: " << L_preconditioner_C << endln;
+							//opserr << "This is L_preconditioner_C_Inv: " << L_preconditioner_C_Inv << endln;
+							//opserr << "This is L_preconditioner_C_Inv_T: " << L_preconditioner_C_Inv_T << endln;
+							//opserr << "This is S: " << S << endln;
+							//opserr << "This is S_shifted: " << S_shifted << endln;
+							//opserr << "This is S_shifted_inv: " << S_shifted_inv << endln;
+							//opserr << "This is FSectionSubdivide: " << FSectionSubdivide[i] << endln;*/
+
 						}
 
 						// calculate section residual deformations de = FSection * (s - sr);
@@ -1095,10 +1140,13 @@ FBCElemSGINUS3d::update(void)
 							WDot_isec += 0.5 * (srSubdivide[i](iComp) - srCommit[i](iComp)) * (eLocalSubdivide[i](iComp) - eLocalCommit[i](iComp));
 						}
 						//opserr << "This is WDot:" << WDot << endln;
-						//if (WDot_isec < 0. && abs(WDot_isec)>1)
 						if (WDot_isec < 0.)
+						//// Try 08/28/2025
+						//if (WDot_isec < 10.*WSofteningTol)
 						{
-							WDot_cumulativeSoft += WDot_isec;
+							//WDot_cumulativeSoft += WDot_isec;
+							//// Try 08/28/2025
+							//WDot_cumulativeSoft += -abs(WDot_isec);
 						}
 						/*else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
 						{
@@ -1109,12 +1157,12 @@ FBCElemSGINUS3d::update(void)
 						int component_unload = 0;
 						for (int iComp = 0; iComp < NEBD; iComp++)
 						{
-							if (eLocalSubdivide[i](iComp)* eLocalCommit[i](iComp) > 0 && fabs(eLocalSubdivide[i](iComp))<=fabs(eLocalCommit[i](iComp)))
+							if (eLocalSubdivide[i](iComp) * eLocalCommit[i](iComp) > 0 && fabs(eLocalSubdivide[i](iComp)) <= fabs(eLocalCommit[i](iComp)))
 							{
 								component_unload += 1;
 							}
 						}
-						if (component_unload==NEBD)
+						if (component_unload == NEBD)
 						{
 							elasticUnload += 1;
 							WDot_cumulativeElasticUnload += WDot_isec;
@@ -1128,6 +1176,8 @@ FBCElemSGINUS3d::update(void)
 					{
 						WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeSoft, 0.), WSofteningTol);
 					}
+					// Trick to always do Gradient formulations
+					//WSofteningTrial = WSofteningTol;
 
 					//todo 
 					/*opserr << "This is the element flexibility matrix:" << Felement << endln;
@@ -1165,18 +1215,18 @@ FBCElemSGINUS3d::update(void)
 
 					// check for convergence of this interval
 					if (dv.Norm() < Tol)
-					//if (fabs(dW) < Tol) 
-					//if ((vu.Norm() < Tol) && (dq.Norm() < 100000 * Tol))
-					//if (abs(vu^q)<Tol)
-					/*double normalizedResid_disp = 0.;
-					double normalizedResid_force = 0.;
-					for (int cc = 0; cc < NEBD; cc++)
-					{
-						normalizedResid_disp += abs(vu(cc) / (vin(cc) + 1e-6));
-						normalizedResid_force += abs(dq(cc) / (q(cc) + 1e-6));
-					}
-					if ((normalizedResid_disp<Tol)&& (normalizedResid_force < Tol))*/
-					//if (dq.Norm()< 100000 * Tol)
+						//if (fabs(dW) < Tol) 
+						//if ((vu.Norm() < Tol) && (dq.Norm() < 100000 * Tol))
+						//if (abs(vu^q)<Tol)
+						/*double normalizedResid_disp = 0.;
+						double normalizedResid_force = 0.;
+						for (int cc = 0; cc < NEBD; cc++)
+						{
+							normalizedResid_disp += abs(vu(cc) / (vin(cc) + 1e-6));
+							normalizedResid_force += abs(dq(cc) / (q(cc) + 1e-6));
+						}
+						if ((normalizedResid_disp<Tol)&& (normalizedResid_force < Tol))*/
+						//if (dq.Norm()< 100000 * Tol)
 					{
 						// set the target displacement
 						dvToDo -= dvTrial;
@@ -2160,7 +2210,7 @@ FBCElemSGINUS3d::initCoefficientMatrixH()
 	double secX[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, secX);
 
-	Vector allDx(numSections-1);	// spaces between all integration points
+	Vector allDx(numSections - 1);	// spaces between all integration points
 	for (int i = 0; i < numSections; i++)
 	{
 		allDx[i] = L * (secX[i + 1] - secX[i]);
@@ -2170,7 +2220,7 @@ FBCElemSGINUS3d::initCoefficientMatrixH()
 	double ac_GI = 0.;
 	double cc_GI = 0.;
 	coeffs_H_GI(0, 0) = 1.;
-	for (int i = 1; i < numSections-1; i++)
+	for (int i = 1; i < numSections - 1; i++)
 	{
 		bc_GI = -pow(lc, 2) / (allDx[i - 1] * (allDx[i] + allDx[i - 1]));
 		ac_GI = 1. + pow(lc, 2) / (allDx[i - 1] * allDx[i]);
@@ -2179,7 +2229,7 @@ FBCElemSGINUS3d::initCoefficientMatrixH()
 		coeffs_H_GI(i, 1) = ac_GI;
 		coeffs_H_GI(i, 2) = cc_GI;
 	}
-	coeffs_H_GI(numSections-1, 2) = 1.;
+	coeffs_H_GI(numSections - 1, 2) = 1.;
 	//opserr << "This is coeffs_H_GI:" << coeffs_H_GI << endln;
 
 	double ASection = abs(sections[0]->getSectionArea());

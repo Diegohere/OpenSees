@@ -93,6 +93,9 @@ class Matrix
     // Added by Diego Heredia 22.07.2025
     // Solve the least square problem Ax=b using QR decomposition
     int solve_leastSquare(const Vector& b, Vector& x);
+    // Added by Diego Heredia 19/08/2025
+    int computeCholeskyDecomp(Matrix& L);
+    int shiftSmoothRegularization(Matrix& AShifted, double tol);
 
     // overloaded operators 
     inline double &operator()(int row, int col);
