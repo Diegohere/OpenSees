@@ -165,9 +165,9 @@ namespace {
 	nDMaterialsMap.insert(std::make_pair("UVCmultiaxial", &OPS_UVCmultiaxial));
 	nDMaterialsMap.insert(std::make_pair("PressureDependMultiYield03", &OPS_PressureDependMultiYield03));
 	nDMaterialsMap.insert(std::make_pair("PlasticDamageConcretePlaneStress", &OPS_NewPlasticDamageConcretePlaneStress));
-	nDMaterialsMap.insert(std::make_pair("OPS_LocalBucklingWebPlate", &OPS_LocalBucklingWebPlate));
-	nDMaterialsMap.insert(std::make_pair("OPS_LocalBucklingFlangePlate", &OPS_LocalBucklingFlangePlate));
-	nDMaterialsMap.insert(std::make_pair("OPS_HLBModel", &OPS_HLBModel));
+	nDMaterialsMap.insert(std::make_pair("LocalBucklingWebPlate", &OPS_LocalBucklingWebPlate));
+	nDMaterialsMap.insert(std::make_pair("LocalBucklingFlangePlate", &OPS_LocalBucklingFlangePlate));
+	nDMaterialsMap.insert(std::make_pair("HLBModel", &OPS_HLBModel));
 
 	return 0;
     }
