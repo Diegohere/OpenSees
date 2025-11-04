@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.02.2025
-// Version 10.02.2025
+// Version 11/03/2025
 //
 
 #ifndef CPP_HLBModelUniaxialUniaxial_H
@@ -25,11 +25,14 @@ class HLBModelUniaxial : public UniaxialMaterial
 
 public:
 	// Constructor, called by clients
+	// plateType and steelType
 	HLBModelUniaxial(int tag, double E, double sy0,
 		double qInf, double b, double dInf, double a,
 		std::vector<double> cK, std::vector<double> gammaK,
-		double bPlate, double tPlate, double sigmaC0, double alphaReg, std::string plateType, std::string steelType);
+		double bPlate, double tPlate, double sigmaC0, double alphaReg, std::string plateType, std::string steelType,
+		double stressUnitFactor);
 
+	// Regression coeffs for cyclic loading
 	HLBModelUniaxial(int tag, double E, double sy0,
 		double qInf, double b, double dInf, double a,
 		std::vector<double> cK, std::vector<double> gammaK,
@@ -282,6 +285,9 @@ private:
 
 	//Steel material
 	std::string steelMaterial;
+
+	// unit conversion factor (base N/mm^2 to selected)
+	double stressUnitFactor;
 
 	// Plate stress properties (fixed for now, could be set by the constructor)
 	//const double alpha_chi1c = 1. / 3.;

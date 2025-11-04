@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 10.02.2025
-// Version  10.02.2025
+// Version  11/03/2025
 //
 
 #include "HLBModelUniaxial.h"
@@ -121,7 +121,7 @@ void* OPS_HLBModelUniaxial(void) {
 		return 0;
 	}
 
-	if (numData == 18)
+	if (numData == 18) // using default units (mm and N)
 	{
 		// Read the steel type
 		const char* steelTypePointer = OPS_GetString();
@@ -137,7 +137,64 @@ void* OPS_HLBModelUniaxial(void) {
 			hardeningProps[3], hardeningProps[4], hardeningProps[5], 
 			cK, gammaK,
 			softeningProps[0], softeningProps[1], softeningProps[2],
-			regularizationgProps[0], plateType, steelType);
+			regularizationgProps[0], plateType, steelType, 1.0);
+	}
+	else if (numData == 20) // units are specified
+	{
+		// Read the steel type
+		const char* steelTypePointer = OPS_GetString();
+		std::string steelType(steelTypePointer);
+		if (steelType != "A992Gr50") {
+			opserr << "Problem with parameter for steel material" << endln;
+			return 0;
+		}
+
+		// Read the length unit
+		double lengthUnitConverter = 0.;
+		const char* lengthUnitPointer = OPS_GetString();
+		std::string lengthUnit(lengthUnitPointer);
+		if (lengthUnit == "mm") {
+			lengthUnitConverter = 1.0;
+		}
+		else if (lengthUnit == "m") {
+			lengthUnitConverter = 1000.0;
+		}
+		else if (lengthUnit == "in") {
+			lengthUnitConverter = 25.4;
+		}
+		else {
+			opserr << "Problem with parameter for length units" << endln;
+			return 0;
+		}
+
+		// Read the force unit
+		double forceUnitConverter = 0.;
+		const char* forceUnitPointer = OPS_GetString();
+		std::string forceUnit(forceUnitPointer);
+		if (forceUnit == "N") {
+			forceUnitConverter = 1.0;
+		}
+		else if (forceUnit == "kN") {
+			forceUnitConverter = 1000.0;
+		}
+		else if (forceUnit == "lbf") {
+			forceUnitConverter = 4.44822;
+		}
+		else {
+			opserr << "Problem with parameter for force units" << endln;
+			return 0;
+		}
+
+		// Compute the stress unit scalling factor
+		double stressUnitFactor = (lengthUnitConverter * lengthUnitConverter) / forceUnitConverter;
+
+		// Allocate the material
+		theMaterial = new HLBModelUniaxial(materialTag[0],
+			hardeningProps[0], hardeningProps[1], hardeningProps[2],
+			hardeningProps[3], hardeningProps[4], hardeningProps[5],
+			cK, gammaK,
+			softeningProps[0], softeningProps[1], softeningProps[2],
+			regularizationgProps[0], plateType, steelType, stressUnitFactor);
 	}
 	else if (numData == 40)
 	{
@@ -171,7 +228,7 @@ HLBModelUniaxial::HLBModelUniaxial(int tag, double E,
 	double sy0, double qInf, double b, double dInf, double a,
 	std::vector<double> cK, std::vector<double> gammaK,
 	double bPlate, double tPlate, double sigmaC0,
-	double alphaReg, std::string plateType, std::string steelType)
+	double alphaReg, std::string plateType, std::string steelType, double theStressUnitFactor)
 	: UniaxialMaterial(tag, MAT_TAG_HLBModelUniaxial),
 	elasticModulus(E),
 	initialYield(sy0),
@@ -187,6 +244,8 @@ HLBModelUniaxial::HLBModelUniaxial(int tag, double E,
 	alphaRegularization(alphaReg),
 	plateType(plateType),
 	steelMaterial(steelType),
+	stressUnitFactor(theStressUnitFactor),
+
 	strainConverged(0.),
 	strainTrial(0.),
 	strainPlasticConverged(0.),
@@ -2134,14 +2193,16 @@ double HLBModelUniaxial::getStrain() {
 
 double HLBModelUniaxial::getStress() {
 
-	return stressTrial;
+	//return stressTrial;
+	return stressUnitFactor * stressTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 double HLBModelUniaxial::getTangent() {
 
-	return stiffnessTrial;
+	//return stiffnessTrial;
+	return stressUnitFactor * stiffnessTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2152,7 +2213,8 @@ double HLBModelUniaxial::getYieldStress() {
 	double yieldStressTot = 0.;
 	yieldStressP = calculateYieldStressPlastic(strainPEqTrial);
 	yieldStressTot = yieldStressP + yieldStressPBTrial;
-	return yieldStressTot;
+	//return yieldStressTot;
+	return stressUnitFactor * yieldStressTot;
 
 }
 
@@ -2205,14 +2267,16 @@ double HLBModelUniaxial::getPlasticStrains() {
 double HLBModelUniaxial::getInitialTangent() {
 
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable
-	return stiffnessInitial;
+	//return stiffnessInitial;
+	return stressUnitFactor * stiffnessInitial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 
 double HLBModelUniaxial::getConvergedTangent() {
-	return stiffnessConverged;
+	//return stiffnessConverged;
+	return stressUnitFactor * stiffnessConverged;
 }
 
 
@@ -2220,7 +2284,8 @@ double HLBModelUniaxial::getConvergedTangent() {
 
 
 double HLBModelUniaxial::getConvergedStress() {
-	return stressConverged;
+	//return stressConverged;
+	return stressUnitFactor * stressConverged;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2417,7 +2482,7 @@ UniaxialMaterial* HLBModelUniaxial::getCopy() {
 			beta1RegressionErc, beta2RegressionErc);*/
 	theCopy = new HLBModelUniaxial(this->getTag(), elasticModulus,
 		initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
-		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial);
+		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial, stressUnitFactor);
 
 	// Copy all the internals
 	theCopy->strainConverged = strainConverged;

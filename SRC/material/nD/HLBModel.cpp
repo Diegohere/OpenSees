@@ -1,6 +1,6 @@
 // 
 // Created by Diego Heredia on 03.05.2024
-// Version  03.05.2024
+// Version  11/03/2025
 //
 
 #include "HLBModel.h"
@@ -121,7 +121,7 @@ void* OPS_HLBModel(void) {
 		return 0;
 	}
 
-	if (numData==19)
+	if (numData==19) // using default units (mm and N)
 	{
 		// Read the steel type
 		const char* steelTypePointer = OPS_GetString();
@@ -137,7 +137,64 @@ void* OPS_HLBModel(void) {
 			hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
 			cK, gammaK,
 			softeningProps[0], softeningProps[1], softeningProps[2],
-			regularizationgProps[0], plateType, steelType);
+			regularizationgProps[0], plateType, steelType, 1.0);
+	}
+	else if (numData == 21) // units are specified
+	{
+		// Read the steel type
+		const char* steelTypePointer = OPS_GetString();
+		std::string steelType(steelTypePointer);
+		if (steelType != "A992Gr50") {
+			opserr << "Problem with parameter for steel material" << endln;
+			return 0;
+		}
+
+		// Read the length unit
+		double lengthUnitConverter = 0.;
+		const char* lengthUnitPointer = OPS_GetString();
+		std::string lengthUnit(lengthUnitPointer);
+		if (lengthUnit == "mm" ){
+			lengthUnitConverter = 1.0;
+		}
+		else if (lengthUnit == "m" ) {
+			lengthUnitConverter = 1000.0;
+		}
+		else if (lengthUnit == "in") {
+			lengthUnitConverter = 25.4;
+		}
+		else {
+			opserr << "Problem with parameter for length units" << endln;
+			return 0;
+		}
+
+		// Read the force unit
+		double forceUnitConverter = 0.;
+		const char* forceUnitPointer = OPS_GetString();
+		std::string forceUnit(forceUnitPointer);
+		if (forceUnit == "N") {
+			forceUnitConverter = 1.0;
+		}
+		else if (forceUnit == "kN") {
+			forceUnitConverter = 1000.0;
+		}
+		else if (forceUnit == "lbf") {
+			forceUnitConverter = 4.44822;
+		}
+		else {
+			opserr << "Problem with parameter for force units" << endln;
+			return 0;
+		}
+
+		// Compute the stress unit scalling factor
+		double stressUnitFactor = (lengthUnitConverter * lengthUnitConverter) / forceUnitConverter;
+
+		// Allocate the material
+		theMaterial = new HLBModel(materialTag[0],
+			hardeningProps[0], hardeningProps[1], hardeningProps[2],
+			hardeningProps[3], hardeningProps[4], hardeningProps[5], hardeningProps[6],
+			cK, gammaK,
+			softeningProps[0], softeningProps[1], softeningProps[2],
+			regularizationgProps[0], plateType, steelType, stressUnitFactor);
 	}
 	else if (numData==41)
 	{
@@ -160,18 +217,17 @@ void* OPS_HLBModel(void) {
 			cyclicProps[19], cyclicProps[20], cyclicProps[21], cyclicProps[22]);
 	}
 
-
 	return theMaterial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-// If cylic properties are not specified
+// If cylic properties are not specified 
 HLBModel::HLBModel(int tag, double E, double poissonRatio,
 	double sy0, double qInf, double b, double dInf, double a,
 	std::vector<double> cK, std::vector<double> gammaK,
 	double bPlate, double tPlate, double sigmaC0,
-	double alphaReg, std::string plateType, std::string steelType)
+	double alphaReg, std::string plateType, std::string steelType, double theStressUnitFactor)
 	: NDMaterial(tag, ND_TAG_HLBModel),
 	elasticModulus(E),
 	poissonRatio(poissonRatio),
@@ -188,6 +244,8 @@ HLBModel::HLBModel(int tag, double E, double poissonRatio,
 	alphaRegularization(alphaReg),
 	plateType(plateType),
 	steelMaterial(steelType),
+	stressUnitFactor(theStressUnitFactor),
+
 	shearModulus(E / (2. * (1. + poissonRatio))),
 	bulkModulus(E / (3. * (1. - 2. * poissonRatio))),
 	strainConverged(N_DIMS),
@@ -2344,14 +2402,16 @@ const Vector& HLBModel::getStrain() {
 
 const Vector& HLBModel::getStress() {
 
-	return stressTrial;
+	//return stressTrial;
+	return stressUnitFactor * stressTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 const Matrix& HLBModel::getTangent() {
 
-	return stiffnessTrial;
+	//return stiffnessTrial;
+	return stressUnitFactor * stiffnessTrial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2362,7 +2422,8 @@ double HLBModel::getYieldStress() {
 	double yieldStressTot = 0.;
 	yieldStressP = calculateYieldStressPlastic(strainPEqTrial);
 	yieldStressTot = yieldStressP + yieldStressPBTrial;
-	return yieldStressTot;
+	//return yieldStressTot;
+	return stressUnitFactor * yieldStressTot;
 
 }
 
@@ -2421,14 +2482,16 @@ Vector& HLBModel::getPlasticStrains() {
 const Matrix& HLBModel::getInitialTangent() {
 
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable
-	return stiffnessInitial;
+	//return stiffnessInitial;
+	return stressUnitFactor * stiffnessInitial;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
 
 const Matrix& HLBModel::getConvergedTangent() {
-	return stiffnessConverged;
+	//return stiffnessConverged;
+	return stressUnitFactor * stiffnessConverged;
 }
 
 
@@ -2436,7 +2499,8 @@ const Matrix& HLBModel::getConvergedTangent() {
 
 
 const Vector& HLBModel::getConvergedStress() {
-	return stressConverged;
+	//return stressConverged;
+	return stressUnitFactor * stressConverged;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2633,7 +2697,7 @@ NDMaterial* HLBModel::getCopy() {
 			beta1RegressionErc, beta2RegressionErc);*/
 	theCopy = new HLBModel(this->getTag(), elasticModulus, poissonRatio,
 		initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
-		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial);
+		bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial, stressUnitFactor);
 
 	// Copy all the internals
 	theCopy->strainConverged = strainConverged;
@@ -2763,7 +2827,7 @@ NDMaterial* HLBModel::getCopy(const char* code) {
 			beta1RegressionErc, beta2RegressionErc);*/
 		theCopy = new HLBModel(this->getTag(), elasticModulus, poissonRatio,
 			initialYield, qInf, bIso, dInf, aIso, cK, gammaK,
-			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial);
+			bPlateWidth, tPlateThickness, sigmaC0Stress, alphaRegularization, plateType, steelMaterial, stressUnitFactor);
 		return theCopy;
 	}
 	else {
