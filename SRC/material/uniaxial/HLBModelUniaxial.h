@@ -288,6 +288,11 @@ private:
 
 	// unit conversion factor (base N/mm^2 to selected)
 	double stressUnitFactor;
+	double stressOut;
+	double tangentOut;
+	double initialTangentOut;
+	double convergedTangentOut;
+	double convergedStressOut;
 
 	// Plate stress properties (fixed for now, could be set by the constructor)
 	//const double alpha_chi1c = 1. / 3.;

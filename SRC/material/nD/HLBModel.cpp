@@ -2403,7 +2403,8 @@ const Vector& HLBModel::getStrain() {
 const Vector& HLBModel::getStress() {
 
 	//return stressTrial;
-	return stressUnitFactor * stressTrial;
+	stressOut = stressUnitFactor * stressTrial;
+	return stressOut;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2411,7 +2412,8 @@ const Vector& HLBModel::getStress() {
 const Matrix& HLBModel::getTangent() {
 
 	//return stiffnessTrial;
-	return stressUnitFactor * stiffnessTrial;
+	tangentOut = stressUnitFactor * stiffnessTrial;
+	return tangentOut;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2483,7 +2485,8 @@ const Matrix& HLBModel::getInitialTangent() {
 
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable
 	//return stiffnessInitial;
-	return stressUnitFactor * stiffnessInitial;
+	initialTangentOut = stressUnitFactor * stiffnessInitial;
+	return initialTangentOut;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2491,7 +2494,8 @@ const Matrix& HLBModel::getInitialTangent() {
 
 const Matrix& HLBModel::getConvergedTangent() {
 	//return stiffnessConverged;
-	return stressUnitFactor * stiffnessConverged;
+	convergedTangentOut = stressUnitFactor * stiffnessConverged;
+	return convergedTangentOut;
 }
 
 
@@ -2500,7 +2504,8 @@ const Matrix& HLBModel::getConvergedTangent() {
 
 const Vector& HLBModel::getConvergedStress() {
 	//return stressConverged;
-	return stressUnitFactor * stressConverged;
+	convergedStressOut = stressUnitFactor * stressConverged;
+	return convergedStressOut;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */

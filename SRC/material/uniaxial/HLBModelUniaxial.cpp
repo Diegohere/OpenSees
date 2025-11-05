@@ -2194,7 +2194,8 @@ double HLBModelUniaxial::getStrain() {
 double HLBModelUniaxial::getStress() {
 
 	//return stressTrial;
-	return stressUnitFactor * stressTrial;
+	stressOut = stressUnitFactor * stressTrial;
+	return stressOut;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2202,7 +2203,8 @@ double HLBModelUniaxial::getStress() {
 double HLBModelUniaxial::getTangent() {
 
 	//return stiffnessTrial;
-	return stressUnitFactor * stiffnessTrial;
+	tangentOut = stressUnitFactor * stiffnessTrial;
+	return tangentOut;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2268,7 +2270,8 @@ double HLBModelUniaxial::getInitialTangent() {
 
 	// todo: can make more efficient by changing this to elasticMatrix and removing stiffnessInitial as a variable
 	//return stiffnessInitial;
-	return stressUnitFactor * stiffnessInitial;
+	initialTangentOut = stressUnitFactor * stiffnessInitial;
+	return initialTangentOut;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
@@ -2276,7 +2279,8 @@ double HLBModelUniaxial::getInitialTangent() {
 
 double HLBModelUniaxial::getConvergedTangent() {
 	//return stiffnessConverged;
-	return stressUnitFactor * stiffnessConverged;
+	convergedTangentOut = stressUnitFactor * stiffnessConverged;
+	return convergedTangentOut;
 }
 
 
@@ -2285,7 +2289,8 @@ double HLBModelUniaxial::getConvergedTangent() {
 
 double HLBModelUniaxial::getConvergedStress() {
 	//return stressConverged;
-	return stressUnitFactor * stressConverged;
+	convergedStressOut = stressUnitFactor * stressConverged;
+	return convergedStressOut;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
