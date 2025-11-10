@@ -177,8 +177,8 @@ void* OPS_HLBModel(void) {
 		else if (forceUnit == "kN") {
 			forceUnitConverter = 1000.0;
 		}
-		else if (forceUnit == "lbf") {
-			forceUnitConverter = 4.44822;
+		else if (forceUnit == "kip") {
+			forceUnitConverter = 4.44822e3;
 		}
 		else {
 			opserr << "Problem with parameter for force units" << endln;

@@ -41,10 +41,10 @@ fix 2 0 0 1 1 1 0;
 #          Define Beam-Column Elements							  
 ###################################################################################################
 
-set E 		200.;
+set E 		200000.;
 set mu 		0.3; 
-set sigmay  0.373;									# yield stress
-set sigmaC0 0.415;									# Initial capping stress
+set sigmay  373.72;									# yield stress
+set sigmaC0 415.29;									# Initial capping stress
 
 #Torsion part
 set G 	[expr $E/2.0/(1+$mu)];  # shear modulus
@@ -55,8 +55,8 @@ set GJ 	[expr $G*$J];  			# torsional stiffness
 
 set dw [expr $d - 2 * $tf]
 
-nDMaterial HLBModel 1 $E $mu $sigmay  0.14147 15.2 0.13595 211.16 2 25.621 235.12 0.94218 3.16 [expr $bf/2] $tf $sigmaC0 1.0 flange A992Gr50 mm kN;
-nDMaterial HLBModel 2 $E $mu $sigmay  0.14147 15.2 0.13595 211.16 2 25.621 235.12 0.94218 3.16 $dw 		    $tw $sigmaC0 1.0 web    A992Gr50 mm kN;
+nDMaterial HLBModel 1 $E $mu $sigmay  0.14147 15.2 135.95 211.16 2 25621. 235.12 942.18 3.16 [expr $bf/2] $tf $sigmaC0 1.0 flange A992Gr50 mm kN;
+nDMaterial HLBModel 2 $E $mu $sigmay  0.14147 15.2 135.95 211.16 2 25621. 235.12 942.18 3.16 $dw 		    $tw $sigmaC0 1.0 web    A992Gr50 mm kN;
 
 set nfbf  4; set nftf 1;
 set nfdw 10; set nftw 1;
