@@ -951,7 +951,10 @@ FBCElemSGINUS3d::update(void)
 							//double alphaTangent = 0.5;
 							//FSectionSubdivide[i] = alphaTangent * Fsection_elastic + (1.0 - alphaTangent) * FSectionSubdivide[i];
 
-							//numItersMax = 20 * maxIters;*/
+
+							// Use initial flexibility from the begining
+							/*FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+							numItersMax = 20 * maxIters;*/
 
 
 
@@ -1141,12 +1144,8 @@ FBCElemSGINUS3d::update(void)
 						}
 						//opserr << "This is WDot:" << WDot << endln;
 						if (WDot_isec < 0.)
-						//// Try 08/28/2025
-						//if (WDot_isec < 10.*WSofteningTol)
 						{
-							//WDot_cumulativeSoft += WDot_isec;
-							//// Try 08/28/2025
-							//WDot_cumulativeSoft += -abs(WDot_isec);
+							WDot_cumulativeSoft += WDot_isec;
 						}
 						/*else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
 						{
