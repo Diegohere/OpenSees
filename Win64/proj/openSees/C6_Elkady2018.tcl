@@ -3,8 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	# set dataDir results_C6_Elkady2018_vuIllCondTol1e8ElasticOnly_resize12;			# name of output folder
-	set dataDir results_C6_Elkady2018_precondTol1e16_resize12Generated;			# name of output folder
+	set dataDir results_C6_Elkady2018_vuTol1e7_illCond1e12_l1;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -31,6 +30,8 @@
 	
 	set sigmaC0_Web [expr 1.15*370.5703];
 	set sigmaC0_Flange [expr 1.0* 511.1520];
+	# set sigmaC0_Web [expr 1000000*370.5703];
+	# set sigmaC0_Flange [expr 1000000* 511.1520];
 	
 	set alphaRegularization_Web 1.0;							# Factor for regularization web 
 	set alphaRegularization_Flange 1.0;							# Factor for regularization flange
@@ -133,14 +134,15 @@
 	# element testNonlocalElementDH 23 2 3 $ColTransfTag $integration 20 1e-5 $lc
 	
 	set Lp1 [expr 2.0*$d/$L];
-	set nIPs_Lp1 9;
+	set nIPs_Lp1 5;
 	set Lp2 $Lp1;
 	set nIPs_Lp2 $nIPs_Lp1;
 	set Le [expr (1-$Lp1-$Lp2)];
 	set nIPs_Le 1;
 	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
+	set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
 	# set integration "Simpson 1 21"
-	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-8 $lc
+	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-7 $lc
 
 # Zero length element definition
 	 uniaxialMaterial Elastic 3 976617499682.016
@@ -152,8 +154,6 @@
 
 puts "Recorders ..."
 
-set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
-
 # Record displacements 
 	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_Disp.txt -time -node 3 -dof 1 2 3 4 5 6 disp;
 	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_Disp.txt -time -node 3 -dof 1 2 3 4 5 6 disp;
@@ -163,6 +163,14 @@ set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
 	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
 	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RBase.txt -time -node 1 -dof 1 2 3 4 5 6 reaction;
 	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
+	
+# Record section connectivity and coordinate matrices
+recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_connectivityMatrix.txt -ele 23 section 1 connectivity; 
+recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_coordinateMatrix.txt -ele 23 section 1 coordinate; 	
+	
+# Record all fiber stresses
+recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_Section1_allFiberStresses.txt -ele 23 section 1 allFiberStresses; 
+recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_Section1_allFiberStrains.txt -ele 23 section 1 allFiberStrains; 
 	
 # Record local section deformations
    # recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_curvatureLoc.txt -ele 12 LocalSectionCurvature;

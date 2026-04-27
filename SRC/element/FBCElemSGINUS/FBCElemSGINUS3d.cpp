@@ -686,12 +686,15 @@ FBCElemSGINUS3d::update(void)
 	//maxSubdivisions = 20;
 	maxSubdivisions = 1;
 
+	int lMax = 2;
+
 	while (converged == false && numSubdivide <= maxSubdivisions)
 	{
 		// try regular newton (if l==0), or
 	  // initial tangent iterations (if l==1), or
 
-		for (int l = 0; l < 2; l++) {
+		//for (int l = 0; l < 2; l++) {
+		for (int l = 0; l < lMax; l++) {
 
 			qTrial = q;
 			KelementTrial = Kelement;
@@ -908,7 +911,7 @@ FBCElemSGINUS3d::update(void)
 
 
 							// Using the elastic and plastic decomposition for pseudoinverse
-							double illCondTol = 1e-8;
+							double illCondTol = 1e-12;
 							int isIllCondition = Ksection.checkIllCondition(illCondTol);
 							//if (isIllCondition == 0) {// The matrix is not ill-conditioned 
 							//	isIllCondition = Ksection.checkIllCondition(1e-8);
@@ -1258,13 +1261,15 @@ FBCElemSGINUS3d::update(void)
 
 						// break out of j & l loops
 						j = numItersMax + 1;
-						l = 3;
+						//l = 3;
+						l = lMax + 1;
 					}
 					else //if(dv.Norm() < tolerance)
 					{
 						// if we have failed to converge for all of our newton schemes - reduce step size by the factor specified
 
-						if ((j == (numItersMax - 1)) && (l == 1))
+						//if ((j == (numItersMax - 1)) && (l == 1))
+						if ((j == (numItersMax - 1)) && (l == lMax-1))
 						{
 							dvTrial /= factor;
 							numSubdivide++;

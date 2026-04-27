@@ -205,7 +205,7 @@ private:
 	double calculateEtaTangentReduce(double epsiPb11);
 
 	// Computes derivative of C elastic matrix moduli with respect to lambda_Pb
-	Vector calculateDCdLambdaPB(double etaTangent, double dPhiCompdXiVector11);
+	Vector calculateDCdLambdaPB(double etaTangent, double dPhiELLdXiVector11);
 
 	// Computes the derivative of etaTangent with respect to epsiPb11
 	double calculateDEtaTangentdEpsiPb11(void);

@@ -878,7 +878,7 @@ int HLBModel::timeIntegration() {
 	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 
-	/*if (strainConverged(0) <= 0.0015837 && strainConverged(0) > 0.0015836 && strainTrial(0) <= 0.0015999 && strainTrial(0) > 0.001599) {
+	/*if (strainConverged(0) <= -0.0203703 && strainConverged(0) > -0.0203705 && strainTrial(0) <= -0.0203203 && strainTrial(0) > -0.0203205) {
 		double testBreak = 0.;
 		opserr << "This is strainConverged: " << strainConverged << endln;
 		opserr << "This is strainTrial: " << strainTrial << endln;
@@ -1624,7 +1624,9 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 		strainPBEqTrial = strainPBEqIntermed * -psi * consistParam_plRecov;
 		strainPostBucklingTrial = strainPostBucklingIntermed + consistParam_plRecov * dPhiTensdXi;
-		if (strainPostBucklingTrial(0) > 0)
+		/*if (strainPostBucklingTrial(0) > 0)*/
+		// Updated 04/27/2026
+		if (strainPostBucklingTrial(0) > SMALL_NUMBER)
 		{
 			break;
 		}
@@ -1649,6 +1651,12 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		}
 
 	} // end loop for return mapping iterations
+
+	/*if (etaTangent > 1.0)
+	{
+		opserr << "This is sigmaPlRecovStage" << stressTrial << endln;
+		double testBreak = 0.;
+	}*/
 
 	// Compute post-buckling yield stress
 	yieldStressP = calculateYieldStressPlastic(strainPEqIntermed);
@@ -1952,53 +1960,53 @@ void HLBModel::calculateConsistentTangentModulusSoftening(const Vector& strain_n
 	// Initialize the variables
 	Vector dPhiCompDSigma = Vector(N_DIMS);
 	double chi1c = 0.;
-	Vector gammaDiag = Vector(N_DIMS);
 	double sigmaSurSigmaY = 0;
 	double dSigmaSurSigmaYdEpsilonPB11 = 0;
-	Vector dGammaDChi1cDiag = Vector(N_DIMS);
-	Vector dXiDChi1c = Vector(N_DIMS);
 	double dPhiCompDChi1c = 0.;
 	double dChi1cDepsiPB11 = 0.;
 	Vector d2PhiCompDSigmaDChi1c = Vector(N_DIMS);
 	Vector d2PhiCompDSigma2Diag = Vector(N_DIMS);
-	double B = 0.;
+	Vector B = Vector(N_DIMS);
 	Vector D = Vector(N_DIMS);
-	double DPreFactor = 0.;
+	Vector H = Vector(N_DIMS);
+	double L = 0.;
+	double HPreFactor = 0.;
+	double DDenom = 0.;
 	Matrix CepTerm1 = Matrix(N_DIMS, N_DIMS);
-	Matrix CepTerm2 = Matrix(N_DIMS, N_DIMS);
+	Vector CepTerm2 = Vector(N_DIMS);
+	Matrix CepTerm2MultD = Matrix(N_DIMS, N_DIMS);
 	Matrix CepTerm3 = Matrix(N_DIMS, N_DIMS);
 	Matrix I = Matrix(N_DIMS, N_DIMS);
 	Matrix CepTerm3Inverse = Matrix(N_DIMS, N_DIMS);
 	double etaTangent = 0.;
 	Vector LambdaC_nPlus1Diag = Vector(N_DIMS);
 	double dEtaTangentdEpsiPb11 = 0.;
-	Vector F = Vector(N_DIMS);
+	double dAlpha11DEpsiPb11 = 0.;
+	double dSigmaYDEpsiPb11 = 0.;
+	Vector dPhiCompDAlpha = Vector(N_DIMS);
+	double dPhiCompDSigmaY = 0.;
+	Vector d2PhiCompDSigmaDAlphaDiag = Vector(N_DIMS);
 
 	chi1c = calculateChi1c(strainPostBucklingTrial(0));
 
 	etaTangent = calculateEtaTangentReduce(strainPostBucklingTrial(0));
+	dEtaTangentdEpsiPb11 = calculateDEtaTangentdEpsiPb11();
 	LambdaC_nPlus1Diag = etaTangent * lambdaC;
 
 	dPhiCompDSigma(0) = 2. * (relativeStressNPlus1(0) + chi1c * stressTrial(0));
 	dPhiCompDSigma(1) = 6. * relativeStressNPlus1(1);
 	dPhiCompDSigma(2) = 6. * relativeStressNPlus1(2);
 
-	gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_postBuckling * (2. + 2. * chi1c));
-	gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_postBuckling * 6.);
-	gammaDiag(2) = gammaDiag(1);
-
 	//sigmaSurSigmaY = calculateSigmaSurSigmaY(strainPostBucklingTrial(0));
 	sigmaSurSigmaY = (this->*calculateSigmaSurSigmaY)(strainPostBucklingTrial(0));
 	//dSigmaSurSigmaYdEpsilonPB11 = calculateDSigmaSurSigmaYdEpsilonPB11();
 	dSigmaSurSigmaYdEpsilonPB11 = (this->*calculateDSigmaSurSigmaYdEpsilonPB11)();
 
-	dGammaDChi1cDiag.Zero();
-	dGammaDChi1cDiag(0) = -2. * consistParam_postBuckling * pow(gammaDiag(0), 2);
+	dPhiCompDChi1c = pow(stressTrial(0), 2);
 
-	dXiDChi1c.Zero();
-	dXiDChi1c(0) = dGammaDChi1cDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1c * consistParam_postBuckling * backstressTot(0)) - 2 * consistParam_postBuckling * gammaDiag(0) * backstressTot(0) - dGammaDChi1cDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
-
-	dPhiCompDChi1c = 2. * dXiDChi1c(0) * (relativeStressNPlus1(0) + chi1c * stressTrial(0)) + 6. * dXiDChi1c(1) * relativeStressNPlus1(1) + 6. * dXiDChi1c(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
+	dPhiCompDAlpha(0) = -2. * relativeStressNPlus1(0);
+	dPhiCompDAlpha(1) = -6. * relativeStressNPlus1(1);
+	dPhiCompDAlpha(2) = -6. * relativeStressNPlus1(2);
 
 	dChi1cDepsiPB11 = 2. * b_chi1c * (1. - sigmaSurSigmaY) * dSigmaSurSigmaYdEpsilonPB11;
 
@@ -2006,46 +2014,54 @@ void HLBModel::calculateConsistentTangentModulusSoftening(const Vector& strain_n
 	d2PhiCompDSigma2Diag(1) = 6.;
 	d2PhiCompDSigma2Diag(2) = 6.;
 
-	d2PhiCompDSigmaDChi1c(0) = 2. * (dXiDChi1c(0) * (1. + chi1c) + stressTrial(0));
+	d2PhiCompDSigmaDChi1c(0) = 2. * stressTrial(0);
 
-	B = 1. / (1. - dChi1cDepsiPB11 * consistParam_postBuckling * d2PhiCompDSigmaDChi1c(0));
+	d2PhiCompDSigmaDAlphaDiag(0) = -2.;
+	d2PhiCompDSigmaDAlphaDiag(1) = -6.;
+	d2PhiCompDSigmaDAlphaDiag(2) = -6.;
 
-	dEtaTangentdEpsiPb11 = calculateDEtaTangentdEpsiPb11();
+	B(0) = d2PhiCompDSigmaDChi1c(0) * dChi1cDepsiPB11 + d2PhiCompDSigmaDAlphaDiag(0) * dAlpha11DEpsiPb11;
+	B(1) = d2PhiCompDSigmaDChi1c(1) * dChi1cDepsiPB11;
+	B(2) = d2PhiCompDSigmaDChi1c(2) * dChi1cDepsiPB11;
 
-	F(0) = -consistParam_postBuckling * d2PhiCompDSigmaDChi1c(0) + dEtaTangentdEpsiPb11 * 1. / dChi1cDepsiPB11 * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingTrial(0));
-	F(1) = dEtaTangentdEpsiPb11 * 1. / dChi1cDepsiPB11 * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingTrial(1));
-	F(2) = dEtaTangentdEpsiPb11 * 1. / dChi1cDepsiPB11 * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingTrial(2));
+	HPreFactor = 1. / (1. - consistParam_postBuckling * B(0));
+	H(0) = HPreFactor * (lambdaC(0) * dEtaTangentdEpsiPb11 * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingTrial(0)) - consistParam_postBuckling * LambdaC_nPlus1Diag(0) * B(0));
+	H(1) = HPreFactor * (lambdaC(1) * dEtaTangentdEpsiPb11 * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingTrial(1)) - consistParam_postBuckling * LambdaC_nPlus1Diag(1) * B(1));
+	H(2) = HPreFactor * (lambdaC(2) * dEtaTangentdEpsiPb11 * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingTrial(2)) - consistParam_postBuckling * LambdaC_nPlus1Diag(2) * B(2));
 
-	DPreFactor = 1. / (dPhiCompDChi1c * dChi1cDepsiPB11 * dPhiCompDSigma(0) * B);
-	D(0) = DPreFactor * (dPhiCompDSigma(0) + dPhiCompDChi1c * dChi1cDepsiPB11 * consistParam_postBuckling * d2PhiCompDSigma2Diag(0) * B);
-	D(1) = DPreFactor * (dPhiCompDSigma(1));
-	D(2) = DPreFactor * (dPhiCompDSigma(2));
+	L = dPhiCompDAlpha(0) * dAlpha11DEpsiPb11 + dPhiCompDChi1c * dChi1cDepsiPB11 + dPhiCompDSigmaY * dSigmaYDEpsiPb11;
 
-	CepTerm1(0, 0) = d2PhiCompDSigma2Diag(0) - dChi1cDepsiPB11 * F(0) * d2PhiCompDSigma2Diag(0) * B;
-	CepTerm1(1, 0) = -dChi1cDepsiPB11 * F(1) * d2PhiCompDSigma2Diag(0) * B;
-	CepTerm1(1, 1) = d2PhiCompDSigma2Diag(1);
-	CepTerm1(2, 0) = -dChi1cDepsiPB11 * F(2) * d2PhiCompDSigma2Diag(0) * B;
-	CepTerm1(2, 2) = d2PhiCompDSigma2Diag(2);
-	/*CepTerm2 = D * (dPhiCompDSigma + consistParam_postBuckling * A * dPhiCompDSigma(0));*/
-	//opserr << "This is dPhiCompDSigma" << dPhiCompDSigma << endln;
-	//opserr << "This is D" << D << endln;
-	CepTerm2(0, 0) = D(0) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(0) - dPhiCompDSigma(0));
-	CepTerm2(0, 1) = D(0) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(1) - dPhiCompDSigma(1));
-	CepTerm2(0, 2) = D(0) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(2) - dPhiCompDSigma(2));
-	CepTerm2(1, 0) = D(1) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(0) - dPhiCompDSigma(0));
-	CepTerm2(1, 1) = D(1) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(1) - dPhiCompDSigma(1));
-	CepTerm2(1, 2) = D(1) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(2) - dPhiCompDSigma(2));
-	CepTerm2(2, 0) = D(2) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(0) - dPhiCompDSigma(0));
-	CepTerm2(2, 1) = D(2) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(1) - dPhiCompDSigma(1));
-	CepTerm2(2, 2) = D(2) * (dChi1cDepsiPB11 * dPhiCompDSigma(0) * B * F(2) - dPhiCompDSigma(2));
+	DDenom = 1. / (L * dPhiCompDSigma(0));
+	D(0) = DDenom * ((1. - consistParam_postBuckling * B(0)) * dPhiCompDSigma(0) + L * consistParam_postBuckling * d2PhiCompDSigma2Diag(0));
+	D(1) = DDenom * ((1. - consistParam_postBuckling * B(0)) * dPhiCompDSigma(1));
+	D(2) = DDenom * ((1. - consistParam_postBuckling * B(0)) * dPhiCompDSigma(2));
+
+	CepTerm1(0, 0) = d2PhiCompDSigma2Diag(0) * (LambdaC_nPlus1Diag(0) - H(0));
+	CepTerm1(1, 0) = -d2PhiCompDSigma2Diag(0) * H(1);
+	CepTerm1(1, 1) = d2PhiCompDSigma2Diag(1) * LambdaC_nPlus1Diag(1);
+	CepTerm1(2, 0) = -d2PhiCompDSigma2Diag(0) * H(2);
+	CepTerm1(2, 2) = d2PhiCompDSigma2Diag(2) * LambdaC_nPlus1Diag(2);
+
+	CepTerm2(0) = dPhiCompDSigma(0) * H(0) - LambdaC_nPlus1Diag(0) * dPhiCompDSigma(0);
+	CepTerm2(1) = dPhiCompDSigma(0) * H(1) - LambdaC_nPlus1Diag(1) * dPhiCompDSigma(1);
+	CepTerm2(2) = dPhiCompDSigma(0) * H(2) - LambdaC_nPlus1Diag(2) * dPhiCompDSigma(2);
+	CepTerm2MultD(0, 0) = CepTerm2(0) * D(0);
+	CepTerm2MultD(0, 1) = CepTerm2(0) * D(1);
+	CepTerm2MultD(0, 2) = CepTerm2(0) * D(2);
+	CepTerm2MultD(1, 0) = CepTerm2(1) * D(0);
+	CepTerm2MultD(1, 1) = CepTerm2(1) * D(1);
+	CepTerm2MultD(1, 2) = CepTerm2(1) * D(2);
+	CepTerm2MultD(2, 0) = CepTerm2(2) * D(0);
+	CepTerm2MultD(2, 1) = CepTerm2(2) * D(1);
+	CepTerm2MultD(2, 2) = CepTerm2(2) * D(2);
 	//opserr << "This is CepTerm2" << CepTerm2 << endln;
 
 	I(0, 0) = I(1, 1) = I(2, 2) = 1.;
-	CepTerm3 = I + elasticMatrix * (consistParam_postBuckling * CepTerm1 + CepTerm2);
+	CepTerm3 = I + consistParam_postBuckling * CepTerm1 + CepTerm2MultD;
 	//opserr << "This is CepTerm3" << CepTerm3 << endln;
 	CepTerm3Inverse = matinv3(CepTerm3);
 	stiffnessTrial.Zero();
-	stiffnessTrial = elasticMatrix * CepTerm3Inverse;
+	stiffnessTrial = etaTangent * elasticMatrix * CepTerm3Inverse;
 
 	//Take the symmetric approximation
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
@@ -2054,6 +2070,12 @@ void HLBModel::calculateConsistentTangentModulusSoftening(const Vector& strain_n
 	//// Try to fix flat tangent issue
 	////stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
 	//stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
+
+	/*if (etaTangent<0.5)
+	{
+		opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
+		double testBreak = 0.;
+	}*/
 
 	return;
 
@@ -2065,36 +2087,35 @@ void HLBModel::calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus
 	// Initialize the variables
 	Vector dPhiTensDSigma = Vector(N_DIMS);
 	double chi1t = 0.;
-	Vector gammaDiag = Vector(N_DIMS);
-	Vector dGammaDChi1tDiag = Vector(N_DIMS);
-	Vector dXiDChi1t = Vector(N_DIMS);
 	double dPhiTensDChi1t = 0.;
-	double dChi1tDEpsiPB11 = 0.;
+	double dChi1tDepsiPB11 = 0.;
 	Vector d2PhiTensDSigmaDChi1t = Vector(N_DIMS);
 	Vector d2PhiTensDSigma2Diag = Vector(N_DIMS);
-	double B = 0.;
+	Vector B = Vector(N_DIMS);
 	Vector D = Vector(N_DIMS);
-	double DPreFactor = 0.;
+	Vector H = Vector(N_DIMS);
+	double L = 0.;
+	double HPreFactor = 0.;
+	double DDenom = 0.;
 	Matrix CepTerm1 = Matrix(N_DIMS, N_DIMS);
-	Matrix CepTerm2 = Matrix(N_DIMS, N_DIMS);
+	Vector CepTerm2 = Vector(N_DIMS);
+	Matrix CepTerm2MultD = Matrix(N_DIMS, N_DIMS);
 	Matrix CepTerm3 = Matrix(N_DIMS, N_DIMS);
 	Matrix I = Matrix(N_DIMS, N_DIMS);
 	Matrix CepTerm3Inverse = Matrix(N_DIMS, N_DIMS);
 	double etaTangent = 0.;
 	Vector LambdaC_nPlus1Diag = Vector(N_DIMS);
 	double dEtaTangentdEpsiPb11 = 0.;
-	Vector F = Vector(N_DIMS);
 	double tBezier = 0.;
 	double sigmaBezier = 0.;
 	double dSigmaBezierDtBezier = 0.;
 	double dEpsiBezierDtBezier = 0.;
 	double dSigmaBezierDEpsiPb11 = 0.;
-	double dAlpha11TotDEpsiPb11 = 0.;
+	double dAlpha11TotDepsiPb11 = 0.;
 	double dF1tDEpsiPB11 = 0.;
 	Vector dPhiTensDAlpha = Vector(N_DIMS);
 	Vector d2PhiTensDSigmaDAlphaDiag = Vector(N_DIMS);
-	Vector H = Vector(N_DIMS);
-	double L = 0.;
+
 	double dSigmaYieldTotDEpsiPb11 = 0.;
 	double dPhiTensDSigmaYield = 0.;
 
@@ -2109,28 +2130,20 @@ void HLBModel::calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus
 	dEpsiBezierDtBezier = -3. * pow((1. - tBezier), 2) * abs(epsilonPB11UnloadTrial) + 3. * (abs(epsilonPB11UnloadTrial) + alphaPrBezierTrial) * (3. * pow(tBezier, 2) - 4. * tBezier + 1.) + 3. * (0. + alphaYrBezierTrial) * (2. - 3. * tBezier) * tBezier + 3. * pow(tBezier, 2) * 0.;
 	dSigmaBezierDEpsiPb11 = -alphaRegularization * dSigmaBezierDtBezier / dEpsiBezierDtBezier;
 
-	dAlpha11TotDEpsiPb11 = alphaRegularization * computeDAlpha11TotDEpsiPb11PlRecovStage();
+	dAlpha11TotDepsiPb11 = alphaRegularization * computeDAlpha11TotDEpsiPb11PlRecovStage();
 	dSigmaYieldTotDEpsiPb11 = alphaRegularization * computeDSigmaYieldTotDEpsiPb11PlRecovStage();
 
-	gammaDiag(0) = 1. / (1. / LambdaC_nPlus1Diag(0) + consistParam_plRecov * (2. + 2. * chi1t));
-	gammaDiag(1) = 1. / (1. / LambdaC_nPlus1Diag(1) + consistParam_plRecov * 6.);
-	gammaDiag(2) = gammaDiag(1);
-
-	dGammaDChi1tDiag.Zero();
-	dGammaDChi1tDiag(0) = -2. * consistParam_plRecov * pow(gammaDiag(0), 2);
-
-	dXiDChi1t.Zero();
-	dXiDChi1t(0) = dGammaDChi1tDiag(0) * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingConverged(0) - 2. * chi1t * consistParam_plRecov * backstressTot(0)) - 2 * consistParam_plRecov * gammaDiag(0) * backstressTot(0) - dGammaDChi1tDiag(0) / LambdaC_nPlus1Diag(0) * backstressTot(0);
-
-	dF1tDEpsiPB11 = -1 / pow((b_1tTrial * pow(sigmaBezier, 2)), 2) * ((2 * yieldStressTot * dSigmaYieldTotDEpsiPb11 - 2 * (dSigmaBezierDEpsiPb11 - dAlpha11TotDEpsiPb11) *
+	dF1tDEpsiPB11 = -1 / pow((b_1tTrial * pow(sigmaBezier, 2)), 2) * ((2 * yieldStressTot * dSigmaYieldTotDEpsiPb11 - 2 * (dSigmaBezierDEpsiPb11 - dAlpha11TotDepsiPb11) *
 		(sigmaBezier - backstressTot(0))) * (b_1tTrial * pow(sigmaBezier, 2)) - (pow(yieldStressTot, 2) - pow((sigmaBezier - backstressTot(0)), 2)) * 2 * b_1tTrial * dSigmaBezierDEpsiPb11 * sigmaBezier);
-	dChi1tDEpsiPB11 = -b_1tTrial * dF1tDEpsiPB11;
+	dChi1tDepsiPB11 = -b_1tTrial * dF1tDEpsiPB11;
+
+	dEtaTangentdEpsiPb11 = alphaRegularization * calculateDEtaTangentdEpsiPb11();
 
 	dPhiTensDSigma(0) = 2. * (relativeStressNPlus1(0) + chi1t * stressTrial(0));
 	dPhiTensDSigma(1) = 6. * relativeStressNPlus1(1);
 	dPhiTensDSigma(2) = 6. * relativeStressNPlus1(2);
 
-	dPhiTensDChi1t = 2. * dXiDChi1t(0) * (relativeStressNPlus1(0) + chi1t * stressTrial(0)) + 6. * dXiDChi1t(1) * relativeStressNPlus1(1) + 6. * dXiDChi1t(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2);
+	dPhiTensDChi1t = pow(stressTrial(0), 2);
 
 	dPhiTensDAlpha(0) = -2. * relativeStressNPlus1(0);
 	dPhiTensDAlpha(1) = -6. * relativeStressNPlus1(1);
@@ -2142,63 +2155,70 @@ void HLBModel::calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus
 	d2PhiTensDSigma2Diag(1) = 6.;
 	d2PhiTensDSigma2Diag(2) = 6.;
 
-	d2PhiTensDSigmaDChi1t(0) = 2. * (dXiDChi1t(0) * (1. + chi1t) + stressTrial(0));
+	d2PhiTensDSigmaDChi1t(0) = 2. * stressTrial(0);
 
 	d2PhiTensDSigmaDAlphaDiag(0) = -2.;
 	d2PhiTensDSigmaDAlphaDiag(1) = -6.;
 	d2PhiTensDSigmaDAlphaDiag(2) = -6.;
 
-	B = 1. / (1. + 2 * consistParam_plRecov * dAlpha11TotDEpsiPb11 - dChi1tDEpsiPB11 * consistParam_plRecov * d2PhiTensDSigmaDChi1t(0));
+	B(0) = d2PhiTensDSigmaDChi1t(0) * dChi1tDepsiPB11 + d2PhiTensDSigmaDAlphaDiag(0) * dAlpha11TotDepsiPb11;
+	B(1) = d2PhiTensDSigmaDChi1t(1) * dChi1tDepsiPB11;
+	B(2) = d2PhiTensDSigmaDChi1t(2) * dChi1tDepsiPB11;
 
-	dEtaTangentdEpsiPb11 = alphaRegularization * calculateDEtaTangentdEpsiPb11();
+	HPreFactor = 1. / (1. - consistParam_plRecov * B(0));
+	H(0) = HPreFactor * (lambdaC(0) * dEtaTangentdEpsiPb11 * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingTrial(0)) - consistParam_plRecov * LambdaC_nPlus1Diag(0) * B(0));
+	H(1) = HPreFactor * (lambdaC(1) * dEtaTangentdEpsiPb11 * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingTrial(1)) - consistParam_plRecov * LambdaC_nPlus1Diag(1) * B(1));
+	H(2) = HPreFactor * (lambdaC(2) * dEtaTangentdEpsiPb11 * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingTrial(2)) - consistParam_plRecov * LambdaC_nPlus1Diag(2) * B(2));
 
-	H(0) = -2. / dChi1tDEpsiPB11 * dAlpha11TotDEpsiPb11 + d2PhiTensDSigmaDChi1t(0);
+	L = dPhiTensDAlpha(0) * dAlpha11TotDepsiPb11 + dPhiTensDChi1t * dChi1tDepsiPB11 + dPhiTensDSigmaYield * dSigmaYieldTotDEpsiPb11;
 
-	L = (dPhiTensDAlpha(0) * dAlpha11TotDEpsiPb11 + dPhiTensDSigmaYield * dSigmaYieldTotDEpsiPb11) / dChi1tDEpsiPB11 + dPhiTensDChi1t;
+	DDenom = 1. / (L * dPhiTensDSigma(0));
+	D(0) = DDenom * ((1. - consistParam_plRecov * B(0)) * dPhiTensDSigma(0) + L * consistParam_plRecov * d2PhiTensDSigma2Diag(0));
+	D(1) = DDenom * ((1. - consistParam_plRecov * B(0)) * dPhiTensDSigma(1));
+	D(2) = DDenom * ((1. - consistParam_plRecov * B(0)) * dPhiTensDSigma(2));
 
-	F(0) = -consistParam_plRecov * H(0) + dEtaTangentdEpsiPb11 * 1. / dChi1tDEpsiPB11 * (strain_nPlus1(0) - strainPlasticTrial(0) - strainPostBucklingTrial(0));
-	F(1) = dEtaTangentdEpsiPb11 * 1. / dChi1tDEpsiPB11 * (strain_nPlus1(1) - strainPlasticTrial(1) - strainPostBucklingTrial(1));
-	F(2) = dEtaTangentdEpsiPb11 * 1. / dChi1tDEpsiPB11 * (strain_nPlus1(2) - strainPlasticTrial(2) - strainPostBucklingTrial(2));
+	CepTerm1(0, 0) = d2PhiTensDSigma2Diag(0) * (LambdaC_nPlus1Diag(0) - H(0));
+	CepTerm1(1, 0) = -d2PhiTensDSigma2Diag(0) * H(1);
+	CepTerm1(1, 1) = d2PhiTensDSigma2Diag(1) * LambdaC_nPlus1Diag(1);
+	CepTerm1(2, 0) = -d2PhiTensDSigma2Diag(0) * H(2);
+	CepTerm1(2, 2) = d2PhiTensDSigma2Diag(2) * LambdaC_nPlus1Diag(2);
 
-	DPreFactor = 1. / (L * dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B);
-	D(0) = DPreFactor * (dPhiTensDSigma(0) + L * dChi1tDEpsiPB11 * consistParam_plRecov * d2PhiTensDSigma2Diag(0) * B);
-	D(1) = DPreFactor * (dPhiTensDSigma(1));
-	D(2) = DPreFactor * (dPhiTensDSigma(2));
-
-	CepTerm1(0, 0) = d2PhiTensDSigma2Diag(0) - dChi1tDEpsiPB11 * F(0) * d2PhiTensDSigma2Diag(0) * B;
-	CepTerm1(1, 0) = -dChi1tDEpsiPB11 * F(1) * d2PhiTensDSigma2Diag(0) * B;
-	CepTerm1(1, 1) = d2PhiTensDSigma2Diag(1);
-	CepTerm1(2, 0) = -dChi1tDEpsiPB11 * F(2) * d2PhiTensDSigma2Diag(0) * B;
-	CepTerm1(2, 2) = d2PhiTensDSigma2Diag(2);
-	/*CepTerm2 = D * (dPhiCompDSigma + consistParam_postBuckling * A * dPhiCompDSigma(0));*/
-	//opserr << "This is dPhiCompDSigma" << dPhiCompDSigma << endln;
-	//opserr << "This is D" << D << endln;
-	CepTerm2(0, 0) = D(0) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
-	CepTerm2(0, 1) = D(0) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
-	CepTerm2(0, 2) = D(0) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
-	CepTerm2(1, 0) = D(1) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
-	CepTerm2(1, 1) = D(1) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
-	CepTerm2(1, 2) = D(1) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
-	CepTerm2(2, 0) = D(2) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(0) - dPhiTensDSigma(0));
-	CepTerm2(2, 1) = D(2) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(1) - dPhiTensDSigma(1));
-	CepTerm2(2, 2) = D(2) * (dChi1tDEpsiPB11 * dPhiTensDSigma(0) * B * F(2) - dPhiTensDSigma(2));
+	CepTerm2(0) = dPhiTensDSigma(0) * H(0) - LambdaC_nPlus1Diag(0) * dPhiTensDSigma(0);
+	CepTerm2(1) = dPhiTensDSigma(0) * H(1) - LambdaC_nPlus1Diag(1) * dPhiTensDSigma(1);
+	CepTerm2(2) = dPhiTensDSigma(0) * H(2) - LambdaC_nPlus1Diag(2) * dPhiTensDSigma(2);
+	CepTerm2MultD(0, 0) = CepTerm2(0) * D(0);
+	CepTerm2MultD(0, 1) = CepTerm2(0) * D(1);
+	CepTerm2MultD(0, 2) = CepTerm2(0) * D(2);
+	CepTerm2MultD(1, 0) = CepTerm2(1) * D(0);
+	CepTerm2MultD(1, 1) = CepTerm2(1) * D(1);
+	CepTerm2MultD(1, 2) = CepTerm2(1) * D(2);
+	CepTerm2MultD(2, 0) = CepTerm2(2) * D(0);
+	CepTerm2MultD(2, 1) = CepTerm2(2) * D(1);
+	CepTerm2MultD(2, 2) = CepTerm2(2) * D(2);
 	//opserr << "This is CepTerm2" << CepTerm2 << endln;
 
 	I(0, 0) = I(1, 1) = I(2, 2) = 1.;
-	CepTerm3 = I + elasticMatrix * (consistParam_plRecov * CepTerm1 + CepTerm2);
+	CepTerm3 = I + consistParam_plRecov * CepTerm1 + CepTerm2MultD;
 	//opserr << "This is CepTerm3" << CepTerm3 << endln;
 	CepTerm3Inverse = matinv3(CepTerm3);
 	stiffnessTrial.Zero();
-	stiffnessTrial = elasticMatrix * CepTerm3Inverse;
+	stiffnessTrial = etaTangent * elasticMatrix * CepTerm3Inverse;
 
 	//Take the symmetric approximation
 	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+
 	/*opserr << "This is tangentModulusPlRecovStage" << stiffnessTrial << endln;
 	opserr << "This is strain vector:" << strainTrial << endln;*/
 
 	//// Try to fix flat tangent issue
 	////stiffnessTrial = 0.5 * (elasticMatrix + stiffnessTrial);
 	//stiffnessTrial = 0.05 * elasticMatrix + 0.95 * stiffnessTrial;
+
+	/*if (etaTangent>1.0)
+	{
+		opserr << "This is tangentModulusPlRecovStage" << stiffnessTrial << endln;
+		double testBreak = 0.;
+	}*/
 
 	return;
 }
@@ -3719,14 +3739,24 @@ double HLBModel::calculateEtaTangentReduce(double epsiPb11) {
 
 	double epsiPb11_min = pow(1. / beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), -beta2RegressionEuSurEl), 1 / beta3RegressionEuSurEl);
 
-	// Try to solve oscillation trap
-	double bound4Smoothin = 50. / 100. * abs(epsiPb11_min);
+	/*double bound4Smoothin = 50. / 100. * abs(epsiPb11_min);*/
+	// Updated 04/25/2026
+	double bound4Smoothin = 5. / 100. * abs(epsiPb11_min);
 
 	double a1XTilda = 1.;
-	double a2XTilda = beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(epsiPb11), beta3RegressionEuSurEl);
 
-	/*double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (epsiPb11 + epsiPb11_min + bound4Smoothin) / (2. * bound4Smoothin);
+	// double a2XTilda = beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(epsiPb11), beta3RegressionEuSurEl);
+	// Updated 04/25/2026
+	double a2XTilda = beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(epsiPb11), beta3RegressionEuSurEl);
+	if (abs(epsiPb11)==0)
+	{
+		a2XTilda = 0.;
+	}
+
+	//double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
+	// Updated 04/25/2026
+	double xTilda = 1. + (alphaRegularization * strainPostBucklingTrial(0) + epsiPb11_min) / (bound4Smoothin);
+
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -3739,16 +3769,17 @@ double HLBModel::calculateEtaTangentReduce(double epsiPb11) {
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	/*double etaTangentIntermed = gXTilda * a2XTilda + (1. - gXTilda) * a1XTilda;*/
-	double etaTangentIntermed = gXTilda * a1XTilda + (1. - gXTilda) * a2XTilda;
-	etaTangent = std::min(1., etaTangentIntermed);
+	//double etaTangentIntermed = gXTilda * a1XTilda + (1. - gXTilda) * a2XTilda;
+	// etaTangent = std::min(1., etaTangentIntermed);
+	// Updated 04/25/2026
+	etaTangent = gXTilda * a1XTilda + (1. - gXTilda) * a2XTilda;	
 
 	return etaTangent;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */
 
-Vector HLBModel::calculateDCdLambdaPB(double etaTangent, double dPhiCompdXiVector11) {
+Vector HLBModel::calculateDCdLambdaPB(double etaTangent, double dPhiELLdXiVector11) {
 	Vector dCdLambdaPB = Vector(N_DIMS);
 	dCdLambdaPB.Zero();
 	double dEtaTangentdEpsiPb11 = 0.;
@@ -3765,9 +3796,13 @@ Vector HLBModel::calculateDCdLambdaPB(double etaTangent, double dPhiCompdXiVecto
 	}*/
 	dEtaTangentdEpsiPb11 = calculateDEtaTangentdEpsiPb11();
 
-	dCdLambdaPB(0) = 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(0, 0);
+	/*dCdLambdaPB(0) = 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(0, 0);
 	dCdLambdaPB(1) = 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(1, 1);
-	dCdLambdaPB(2) = 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(2, 2);
+	dCdLambdaPB(2) = 1. / pow(etaTangent, 2) * dPhiCompdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(2, 2);*/
+	// Updated 04/25/2026
+	dCdLambdaPB(0) = -1. / pow(etaTangent, 2) * dPhiELLdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(0, 0);
+	dCdLambdaPB(1) = -1. / pow(etaTangent, 2) * dPhiELLdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(1, 1);
+	dCdLambdaPB(2) = -1. / pow(etaTangent, 2) * dPhiELLdXiVector11 * dEtaTangentdEpsiPb11 * 1 / elasticMatrix(2, 2);
 
 	return dCdLambdaPB;
 }
@@ -3789,26 +3824,51 @@ double HLBModel::calculateDEtaTangentdEpsiPb11() {
 	}*/
 
 	// Try to solve oscillation trap
-	double bound4Smoothin = 50. / 100. * abs(epsiPb11_min);
+	/*double bound4Smoothin = 50. / 100. * abs(epsiPb11_min);*/
+	// Updated 04/25/2026
+	double bound4Smoothin = 5. / 100. * abs(epsiPb11_min);
+
 	double a2XTilda = beta3RegressionEuSurEl * beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(alphaRegularization * abs(strainPostBucklingTrial(0)), (beta3RegressionEuSurEl - 1.));
 
-	/*double xTilda = (abs(strainPostBucklingTrial(0)) - epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);*/
-	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
+	//double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + epsiPb11_min + bound4Smoothin) / (2 * bound4Smoothin);
+	// Updated 04/25/2026
+	double xTilda = 1. + (alphaRegularization * strainPostBucklingTrial(0) + epsiPb11_min) / (bound4Smoothin);
+
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
+	double dfXTildaDXTilda = 0;
+	double df1MinusXTildaDXTilda = 0;
 	if (xTilda > 0.)
 	{
 		fXTilda = exp(-1. / xTilda);
+		dfXTildaDXTilda = 1. / pow(xTilda, 2.) * fXTilda;
 	}
 	double ans = 1. - xTilda;
 	if (1. - xTilda > 0.)
 	{
 		f1MinusXTilda = exp(-1 / (1. - xTilda));
+		df1MinusXTildaDXTilda = -1. / pow((1. - xTilda), 2.) * f1MinusXTilda;
 	}
 	double gXTilda = fXTilda / (fXTilda + f1MinusXTilda);
 
-	/*dEtaTangentdEpsiPb11 = gXTilda * a2XTilda;*/
-	dEtaTangentdEpsiPb11 = (1. - gXTilda) * a2XTilda;
+	//dEtaTangentdEpsiPb11 = (1. - gXTilda) * a2XTilda;
+	// Updated 04/25/2026
+	double dEtaTangentRegDEpsiPb11 = -a2XTilda;
+
+	double dXTildaDEpsiPb11 = 1. / (bound4Smoothin);
+	double dfXTildaDEpsiPb11 = dfXTildaDXTilda * dXTildaDEpsiPb11;
+	double df1MinusXTildaDEpsiPb11 = df1MinusXTildaDXTilda * dXTildaDEpsiPb11;
+	double den = fXTilda + f1MinusXTilda;
+	double dgXTildaDEpsiPb11 = 0.;
+	if (den !=0.)
+	{
+		dgXTildaDEpsiPb11 = (dfXTildaDEpsiPb11 * den - fXTilda * (dfXTildaDEpsiPb11 + df1MinusXTildaDEpsiPb11)) / pow(den, 2.);
+	}
+
+	double etaTangentReg = beta1RegressionEuSurEl * pow((bPlateWidth / tPlateThickness), beta2RegressionEuSurEl) * pow(abs(alphaRegularization * strainPostBucklingTrial(0)), beta3RegressionEuSurEl);
+
+	dEtaTangentdEpsiPb11 = dgXTildaDEpsiPb11 * (1 - etaTangentReg) + dEtaTangentRegDEpsiPb11 * (1 - gXTilda);
+
 
 	return dEtaTangentdEpsiPb11;
 }
