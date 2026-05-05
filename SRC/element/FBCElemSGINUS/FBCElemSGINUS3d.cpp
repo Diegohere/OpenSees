@@ -734,7 +734,10 @@ FBCElemSGINUS3d::update(void)
 				{
 					for (i = 0; i < numSections; i++)
 					{
+						// Initial elastic tangent
 						FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+						// Tangent starting iteration
+						//FSectionSubdivide[i] = FSection[i];
 					}
 					// Increase the maximum number of iterations because Modified Newton
 					numItersMax = 10 * maxIters;
@@ -910,49 +913,45 @@ FBCElemSGINUS3d::update(void)
 							//opserr << "This is Ksection: " << Ksection << endln;
 
 
-							// Using the elastic and plastic decomposition for pseudoinverse
-							double illCondTol = 1e-12;
-							int isIllCondition = Ksection.checkIllCondition(illCondTol);
+							//// Using the elastic and plastic decomposition for pseudoinverse
+							//double illCondTol = 1e-12;
+							//int isIllCondition = Ksection.checkIllCondition(illCondTol);
+							////if (isIllCondition == 0) {// The matrix is not ill-conditioned 
+							////	isIllCondition = Ksection.checkIllCondition(1e-8);
+							////}
 							//if (isIllCondition == 0) {// The matrix is not ill-conditioned 
-							//	isIllCondition = Ksection.checkIllCondition(1e-8);
+							//	FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 							//}
+							//else // The matrix singular (ill-conditioned)
+							//{
+							//	const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
+							//	const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
+							//	Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
+							//	Matrix Ksection_intermed1_inverse = Matrix(6, 6);
+							//	Ksection_intermed1.Invert(Ksection_intermed1_inverse);
+							//	Matrix Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
+							//	/*opserr << "This is Ksection: " << Ksection << endln;
+							//	opserr << "This is Ksection_intermed1: " << Ksection_intermed1 << endln;
+							//	opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
+							//	opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
+							//	Matrix Fsection_plastic = Matrix(6, 6);
+							//	if (Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, illCondTol) < 0)
+							//	{
+							//		return -1; // matrix has nan (modified DH 18.03.2025)
+							//	}
+							//	FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
+							//	//opserr << "This is Ksection: " << Ksection << endln;
+							//	/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
+							//	opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
+							//	opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
 
-							if (isIllCondition == 0) {// The matrix is not ill-conditioned 
-								FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-							}
-							else // The matrix singular (ill-conditioned)
-							{
-								const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
-								const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
-								Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
-								Matrix Ksection_intermed1_inverse = Matrix(6, 6);
-								Ksection_intermed1.Invert(Ksection_intermed1_inverse);
-								Matrix Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
-								/*opserr << "This is Ksection: " << Ksection << endln;
-								opserr << "This is Ksection_intermed1: " << Ksection_intermed1 << endln;
-								opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
-								opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
-								Matrix Fsection_plastic = Matrix(6, 6);
-								if (Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, illCondTol) < 0)
-								{
-									return -1; // matrix has nan (modified DH 18.03.2025)
-								}
-								FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
-								//opserr << "This is Ksection: " << Ksection << endln;
-								/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
-								opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
-								opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
+							//	//FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
 
-								//FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
+							//	// Increase the maximum number of iterations because Modified Newton
+							//	numItersMax = 10 * maxIters;
 
-								// Increase the maximum number of iterations because Modified Newton
-								numItersMax = 10 * maxIters;
-
-								//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-							}
-							///*const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
-							//double alphaTangent = 0.5;
-							//FSectionSubdivide[i] = alphaTangent * Fsection_elastic + (1.0 - alphaTangent) * FSectionSubdivide[i];
+							//	//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
+							//}
 
 
 							// Use initial flexibility from the begining
@@ -966,7 +965,6 @@ FBCElemSGINUS3d::update(void)
 							//const Matrix preconditioner_CMinus1 = sections[i]->getInitialFlexibility();
 							////opserr << "This is preconditioner_CMinus1: " << preconditioner_CMinus1 << endln;
 							//Matrix Ksection_withPrecond = preconditioner_CMinus1*Ksection;
-
 							//// Construct matrix K for pseudo-inverse computation (because Ksection_withPrecond is not symmetric)
 							////K=[0, Ksection_withPrecond; Ksection_withPrecond, 0]
 							//Matrix Ksym4PseudoInver = Matrix(12, 12);
@@ -993,7 +991,6 @@ FBCElemSGINUS3d::update(void)
 							///*opserr << "This is Ksym4PseudoInver: " << Ksym4PseudoInver << endln;
 							//opserr << "This is Ksym4PseudoInver_plus: " << Ksym4PseudoInver_plus << endln;
 							//opserr << "This is Fsection_withPrecond: " << Fsection_withPrecond << endln;*/
-
 							//FSectionSubdivide[i] = Fsection_withPrecond * preconditioner_CMinus1;
 							///*opserr << "This is Ksection: " << Ksection << endln;
 							//opserr << "This is FSectionSubdivide: " << FSectionSubdivide[i] << endln;*/
@@ -1009,43 +1006,26 @@ FBCElemSGINUS3d::update(void)
 							//	int test = 0;
 							//}*/
 
-							//// Check if ill-conditioned to increase the num iteration
-							//int isIllCondition = Ksym4PseudoInver.checkIllCondition(1e-12);
-							//if (isIllCondition == 0)
-							//{
-							//	FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-							//}
-							//else
-							//{
-							//	FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
-							//	numItersMax = 10 * maxIters; // Increase the maximum number of iterations because Modified Newton
-							//}
-
-							//// Approach Cholesky Preconditioner + shift
-							//Matrix preconditioner_C = sections[i]->getInitialTangent();
-							//Matrix L_preconditioner_C(6, 6);
-							//preconditioner_C.computeCholeskyDecomp(L_preconditioner_C);
-							//Matrix L_preconditioner_C_Inv(6, 6);
-							//L_preconditioner_C.Invert(L_preconditioner_C_Inv);
-							//Matrix L_preconditioner_C_Inv_T(6, 6);
-							//L_preconditioner_C_Inv_T.addMatrixTranspose(0.0, L_preconditioner_C_Inv, 1.0);
-							//Matrix S = L_preconditioner_C_Inv * Ksection * L_preconditioner_C_Inv_T;
-							//Matrix S_shifted(6, 6);
-							//double tolIllCond = 1e-2;
-							//S.shiftSmoothRegularization(S_shifted, tolIllCond);
-							//Matrix S_shifted_inv(6, 6);
-							//S_shifted.computePseudoInverseSymmetric(S_shifted_inv, tolIllCond);
-							//FSectionSubdivide[i] = L_preconditioner_C_Inv_T * S_shifted_inv * L_preconditioner_C_Inv;
-							///*opserr << "This is Ksection: " << Ksection << endln;
-							//opserr << "This is preconditioner_C: " << preconditioner_C << endln;
-							//opserr << "This is L_preconditioner_C: " << L_preconditioner_C << endln;
-							//opserr << "This is L_preconditioner_C_Inv: " << L_preconditioner_C_Inv << endln;
-							//opserr << "This is L_preconditioner_C_Inv_T: " << L_preconditioner_C_Inv_T << endln;
-							//opserr << "This is S: " << S << endln;
-							//opserr << "This is S_shifted: " << S_shifted << endln;
-							//opserr << "This is S_shifted_inv: " << S_shifted_inv << endln;
-							//opserr << "This is FSectionSubdivide: " << FSectionSubdivide[i] << endln;*/
-
+							
+							// Use left and right scaling
+							const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
+							Matrix Pscalling = Matrix(NEBD, NEBD);
+							Ksection_elastic.computeScalingMatrix(Pscalling);
+							/*opserr << "This is Ksection: " << Ksection << endln;
+							opserr << "This is Pscalling: " << Pscalling << endln;
+							Matrix Itest = Pscalling * Ksection_elastic * Pscalling;
+							opserr << "This is Itest " << Itest << endln;*/
+							Matrix KsectionBar = Pscalling * Ksection * Pscalling;
+							//opserr << "This is KsectionBar: " << KsectionBar << endln;
+							Matrix FsectionBar = Matrix(NEBD, NEBD);
+							double lambdaMin = 1e-4;
+							if (KsectionBar.computeRegularizedInverseSymmetric(FsectionBar, lambdaMin) < 0)
+							{
+								return -1; // matrix has nan 
+							}
+							FSectionSubdivide[i] = Pscalling * FsectionBar * Pscalling;
+							/*opserr << "This is FSectionElastic: " << sections[i]->getInitialFlexibility() << endln;
+							opserr << "This is FSectionSubdivide: " << FSectionSubdivide[i] << endln;*/
 						}
 
 						// calculate section residual deformations de = FSection * (s - sr);

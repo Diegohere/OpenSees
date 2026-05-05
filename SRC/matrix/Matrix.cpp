@@ -1743,6 +1743,314 @@ Matrix::shiftSmoothRegularization(Matrix& AShifted, double tol)
 }
 
 
+// Added by Diego Heredia 05/05/2026
+int 
+Matrix::computeScalingMatrix(Matrix& P) const
+{
+	// Check if nan 
+	for (int i = 0; i < numCols * numCols; i++)
+	{
+		if (isnan(data[i]))
+		{
+			return -1;
+		}
+	}
+
+	// Check if matrix is square
+	if (numRows != numCols) {
+		opserr << "compute_Eigen_decomposition - the matrix of dimensions [" << numRows << "," << numCols << "] is not square\n";
+		return -1;
+	}
+
+	// copy the data
+	double* A_copy = new (nothrow) double[numCols * numCols];
+	//opserr << "This is A.data: " << endln;
+	for (int i = 0; i < numCols * numCols; i++)
+	{
+		//opserr <<  data[i] << endln;
+		A_copy[i] = data[i];
+	}
+
+	// Step 1: Compute (right) eigen vectors and eigen values of A using LAPACKE_dgeev
+	Vector Lambda(numCols);
+	Matrix Q(numRows, numCols);
+
+	int lda = numCols;
+	int ldvl = numCols;
+	int ldvr = numCols;
+	double* wi = new (nothrow) double[numCols];
+	double* vl = new (nothrow) double[ldvl * numCols];
+
+	char jobvl = 'N'; // Do notCompute the left eigen vectors
+	char jobvr = 'V'; //  Compute the right eigen vectors
+	double wkopt;
+	double* work;
+	int lwork = -1;
+	int info;
+#ifdef _WIN32
+	// Query and allocate the optimal workspace
+	DGEEV(&jobvl, &jobvr, &lda, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
+		&wkopt, &lwork, &info);
+	lwork = (int)wkopt;
+	work = new (nothrow) double[lwork];
+
+	// Solve the eigen problem
+	DGEEV(&jobvl, &jobvr, &lda, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
+		work, &lwork, &info);
+
+	//// Some outputs
+	//opserr << "This is Q: " << Q << endln;
+	//opserr << "This is LambdaDiag: " << Lambda << endln;
+
+	// Step 2: Compute Q*diag(1/sqrt(lambda_i))*Q^T
+	// Q*diag(1/sqrt(lambda_i))
+	Vector QMultInvSqrtLambda(numCols * numRows);
+	for (int i = 0; i < numCols; ++i) {
+		for (int j = 0; j < numCols; ++j) {
+			QMultInvSqrtLambda[i + j * numCols] = Q.data[i + j * numCols] / sqrt(Lambda[j]);
+		}
+	}
+	//opserr << "This is QMultInvLambda: " << QMultLambda << endln;
+
+	// Compute Q*diag(1/sqrt(lambda_i))*Q^T
+	for (int i = 0; i < numCols; ++i) {
+		for (int j = 0; j < numCols; ++j) {
+			for (int k = 0; k < numCols; ++k) {
+				P(i, j) += QMultInvSqrtLambda[i + k * numCols] * Q.data[j + k * numCols];
+			}
+		}
+	}
+	//opserr << "This is P: " << P << endln;
+
+		// Free dynamically alocated memory
+	delete[] A_copy;
+	delete[] wi;
+	delete[] vl;
+	delete[] work;
+	return -abs(info);
+#else
+	dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+		&wkopt, &lwork, &info);
+	lwork = (int)wkopt;
+	work = new (nothrow) double[lwork];
+
+	// Solve the eigen problem
+	dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+		work, &lwork, &info);
+
+	// Step 2: Compute Q*diag(1/sqrt(lambda_i))*Q^T
+	// Q*diag(1/sqrt(lambda_i))
+	Vector QMultInvSqrtLambda(numCols * numRows);
+	for (int i = 0; i < numCols; ++i) {
+		for (int j = 0; j < numCols; ++j) {
+			QMultInvSqrtLambda[i + j * numCols] = Q.data[i + j * numCols] / sqrt(Lambda[j]);
+		}
+	}
+	//opserr << "This is QMultInvLambda: " << QMultLambda << endln;
+
+	// Compute Q*diag(1/sqrt(lambda_i))*Q^T
+	for (int i = 0; i < numCols; ++i) {
+		for (int j = 0; j < numCols; ++j) {
+			for (int k = 0; k < numCols; ++k) {
+				P(i, j) += QMultInvSqrtLambda[i + k * numCols] * Q.data[j + k * numCols];
+			}
+		}
+	}
+	//opserr << "This is P: " << P << endln;
+
+		// Free dynamically alocated memory
+	delete[] A_copy;
+	delete[] wi;
+	delete[] vl;
+	delete[] work;
+	return -abs(info);
+#endif
+}
+
+
+int 
+Matrix::computeRegularizedInverseSymmetric(Matrix& APlus, const double lambdaMin)
+{
+	// Check if nan 
+	for (int i = 0; i < numCols * numCols; i++)
+	{
+		if (isnan(data[i]))
+		{
+			return -1;
+		}
+	}
+
+	// Check if matrix is square
+	if (numRows != numCols) {
+		opserr << "compute_Eigen_decomposition - the matrix of dimensions [" << numRows << "," << numCols << "] is not square\n";
+		return -1;
+	}
+
+	// copy the data
+	double* A_copy = new (nothrow) double[numCols * numCols];
+	//opserr << "This is A.data: " << endln;
+	for (int i = 0; i < numCols * numCols; i++)
+	{
+		//opserr <<  data[i] << endln;
+		A_copy[i] = data[i];
+	}
+
+	// Step 1: Compute (right) eigen vectors and eigen values of A using LAPACKE_dgeev
+	Vector Lambda(numCols);
+	Matrix Q(numRows, numCols);
+
+	int lda = numCols;
+	int ldvl = numCols;
+	int ldvr = numCols;
+	double* wi = new (nothrow) double[numCols];
+	double* vl = new (nothrow) double[ldvl * numCols];
+
+	char jobvl = 'N'; // Do notCompute the left eigen vectors
+	char jobvr = 'V'; //  Compute the right eigen vectors
+	double wkopt;
+	double* work;
+	int lwork = -1;
+	int info;
+#ifdef _WIN32
+	// Query and allocate the optimal workspace
+	DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
+		&wkopt, &lwork, &info);
+	lwork = (int)wkopt;
+	work = new (nothrow) double[lwork];
+
+	// Solve the eigen problem
+	DGEEV(&jobvl, &jobvr, &numCols, A_copy, &lda, Lambda.theData, wi, vl, &ldvl, Q.data, &ldvr,
+		work, &lwork, &info);
+
+	//// Some outputs
+	//opserr << "This is Q: " << Q << endln;
+	//opserr << "This is LambdaDiag: " << Lambda << endln;
+
+	// Step 2: Compute Q*Lambda*Q^T
+	//// Regularize eigenvalue
+	//for (int i = 0; i < numCols; i++) { // Loop through eigenvalues to find the max and min
+	//	if (Lambda(i) >= 0. && Lambda(i)< lambdaMin) {
+	//		Lambda(i) = lambdaMin;
+	//	}
+	//	else if (Lambda(i) >-lambdaMin && Lambda(i) < 0)
+	//	{
+	//		Lambda(i) = -lambdaMin;
+	//	}
+	//}
+	//// Compute Q * Lambda
+	//Vector QMultInvLambda(numCols * numRows);
+	//for (int i = 0; i < numCols; ++i) {
+	//	for (int j = 0; j < numCols; ++j) {
+	//		QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] / Lambda[j];
+	//	}
+	//}
+	
+	//// Truncate eigenvalue
+	//// Compute Q * Lambda
+	//Vector QMultInvLambda(numCols * numRows);
+	//for (int i = 0; i < numCols; ++i) {
+	//	for (int j = 0; j < numCols; ++j) {
+	//		if (abs(Lambda[j]) >= lambdaMin)
+	//		{
+	//			QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] / Lambda[j];
+	//		}
+	//	}
+	//}
+	
+	// Smooth filtered inverse
+	// Compute Q * Lambda
+	Vector QMultInvLambda(numCols * numRows);
+	for (int i = 0; i < numCols; ++i) {
+		for (int j = 0; j < numCols; ++j) {
+			double g = Lambda(j) / (pow(Lambda(j), 2) + pow(lambdaMin, 2));
+			QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] * g;
+		}
+	}
+	
+	//opserr << "This is QMultInvLambda: " << QMultLambda << endln;
+
+	// Compute Q^-1
+	Matrix QInv = Matrix(numCols, numCols);
+	if (Q.Invert(QInv)<0)
+	{
+		return -1; // failed to invert
+	}
+	/*opserr << "This is Q: " << Q << endln;
+	opserr << "This is QInv : " << QInv << endln;*/
+
+	// Compute Q * Lambda * Q^-1
+	for (int i = 0; i < numCols; ++i) {
+		for (int j = 0; j < numCols; ++j) {
+			for (int k = 0; k < numCols; ++k) {
+				APlus(i, j) += QMultInvLambda[i + k * numCols] * QInv.data[k + j * numCols];
+			}
+		}
+	}
+
+		// Free dynamically alocated memory
+	delete[] A_copy;
+	delete[] wi;
+	delete[] vl;
+	delete[] work;
+	return -abs(info);
+#else
+	dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+		&wkopt, &lwork, &info);
+	lwork = (int)wkopt;
+	work = new (nothrow) double[lwork];
+
+	// Solve the eigen problem
+	dgeev_(&jobvl, &jobvr, &n, dataPtr_AtA, &lda, Lambda.theData, wi, vl, &ldvl, vr, &ldvr,
+		work, &lwork, &info);
+
+	// Step 2: Compute Q*Lambda*Q^T
+	// Regularize eigenvalue
+	for (int i = 0; i < numCols; i++) { // Loop through eigenvalues to find the max and min
+		if (Lambda(i) >= 0. && Lambda(i) < lambdaMin) {
+			Lambda(i) = lambdaMin;
+		}
+		else if (Lambda(i) > -lambdaMin && Lambda(i) < 0)
+		{
+			Lambda(i) = -lambdaMin;
+		}
+	}
+	// Compute Q * Lambda
+	Vector QMultInvLambda(numCols * numRows);
+	for (int i = 0; i < numCols; ++i) {
+		for (int j = 0; j < numCols; ++j) {
+			QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] / Lambda[j];
+		}
+	}
+	//opserr << "This is QMultInvLambda: " << QMultLambda << endln;
+
+	// Compute Q^-1
+	Matrix QInv = Matrix(numCols, numCols);
+	if (Q.Invert(QInv) < 0)
+	{
+		return -1; // failed to invert
+	}
+	/*opserr << "This is Q: " << Q << endln;
+	opserr << "This is QInv : " << QInv << endln;*/
+
+	// Compute Q * Lambda * Q^-1
+	for (int i = 0; i < numCols; ++i) {
+		for (int j = 0; j < numCols; ++j) {
+			for (int k = 0; k < numCols; ++k) {
+				APlus(i, j) += QMultInvLambda[i + k * numCols] * QInv.data[k + j * numCols];
+			}
+		}
+	}
+
+		// Free dynamically alocated memory
+	delete[] A_copy;
+	delete[] wi;
+	delete[] vl;
+	delete[] work;
+	return -abs(info);
+#endif
+}
+
+
 
 int
 Matrix::Invert(Matrix& theInverse) const

@@ -96,6 +96,9 @@ class Matrix
     // Added by Diego Heredia 19/08/2025
     int computeCholeskyDecomp(Matrix& L);
     int shiftSmoothRegularization(Matrix& AShifted, double tol);
+	// Added by Diego Heredia 05/05/2026
+	int computeScalingMatrix(Matrix& P) const;
+    int computeRegularizedInverseSymmetric(Matrix& APlus, const double lambdaMin);
 
     // overloaded operators 
     inline double &operator()(int row, int col);

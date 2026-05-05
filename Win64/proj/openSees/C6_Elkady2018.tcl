@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_C6_Elkady2018_vuTol1e7_illCond1e12_l1;			# name of output folder
+	set dataDir results_C6_Elkady2018_vuTol1e7_illCond1e12;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -164,13 +164,13 @@ puts "Recorders ..."
 	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RBase.txt -time -node 1 -dof 1 2 3 4 5 6 reaction;
 	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
 	
-# Record section connectivity and coordinate matrices
-recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_connectivityMatrix.txt -ele 23 section 1 connectivity; 
-recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_coordinateMatrix.txt -ele 23 section 1 coordinate; 	
+# # Record section connectivity and coordinate matrices
+# recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_connectivityMatrix.txt -ele 23 section 1 connectivity; 
+# recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_coordinateMatrix.txt -ele 23 section 1 coordinate; 	
 	
-# Record all fiber stresses
-recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_Section1_allFiberStresses.txt -ele 23 section 1 allFiberStresses; 
-recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_Section1_allFiberStrains.txt -ele 23 section 1 allFiberStrains; 
+# # Record all fiber stresses
+# recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_Section1_allFiberStresses.txt -ele 23 section 1 allFiberStresses; 
+# recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_Section1_allFiberStrains.txt -ele 23 section 1 allFiberStrains; 
 	
 # Record local section deformations
    # recorder Element -file $dataDir/C6_Elkady2018_lc10DIP17_curvatureLoc.txt -ele 12 LocalSectionCurvature;
