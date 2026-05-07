@@ -1945,27 +1945,27 @@ Matrix::computeRegularizedInverseSymmetric(Matrix& APlus, const double lambdaMin
 	//	}
 	//}
 	
-	//// Truncate eigenvalue
-	//// Compute Q * Lambda
-	//Vector QMultInvLambda(numCols * numRows);
-	//for (int i = 0; i < numCols; ++i) {
-	//	for (int j = 0; j < numCols; ++j) {
-	//		if (abs(Lambda[j]) >= lambdaMin)
-	//		{
-	//			QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] / Lambda[j];
-	//		}
-	//	}
-	//}
-	
-	// Smooth filtered inverse
+	// Truncate eigenvalue
 	// Compute Q * Lambda
 	Vector QMultInvLambda(numCols * numRows);
 	for (int i = 0; i < numCols; ++i) {
 		for (int j = 0; j < numCols; ++j) {
-			double g = Lambda(j) / (pow(Lambda(j), 2) + pow(lambdaMin, 2));
-			QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] * g;
+			if (abs(Lambda[j]) >= lambdaMin)
+			{
+				QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] / Lambda[j];
+			}
 		}
 	}
+	
+	//// Smooth filtered inverse
+	//// Compute Q * Lambda
+	//Vector QMultInvLambda(numCols * numRows);
+	//for (int i = 0; i < numCols; ++i) {
+	//	for (int j = 0; j < numCols; ++j) {
+	//		double g = Lambda(j) / (pow(Lambda(j), 2) + pow(lambdaMin, 2));
+	//		QMultInvLambda[i + j * numCols] = Q.data[i + j * numCols] * g;
+	//	}
+	//}
 	
 	//opserr << "This is QMultInvLambda: " << QMultLambda << endln;
 

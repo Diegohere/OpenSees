@@ -569,14 +569,11 @@ FBCElemKNSGINUS3d::update(void)
 	// Update the coordinate transformation
 	crdTransf->update();
 
-	//Get element displacements and displacements increments in basic reference frame
+	// Get element displacements and displacement increments in basic reference frame
 	const Vector& v = crdTransf->getBasicTrialDisp();
+
 	static Vector dv(NEBD);
 	dv = crdTransf->getBasicIncrDeltaDisp();
-
-	//todo
-	//opserr << "This is v:" << v << endln;
-	//opserr << "This is dv:" << dv << endln;
 
 	if (initialFlag != 0 && dv.Norm() <= DBL_EPSILON && numEleLoads == 0)
 		return 0;
@@ -586,7 +583,6 @@ FBCElemKNSGINUS3d::update(void)
 	vin -= dv;
 
 	double L = crdTransf->getInitialLength();
-	//double oneOverL = 1.0 / L;
 
 	double xi[maxNumSections];
 	beamIntegr->getSectionLocations(numSections, L, xi);
@@ -594,45 +590,32 @@ FBCElemKNSGINUS3d::update(void)
 	double wt[maxNumSections];
 	beamIntegr->getSectionWeights(numSections, L, wt);
 
-	////todo
-	//opserr << "This is the location of the integration points: ";
-	//for (int ip = 0; ip < numSections; ip++) {
-	//	opserr << xi[ip] << "    ";
-	//}
-	//opserr << "Finished\n ";
-	//opserr << "This is the weights of the integration points: ";
-	//for (int ip = 0; ip < numSections; ip++) {
-	//	opserr << wt[ip] << "    ";
-	//}
-	//opserr << "Finished\n ";
-	//return -1;
+	static Vector vu(NEBD);                 // element unbalanced deformations
+	static Matrix Felement(NEBD, NEBD);     // element flexibility matrix
+	static Matrix I(NEBD, NEBD);            // identity matrix
 
-	static Vector vu(NEBD);       // element unbalanced displacements
-	static Matrix Felement(NEBD, NEBD);   // element flexibility matrix
-
-	static Matrix I(NEBD, NEBD);   // an identity matrix for matrix inverse
-	int i, j;
-
-	//I.Zero();
-	for (i = 0; i < NEBD; i++)
+	I.Zero();
+	for (int i = 0; i < NEBD; i++)
 		I(i, i) = 1.0;
 
 	int numSubdivide = 1;
 	bool converged = false;
+
 	static Vector dq(NEBD);
 	static Vector dvToDo(NEBD);
 	static Vector dvTrial(NEBD);
 	static Vector qTrial(NEBD);
-	static Matrix KelementTrial(NEBD, NEBD);
 
-	//Initilitation variables for gradient formulation
+	static Matrix KelementTrial(NEBD, NEBD);    // frozen/preconditioning tangent for Krylov cycle
+	static Matrix KelementCurrent(NEBD, NEBD);  // current tangent from current section state
+
+	// Initialization variables for gradient formulation
 	Vector deStar_local_Tot[maxNumSections];
 	Vector deStar_nonlocal_Tot[maxNumSections];
 	Vector eu_local_Tot[maxNumSections];
 	Vector eu_nonlocal_Tot[maxNumSections];
 	Vector s_Tot[maxNumSections];
 
-	//Initialization of array of vector and matrices for nonlocal formulation
 	for (int ii = 0; ii < numSections; ii++) {
 		int order = sections[ii]->getOrder();
 
@@ -643,237 +626,191 @@ FBCElemKNSGINUS3d::update(void)
 		eu_nonlocal_Tot[ii] = Vector(order);
 	}
 
-	//Zero variables for nonlocal formulation
-	/*deStar_local_Tot.Zero();
-	deStar_nonlocal_Tot.Zero();
-	eu_local_Tot.Zero();
-	eu_nonlocal_Tot.Zero();*/
-
 	dvToDo = dv;
 	dvTrial = dvToDo;
 
-	static double factor = 10;
+	static double factor = 10.0;
 
-	//maxSubdivisions = 20;
+	// For now, keep the same setting you had
 	maxSubdivisions = 1;
 
-	// Initialize the Krylov Newton subspaces
+	// Krylov-Newton subspaces
 	Vector ADeltaQ[nKN_max + 1];
 	Vector DeltaQ[nKN_max + 1];
 
-	// Initialize the preconditioned residual
 	Vector precondResid(NEBD);
+	static Vector dvWork(NEBD);
 
 	while (converged == false && numSubdivide <= maxSubdivisions)
 	{
 		qTrial = q;
 		KelementTrial = Kelement;
+		KelementCurrent = Kelement;
 
-		for (i = 0; i < numSections; i++)
+		for (int i = 0; i < numSections; i++)
 		{
 			eNonLocalSubdivide[i] = eNonlocal[i];
 			eLocalSubdivide[i] = eLocal[i];
 			FSectionSubdivide[i] = FSection[i];
 			srSubdivide[i] = sr[i];
 
-			// Added 20.07.2025
 			eu_local_Tot[i].Zero();
 			eu_nonlocal_Tot[i].Zero();
-
-			//opserr << "This is FSectionSubdivide:" << FSectionSubdivide[i] << endln;
 		}
 
-		// calculate nodal force increments and update nodal forces dq=KelementTrial*dvTrial
+		// Initial force prediction: dq = K * dvTrial
 		dq.addMatrixVector(0.0, KelementTrial, dvTrial, 1.0);
 		qTrial += dq;
 
-		//Outputs
-		/*opserr << "This is dvTrial: " << dvTrial << endln;
-		opserr << "This is KelementTrial: " << KelementTrial << endln;
-		opserr << "This is qTrial: " << qTrial<< endln;*/
-
 		if (initialFlag != 2)
 		{
-			// Compute the unbalanced element deformation vector
-			if (computeElemResidual(vu, qTrial, dq, xi, wt, L, s_Tot, deStar_local_Tot, deStar_nonlocal_Tot, eu_local_Tot, eu_nonlocal_Tot) < 0)
+			// Compute current residual AND current tangent at the predicted qTrial
+			if (computeElemResidual(vu, KelementCurrent, Felement, I,
+				qTrial, dq, xi, wt, L,
+				s_Tot, deStar_local_Tot, deStar_nonlocal_Tot,
+				eu_local_Tot, eu_nonlocal_Tot) < 0)
 			{
 				opserr << "FBCElemKNSGINUS3d::update() -- Issue computing element residual\n";
 				return -1;
 			}
 
-			// Set the Krylov-Newton subspace dimension
 			int nKN = nKN_max + 1;
-
-			// Set the maximum number of iteration
 			int numItersMax = maxIters;
 
-			for (j = 0; j < numItersMax; j++)
+			for (int j = 0; j < numItersMax; j++)
 			{
-				// Refresh tangent and clear subspace
+				// Restart Krylov subspace and freeze current tangent/preconditioner
 				if (nKN > nKN_max)
 				{
-					for (i = 0; i < numSections; i++) {
-						//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-						//Compute section flexibility using decompostion and pseudoInverse
-						const Matrix& Ksection = sections[i]->getSectionTangent();
-						//opserr << "This is Ksection: " << Ksection << endln;
+					KelementTrial = KelementCurrent;
 
-						int isIllCondition = Ksection.checkIllCondition(1e-8);
-
-						if (isIllCondition == 0) {// The matrix is not ill-conditioned 
-							FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-						}
-						else // The matrix singular (ill-conditioned)
-						{
-							const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
-							const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
-							Matrix Ksection_intermed1 = Ksection - Ksection_elastic;
-							Matrix Ksection_intermed1_inverse = Matrix(6, 6);
-							Ksection_intermed1.Invert(Ksection_intermed1_inverse);
-							Matrix Ksection_plastic = Ksection - Ksection * Ksection_intermed1_inverse * Ksection;
-							/*opserr << "This is Ksection: " << Ksection << endln;
-							opserr << "This is Ksection_intermed1: " << Ksection_intermed1 << endln;
-							opserr << "This is Ksection_intermed1_inverse: " << Ksection_intermed1_inverse << endln;
-							opserr << "This is Ksection_plastic: " << Ksection_plastic << endln;*/
-							Matrix Fsection_plastic = Matrix(6, 6);
-							if (Ksection_plastic.computePseudoInverseSymmetric(Fsection_plastic, 1e-2) < 0)
-							{
-								return -1; // matrix has nan (modified DH 18.03.2025)
-							}
-							FSectionSubdivide[i] = Fsection_elastic + Fsection_plastic;
-							//opserr << "This is Ksection: " << Ksection << endln;
-							/*opserr << "This is Fsection_elastic: " << Fsection_elastic << endln;
-							opserr << "This is Fsection_plastic: " << Fsection_plastic << endln;
-							opserr << "This is Fsection: " << FSectionSubdivide[i] << endln;*/
-
-							//FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
-
-							// Increase the maximum number of iterations because Modified Newton
-							//numItersMax = 10 * maxIters;
-
-							//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-						}
-						/*const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
-						double alphaTangent = 0.5;
-						FSectionSubdivide[i] = alphaTangent * Fsection_elastic + (1.0 - alphaTangent) * FSectionSubdivide[i];*/
-						//numItersMax = 20 * maxIters;
-						FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
-						//FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
-					}
-					//Compute Felement_nonlocal
-					computeFelement_nonlocal(Felement);
-					//opserr << "This is Felement:" << Felement << endln;
-
-					// Compute element stiffness matrix 	  
-					if (Felement.Solve(I, KelementTrial) < 0) {
-						opserr << "FBCElemKNSGINUS3d::update() -- could not invert flexibility\n";
-						//opserr << "This is Felement:" <<Felement<<endln;
-					}
-
-					// Clear the subspaces
 					for (int nn = 0; nn < nKN_max + 1; nn++)
 					{
 						ADeltaQ[nn] = Vector(NEBD);
 						DeltaQ[nn] = Vector(NEBD);
-						//opserr << "This is ADeltaQ :" << ADeltaQ[nn] << endln;
 					}
 
-					// Set the Krylov-Newton subspace dimension
 					nKN = 0;
 				}
 
-				// Compute the preconditioned residual
-				//precondResid.addMatrixVector(0.0, KelementTrial, vu, 1.0);
+				// Newton/preconditioned residual direction: dq_N = -K * vu
 				precondResid.addMatrixVector(0.0, KelementTrial, vu, -1.0);
-				//opserr << "This is precondResid:" << precondResid << endln;
 
-				// Add new Krylov direction to the subspace basis
+				// 4 Debug
+				Vector dqFrozen(NEBD);
+				dqFrozen = precondResid;   // computed with KelementTrial
+				Vector dqCurrent(NEBD);
+				dqCurrent.addMatrixVector(0.0, KelementCurrent, vu, -1.0);
+				double normFrozen = dqFrozen.Norm();
+				double normCurrent = dqCurrent.Norm();
+				double ratioFrozenCurrent = normFrozen / (normCurrent + DBL_EPSILON);
+				double cosFrozenCurrent =
+					(dqFrozen ^ dqCurrent) /
+					((normFrozen + DBL_EPSILON) * (normCurrent + DBL_EPSILON));
+				opserr << "Element " << this->getTag()
+					<< ", j = " << j
+					<< ", nKN = " << nKN
+					<< ", normFrozen = " << normFrozen
+					<< ", normCurrent = " << normCurrent
+					<< ", ratioFrozenCurrent = " << ratioFrozenCurrent
+					<< ", cosFrozenCurrent = " << cosFrozenCurrent
+					<< endln;
+
+				// Store the pure Newton correction before Krylov acceleration
+				Vector dqNewton(NEBD);
+				dqNewton = precondResid;
+
 				ADeltaQ[nKN] = precondResid;
 
-				// Least square analysis
+				// Krylov least-square acceleration
 				if (nKN > 0)
 				{
-					// Update the subspace basis
-					/*opserr << "This is ADeltaQ[nKN]:" << ADeltaQ[nKN] << endln;
-					opserr << "This is precondResid:" << precondResid << endln;*/
-					ADeltaQ[nKN-1] = ADeltaQ[nKN-1] - precondResid;
+					// 4Debug:
+					// Compare previous correction with current Newton correction
+					double normPrev = DeltaQ[nKN - 1].Norm();
+					double normCurr = dqNewton.Norm();
 
-					// Initialize the vector for least square coefficients 
+					double cosPrevCurr =
+						(DeltaQ[nKN - 1] ^ dqNewton) /
+						((normPrev + DBL_EPSILON) * (normCurr + DBL_EPSILON));
+
+					opserr << "Element " << this->getTag()
+						<< ", j = " << j
+						<< ", nKN = " << nKN
+						<< ", normPrev = " << normPrev
+						<< ", normCurr = " << normCurr
+						<< ", cosPrevCurr = " << cosPrevCurr
+						<< endln;
+
+					ADeltaQ[nKN - 1] -= precondResid;
+
 					Vector leastSquareCoeffsC(nKN);
 
-					// Solve for least square coefficients
-					/*opserr << "This is ADeltaQ[0]:" << ADeltaQ[0] << endln;
-					opserr << "This is ADeltaQ[1]:" << ADeltaQ[1] << endln;
-					opserr << "This is ADeltaQ[2]:" << ADeltaQ[2] << endln;
-					opserr << "This is ADeltaQ[3]:" << ADeltaQ[3] << endln;*/
-					if (solveLeastSquare(leastSquareCoeffsC, ADeltaQ, precondResid, nKN)<0)
+					if (solveLeastSquare(leastSquareCoeffsC, ADeltaQ, precondResid, nKN) < 0)
 					{
 						opserr << "FBCElemKNSGINUS3d::update() -- Issue solving least square\n";
-						j = (numItersMax - 1);
-						//return -1;
+						j = numItersMax - 1;
 					}
 
-					// Update the the preconditioned residual
+					// 4 Debug: Print coefficients before applying Krylov correction
+					opserr << "Element " << this->getTag()
+						<< ", j = " << j
+						<< ", nKN = " << nKN
+						<< ", leastSquareCoeffsC = " << leastSquareCoeffsC
+						<< endln;
+
+					// Apply Krylov acceleration
 					for (int nn = 0; nn < nKN; nn++)
 					{
 						double c = leastSquareCoeffsC(nn);
-						precondResid.addVector(1.0, DeltaQ[nn], c);     // precondResid += c * DeltaQ[nn]
-						precondResid.addVector(1.0, ADeltaQ[nn], -c);    // precondResid -= c * ADeltaQ[nn]
+						precondResid.addVector(1.0, DeltaQ[nn], c);
+						precondResid.addVector(1.0, ADeltaQ[nn], -c);
 					}
+					// 4Debug: Compare Newton correction and Krylov correction
+					double normNewton = dqNewton.Norm();
+					double normKrylov = precondResid.Norm();
+					double ratioKN = normKrylov / (normNewton + DBL_EPSILON);
+					double dotKN = dqNewton ^ precondResid;
+					double cosKN = dotKN / ((normNewton + DBL_EPSILON) *
+						(normKrylov + DBL_EPSILON));
+					opserr << "Element " << this->getTag()
+						<< ", j = " << j
+						<< ", nKN = " << nKN
+						<< ", normNewton = " << normNewton
+						<< ", normKrylov = " << normKrylov
+						<< ", ratioKN = " << ratioKN
+						<< ", cosKN = " << cosKN
+						<< endln;
+
+					// TEMPORARY TEST: Disable the actual Krylov correction and use Newton correction instead
+					precondResid = dqNewton;
 				}
 
-				// Set the increment in the element basic forces
 				dq = precondResid;
 
-				// Update the element basic force vector
-				qTrial += dq;
+				// Same work-style convergence logic as your Newton code: dvWork = -vu
+				dvWork.addVector(0.0, vu, -1.0);
+				double dW = dvWork ^ dq;
 
-				// Add new Krylov direction to the subspace basis
 				DeltaQ[nKN] = dq;
+				nKN++;
 
-				// Compute the unbalanced element deformation vector
-				/*if (computeElemResidual(vu, qTrial, dq, xi, wt, L, s_Tot, deStar_local_Tot, deStar_nonlocal_Tot, eu_local_Tot, eu_nonlocal_Tot) < 0)
+				if (fabs(dW) < Tol)
 				{
-					opserr << "FBCElemKNSGINUS3d::update() -- Issue computing element residual\n";
-					return -1;
-				}*/
-
-				nKN += 1;
-
-				//double dW = vu ^ dq;
-
-				// check for convergence of this interval
-				//if (vu.Norm() < Tol)
-				//if (fabs(dW) < Tol) 
-				//if ((dq.Norm() / (qCommit.Norm() + 0.01 * Tol) < Tol) && (vu.Norm() / (vin.Norm() + 0.01 * Tol) < Tol))
-				/*double normalizedResid_disp = 0.;
-				double normalizedResid_force = 0.;
-				for (int cc = 0; cc < NEBD; cc++)
-				{
-					normalizedResid_disp += abs(vu(cc) / (vin(cc) + 1e-12));
-					normalizedResid_force += abs(dq(cc) / (qTrial(cc) + 1e-12));
-				}*/
-				if ((vu.Norm() <Tol) && (dq.Norm() < 100000*Tol))
-				{
-					// set the target displacement
 					dvToDo -= dvTrial;
 					vin += dvTrial;
 
-					// check if we have got to where we wanted
 					if (dvToDo.Norm() <= DBL_EPSILON)
 					{
 						converged = true;
 					}
 					else
 					{
-						// we convreged but we have more to do
-						// reset variables for start of next subdivision
 						dvTrial = dvToDo;
-						//numSubdivide = 1;
 					}
 
-					// set Kelement, e and q values
-					Kelement = KelementTrial;
+					// Commit the state corresponding to the current qTrial
+					Kelement = KelementCurrent;
 					q = qTrial;
 
 					for (int k = 0; k < numSections; k++)
@@ -884,31 +821,32 @@ FBCElemKNSGINUS3d::update(void)
 						sr[k] = srSubdivide[k];
 					}
 
-					// break out of j loop
 					j = numItersMax + 1;
 				}
-				else //if(dv.Norm() < tolerance)
+				else
 				{
-					if (computeElemResidual(vu, qTrial, dq, xi, wt, L, s_Tot, deStar_local_Tot, deStar_nonlocal_Tot, eu_local_Tot, eu_nonlocal_Tot) < 0)
+					// Only now apply the correction and compute the next trial state
+					qTrial += dq;
+
+					if (computeElemResidual(vu, KelementCurrent, Felement, I,
+						qTrial, dq, xi, wt, L,
+						s_Tot, deStar_local_Tot, deStar_nonlocal_Tot,
+						eu_local_Tot, eu_nonlocal_Tot) < 0)
 					{
 						opserr << "FBCElemKNSGINUS3d::update() -- Issue computing element residual\n";
-						j = (numItersMax - 1);
-						//return -1;
+						j = numItersMax - 1;
 					}
 
-					// if we have failed to converge  - reduce step size by the factor specified
-					if ((j == (numItersMax - 1)))
+					if (j == (numItersMax - 1))
 					{
 						dvTrial /= factor;
 						numSubdivide++;
 					}
 				}
-			}// for (j=0; j<numIters; j++)
-		}// if (initialFlag != 2)
-	}// while (converged == false)
+			}
+		}
+	}
 
-
-	// if fail to converge we return an error flag & print an error message
 	if (converged == false)
 	{
 		opserr << "WARNING - FBCElemKNSGINUS3d::update - failed to get compatible ";
@@ -918,61 +856,40 @@ FBCElemKNSGINUS3d::update(void)
 		return -1;
 	}
 
-	//// Set the initial flexibility matrix
-	//if (initialFlag == 0)
-	//{
-	//	for (i = 0; i < numSections; i++)
-	//	{
-	//		FSectionSubdivide[i] = sections[i]->getInitialFlexibility();
-	//		FSection[i] = FSectionSubdivide[i];
-	//	}
-	//	computeFelement_nonlocal(Felement);
-	//	// calculate element stiffness matrix  
-	//	if (Felement.Solve(I, KelementTrial) < 0) {
-	//		opserr << "FBCElemKNSGINUS3d::update() -- could not invert flexibility\n";
-	//		//opserr << "This is Felement:" <<Felement<<endln;
-	//	}
-	//	Kelement = KelementTrial;
-	//	//opserr << "This is Kelement: " << Kelement << endln;
-	//}
-
 	initialFlag = 1;
 
 	return 0;
 }
 
 // Method to compute the residual of the element state determination loop
-int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& dq, double* xi, double* wt, double L, Vector s_Tot[], Vector deStar_local_Tot[], Vector deStar_nonlocal_Tot[],
-	Vector eu_local_Tot[], Vector eu_nonlocal_Tot[])
+int
+FBCElemKNSGINUS3d::computeElemResidual(
+	Vector& vu,
+	Matrix& KelementCurrent,
+	Matrix& Felement,
+	const Matrix& I,
+	Vector& qTrial,
+	Vector& dq,
+	double* xi,
+	double* wt,
+	double L,
+	Vector s_Tot[],
+	Vector deStar_local_Tot[],
+	Vector deStar_nonlocal_Tot[],
+	Vector eu_local_Tot[],
+	Vector eu_nonlocal_Tot[])
 {
-	//Compute matrix H and Hinv for gradient formulation
 	computeCoefficientMatrixH();
 
-	//todo store this in matri and use and the end
-	//if (beamIntegr->addElasticFlexibility(L, Felement) < 0)
-	{
-		/*vu(0) += Felement(0, 0) * qTrial(0);
-		vu(1) += Felement(1, 1) * qTrial(1) + Felement(1, 2) * qTrial(2);
-		vu(2) += Felement(2, 1) * qTrial(1) + Felement(2, 2) * qTrial(2);*/
-	}
-
-	//double v0[3];
-	//v0[0] = 0.0; v0[1] = 0.0; v0[2] = 0.0;
-
-	//for (int ie = 0; ie < numEleLoads; ie++)
-	//	beamIntegr->addElasticDeformations(eleLoads[ie], eleLoadFactors[ie], L, v0);
-
-	//// Add effects of element loads
-	//vu(0) += v0[0];
-	//vu(1) += v0[1];
-	//vu(2) += v0[2];
-
-	int i;
 	double oneOverL = 1.0 / L;
 
 	vu.Zero();
+	Felement.Zero();
 
-	for (i = 0; i < numSections; i++)
+	// ------------------------------------------------------------
+	// 1. Compute section forces s = b*q and force increments ds = b*dq
+	// ------------------------------------------------------------
+	for (int i = 0; i < numSections; i++)
 	{
 		int order = sections[i]->getOrder();
 		const ID& code = sections[i]->getType();
@@ -981,11 +898,8 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 
 		double xL = xi[i];
 		double xL1 = xL - 1.0;
-		double wtL = wt[i] * L;
 
-		// calculate total section forces s = b*q + bp*currDistrLoad;
-		int ii;
-		for (ii = 0; ii < order; ii++) {
+		for (int ii = 0; ii < order; ii++) {
 			switch (code(ii)) {
 			case SECTION_RESPONSE_P:
 				s_Tot[i](ii) = qTrial(0);
@@ -994,8 +908,7 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 				s_Tot[i](ii) = xL1 * qTrial(1) + xL * qTrial(2);
 				break;
 			case SECTION_RESPONSE_VY:
-				/*s_Tot[i](ii) = oneOverL * (qTrial(1) + qTrial(2));*/
-				s_Tot[i](ii) = -oneOverL * (qTrial(1) + qTrial(2)); // Diego Heredia 09.08.2024
+				s_Tot[i](ii) = -oneOverL * (qTrial(1) + qTrial(2));
 				break;
 			case SECTION_RESPONSE_MY:
 				s_Tot[i](ii) = xL1 * qTrial(3) + xL * qTrial(4);
@@ -1011,16 +924,11 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 				break;
 			}
 		}
-		// Add the effects of element loads, if present s = b*q + sp
+
 		if (numEleLoads > 0)
 			this->computeSectionForces(s_Tot[i], i);
 
-		//// ds = s - sr[i];
-		//ds = s_seci;
-		//ds.addVector(1.0, srSubdivide[i], -1.0);
-
-		// calculate increment section forces ds = b*dq;
-		for (ii = 0; ii < order; ii++) {
+		for (int ii = 0; ii < order; ii++) {
 			switch (code(ii)) {
 			case SECTION_RESPONSE_P:
 				ds(ii) = dq(0);
@@ -1029,8 +937,7 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 				ds(ii) = xL1 * dq(1) + xL * dq(2);
 				break;
 			case SECTION_RESPONSE_VY:
-				/*ds(ii) = oneOverL * (dq(1) + dq(2));*/
-				ds(ii) = -oneOverL * (dq(1) + dq(2)); // Diego Heredia 09.08.2024
+				ds(ii) = -oneOverL * (dq(1) + dq(2));
 				break;
 			case SECTION_RESPONSE_MY:
 				ds(ii) = xL1 * dq(3) + xL * dq(4);
@@ -1047,42 +954,35 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 			}
 		}
 
-		//Add s_seci to matrix containing all section forces
-		//s_Tot[i] = s_seci;
-
-		// compute local section deformation increments   
+		// Incremental section deformation from previous/current section flexibility
 		deStar_local_Tot[i].addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0);
-
-		//opserr << "This is deStar_local_sec:" << deStar_local_seci << endln;
 	}
 
-	//Compute deStar_nonlocal[]
-	computeDeStar_nonlocal(deStar_nonlocal_Tot, deStar_local_Tot);
+	// ------------------------------------------------------------
+	// 2. Nonlocal deStar
+	// ------------------------------------------------------------
+	this->computeDeStar_nonlocal(deStar_nonlocal_Tot, deStar_local_Tot);
 
-	//todo
-	/*for (int i = 0; i < numSections; i++) {
-		opserr << "Section:" << i << endln;
-		opserr << "This is deStar_local_Tot:" << deStar_local_Tot[i] << endln;
-		opserr << "This is deStar_nonlocal_Tot:" << deStar_nonlocal_Tot[i] << endln;
-		opserr << "This is eu_local_Tot:" << eu_local_Tot[i] << endln;
-	}*/
-
-	for (i = 0; i < numSections; i++)
+	// ------------------------------------------------------------
+	// 3. Update trial section deformations
+	// ------------------------------------------------------------
+	for (int i = 0; i < numSections; i++)
 	{
-		// set section deformations
 		if (initialFlag != 0)
 		{
-			eNonLocalSubdivide[i] += deStar_nonlocal_Tot[i];  //e_NL += deStar_nonlocal
-			eNonLocalSubdivide[i] += eu_nonlocal_Tot[i];  //e_NL += eu_nonlocal
+			eNonLocalSubdivide[i] += deStar_nonlocal_Tot[i];
+			eNonLocalSubdivide[i] += eu_nonlocal_Tot[i];
 		}
-		//opserr << "This is eNonLocalSubdivide:" << eNonLocalSubdivide[i] << endln;
 
 		eLocalSubdivide[i] += deStar_local_Tot[i] + eu_local_Tot[i];
 	}
 
-	for (i = 0; i < numSections; i++)
+	// ------------------------------------------------------------
+	// 4. Set section trial state, update section tangent/flexibility,
+	//    and compute local residual deformation eu_local
+	// ------------------------------------------------------------
+	for (int i = 0; i < numSections; i++)
 	{
-		//Set the section deformations for section state determination
 		if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
 		{
 			opserr << "FBCElemKNSGINUS3d::update() - section failed in setTrial\n";
@@ -1091,24 +991,49 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 			return -1;
 		}
 
-		// get section resisting forces
 		srSubdivide[i] = sections[i]->getStressResultant();
 
-		// calculate section residual deformations de = FSection * (s - sr);
-		static Vector s_seci(NEBD); // initialize vector s_secii
-		static Vector ds(NEBD);
+		// This is the same scaled/regularized section flexibility logic
+		// used in your Newton-Raphson implementation.
+		const Matrix& Ksection = sections[i]->getSectionTangent();
+		const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
 
-		ds = s_Tot[i];  //take the corresponding section force from matrix with all section forces
-		ds.addVector(1.0, srSubdivide[i], -1.0);  // ds = s - sr[i];
+		Matrix Pscalling(NEBD, NEBD);
+		Ksection_elastic.computeScalingMatrix(Pscalling);
 
-		//compute eu_local for section i
+		Matrix KsectionBar = Pscalling * Ksection * Pscalling;
+
+		Matrix FsectionBar(NEBD, NEBD);
+		double lambdaMin = 1e-8;
+
+		if (KsectionBar.computeRegularizedInverseSymmetric(FsectionBar, lambdaMin) < 0)
+		{
+			return -1;
+		}
+
+		FSectionSubdivide[i] = Pscalling * FsectionBar * Pscalling;
+
+		Vector ds(NEBD);
+		ds = s_Tot[i];
+		ds.addVector(1.0, srSubdivide[i], -1.0);
+
 		eu_local_Tot[i].addMatrixVector(0.0, FSectionSubdivide[i], ds, 1.0);
 	}
 
-	//Compute eu_non_local_tot
+	// ------------------------------------------------------------
+	// 5. Compute nonlocal residual deformation
+	// ------------------------------------------------------------
 	this->computeEu_nonlocal(eu_nonlocal_Tot, eu_local_Tot);
 
-	for (i = 0; i < numSections; i++)
+	// ------------------------------------------------------------
+	// 6. Compute element flexibility using the same updated section flexibilities
+	// ------------------------------------------------------------
+	this->computeFelement_nonlocal(Felement);
+
+	// ------------------------------------------------------------
+	// 7. Assemble element unbalanced deformation vector vu
+	// ------------------------------------------------------------
+	for (int i = 0; i < numSections; i++)
 	{
 		int order = sections[i]->getOrder();
 		const ID& code = sections[i]->getType();
@@ -1122,6 +1047,7 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 
 		for (int ii = 0; ii < order; ii++) {
 			dei = eu_nonlocal_Tot[i](ii) * wtL;
+
 			switch (code(ii)) {
 			case SECTION_RESPONSE_P:
 				vu(0) += dei;
@@ -1131,8 +1057,7 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 				vu(2) += xL * dei;
 				break;
 			case SECTION_RESPONSE_VY:
-				/*tmp = oneOverL * dei;*/
-				tmp = -oneOverL * dei; // Diego Heredia 09.08.2024
+				tmp = -oneOverL * dei;
 				vu(1) += tmp;
 				vu(2) += tmp;
 				break;
@@ -1153,59 +1078,68 @@ int FBCElemKNSGINUS3d::computeElemResidual(Vector& vu, Vector& qTrial, Vector& d
 			}
 		}
 	}
-	//vu.Zero();
-	//vu = v - integrale_BeuNL;
-	//vu = integrale_BeuNL; //using definition below
 
-	// Check if section experiences softening
-	double WDot_isec;
-	double WDot_cumulativeSoft = 0.;
-	double WDot_cumulativeElasticUnload = 0.;
-	double elasticUnload = 0.;
-	//double WDot_isec_cumulativeElastic = 0.;
-	//double WDot_totElastic = 0.;
-	for (i = 0; i < numSections; i++)
+	// ------------------------------------------------------------
+	// 8. Compute current element stiffness
+	// ------------------------------------------------------------
+	if (Felement.Solve(I, KelementCurrent) < 0)
 	{
-		WDot_isec = 0.;
+		opserr << "FBCElemKNSGINUS3d::update() -- could not invert flexibility\n";
+		return -1;
+	}
+
+	// ------------------------------------------------------------
+	// 9. Update softening work variable
+	// ------------------------------------------------------------
+	double WDot_isec;
+	double WDot_cumulativeSoft = 0.0;
+	double WDot_cumulativeElasticUnload = 0.0;
+	double elasticUnload = 0.0;
+
+	for (int i = 0; i < numSections; i++)
+	{
+		WDot_isec = 0.0;
+
 		for (int iComp = 0; iComp < NEBD; iComp++)
 		{
-			WDot_isec += 0.5 * (srSubdivide[i](iComp) - srCommit[i](iComp)) * (eLocalSubdivide[i](iComp) - eLocalCommit[i](iComp));
+			WDot_isec += 0.5 *
+				(srSubdivide[i](iComp) - srCommit[i](iComp)) *
+				(eLocalSubdivide[i](iComp) - eLocalCommit[i](iComp));
 		}
-		//opserr << "This is WDot:" << WDot << endln;
-		//if (WDot_isec < 0. && abs(WDot_isec)>1)
-		if (WDot_isec < 0.)
+
+		if (WDot_isec < 0.0)
 		{
 			WDot_cumulativeSoft += WDot_isec;
 		}
-		/*else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
-		{
-			elasticUnload += 1;
-			WDot_cumulativeElasticUnload += WDot_isec;
-		}*/
-		// Try to fix issue oscillations 04/07/2025
+
 		int component_unload = 0;
+
 		for (int iComp = 0; iComp < NEBD; iComp++)
 		{
-			if (eLocalSubdivide[i](iComp) * eLocalCommit[i](iComp) > 0 && fabs(eLocalSubdivide[i](iComp)) <= fabs(eLocalCommit[i](iComp)))
+			if (eLocalSubdivide[i](iComp) * eLocalCommit[i](iComp) > 0.0 &&
+				fabs(eLocalSubdivide[i](iComp)) <= fabs(eLocalCommit[i](iComp)))
 			{
 				component_unload += 1;
 			}
 		}
+
 		if (component_unload == NEBD)
 		{
-			elasticUnload += 1;
+			elasticUnload += 1.0;
 			WDot_cumulativeElasticUnload += WDot_isec;
 		}
 	}
+
 	if (elasticUnload == numSections)
 	{
-		WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeElasticUnload, 0.), WSofteningTol);
+		WSofteningTrial =
+			std::max(std::min(WSofteningCommit + WDot_cumulativeElasticUnload, 0.0), WSofteningTol);
 	}
 	else
 	{
-		WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeSoft, 0.), WSofteningTol);
+		WSofteningTrial =
+			std::max(std::min(WSofteningCommit + WDot_cumulativeSoft, 0.0), WSofteningTol);
 	}
-
 
 	return 0;
 }

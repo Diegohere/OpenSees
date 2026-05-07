@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_C6_Elkady2018_vuTol1e7_illCond1e12;			# name of output folder
+	set dataDir results_C6_Elkady2018_dWTol1e6_truncate_l0_FuStruct;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -134,7 +134,7 @@
 	# element testNonlocalElementDH 23 2 3 $ColTransfTag $integration 20 1e-5 $lc
 	
 	set Lp1 [expr 2.0*$d/$L];
-	set nIPs_Lp1 5;
+	set nIPs_Lp1 7;
 	set Lp2 $Lp1;
 	set nIPs_Lp2 $nIPs_Lp1;
 	set Le [expr (1-$Lp1-$Lp2)];
@@ -142,7 +142,8 @@
 	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
 	set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
 	# set integration "Simpson 1 21"
-	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-7 $lc
+	# element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-6 $lc
+	element FBCElemKNSGINUS 23 2 3 $ColTransfTag $integration 50 1e-6 $lc
 
 # Zero length element definition
 	 uniaxialMaterial Elastic 3 976617499682.016

@@ -686,7 +686,10 @@ FBCElemSGINUS3d::update(void)
 	//maxSubdivisions = 20;
 	maxSubdivisions = 1;
 
-	int lMax = 2;
+	//int lMax = 2;
+	int lMax = 1;
+
+	double dW0 = .0;
 
 	while (converged == false && numSubdivide <= maxSubdivisions)
 	{
@@ -1018,7 +1021,7 @@ FBCElemSGINUS3d::update(void)
 							Matrix KsectionBar = Pscalling * Ksection * Pscalling;
 							//opserr << "This is KsectionBar: " << KsectionBar << endln;
 							Matrix FsectionBar = Matrix(NEBD, NEBD);
-							double lambdaMin = 1e-4;
+							double lambdaMin = 1e-8;
 							if (KsectionBar.computeRegularizedInverseSymmetric(FsectionBar, lambdaMin) < 0)
 							{
 								return -1; // matrix has nan 
@@ -1109,6 +1112,8 @@ FBCElemSGINUS3d::update(void)
 					if (Felement.Solve(I, KelementTrial) < 0) {
 						opserr << "FBCElemSGINUS3d::update() -- could not invert flexibility\n";
 						//opserr << "This is Felement:" <<Felement<<endln;
+						// Added 05/06/2026
+						return -1;
 					}
 
 					// Check if section experiences softening
@@ -1191,13 +1196,21 @@ FBCElemSGINUS3d::update(void)
 					// dq = Kelement * dv;
 					dq.addMatrixVector(0.0, KelementTrial, dv, 1.0);
 
-					qTrial += dq;
+					// Commented on 05/06/2026 and added after convergence check if does not converge
+					//qTrial += dq;
 
-					//double dW = dv ^ dq;
+					double dW = dv ^ dq;
+
+					if (j==0)
+					{
+						dW0 = dv ^ dq;
+					}
 
 					// check for convergence of this interval
-					if (dv.Norm() < Tol)
-						//if (fabs(dW) < Tol) 
+					//if (dv.Norm() < Tol)
+					if (fabs(dW) < Tol)
+					//if (fabs(dW)/(1.+fabs(dW0)) < Tol) 
+					//if (fabs(dW) < Tol && dv.Norm() < 100.*Tol)
 						//if ((vu.Norm() < Tol) && (dq.Norm() < 100000 * Tol))
 						//if (abs(vu^q)<Tol)
 						/*double normalizedResid_disp = 0.;
@@ -1247,6 +1260,9 @@ FBCElemSGINUS3d::update(void)
 					else //if(dv.Norm() < tolerance)
 					{
 						// if we have failed to converge for all of our newton schemes - reduce step size by the factor specified
+
+						// Added here 05/06/2026 and commented out above
+						qTrial += dq;
 
 						//if ((j == (numItersMax - 1)) && (l == 1))
 						if ((j == (numItersMax - 1)) && (l == lMax-1))
