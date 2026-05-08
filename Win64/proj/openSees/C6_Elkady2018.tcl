@@ -142,8 +142,7 @@
 	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
 	set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
 	# set integration "Simpson 1 21"
-	# element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-6 $lc
-	element FBCElemKNSGINUS 23 2 3 $ColTransfTag $integration 50 1e-6 $lc
+	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-6 $lc
 
 # Zero length element definition
 	 uniaxialMaterial Elastic 3 976617499682.016

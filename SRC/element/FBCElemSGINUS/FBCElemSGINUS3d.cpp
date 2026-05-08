@@ -1009,26 +1009,53 @@ FBCElemSGINUS3d::update(void)
 							//	int test = 0;
 							//}*/
 
-							
-							// Use left and right scaling
+
+							//// Use left and right scaling
+							//const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
+							//Matrix Pscalling = Matrix(NEBD, NEBD);
+							//Ksection_elastic.computeScalingMatrix(Pscalling);
+							///*opserr << "This is Ksection: " << Ksection << endln;
+							//opserr << "This is Pscalling: " << Pscalling << endln;
+							//Matrix Itest = Pscalling * Ksection_elastic * Pscalling;
+							//opserr << "This is Itest " << Itest << endln;*/
+							//Matrix KsectionBar = Pscalling * Ksection * Pscalling;
+							////opserr << "This is KsectionBar: " << KsectionBar << endln;
+							//Matrix FsectionBar = Matrix(NEBD, NEBD);
+							//double lambdaMin = 1e-8;
+							//if (KsectionBar.computeRegularizedInverseSymmetric(FsectionBar, lambdaMin) < 0)
+							//{
+							//	return -1; // matrix has nan 
+							//}
+							//FSectionSubdivide[i] = Pscalling * FsectionBar * Pscalling;
+							///*opserr << "This is FSectionElastic: " << sections[i]->getInitialFlexibility() << endln;
+							//opserr << "This is FSectionSubdivide: " << FSectionSubdivide[i] << endln;*/
+
+							// Use left and right scaling with elastic and plastic part
 							const Matrix& Ksection_elastic = sections[i]->getInitialTangent();
 							Matrix Pscalling = Matrix(NEBD, NEBD);
 							Ksection_elastic.computeScalingMatrix(Pscalling);
-							/*opserr << "This is Ksection: " << Ksection << endln;
-							opserr << "This is Pscalling: " << Pscalling << endln;
-							Matrix Itest = Pscalling * Ksection_elastic * Pscalling;
-							opserr << "This is Itest " << Itest << endln;*/
 							Matrix KsectionBar = Pscalling * Ksection * Pscalling;
-							//opserr << "This is KsectionBar: " << KsectionBar << endln;
-							Matrix FsectionBar = Matrix(NEBD, NEBD);
-							double lambdaMin = 1e-8;
-							if (KsectionBar.computeRegularizedInverseSymmetric(FsectionBar, lambdaMin) < 0)
-							{
-								return -1; // matrix has nan 
+							double illCondTol = 1.0e-8;
+							int isIllCondition = KsectionBar.checkIllCondition(illCondTol);
+							if (isIllCondition == 0) { // Matrix is not ill-conditioned
+								FSectionSubdivide[i] = sections[i]->getSectionFlexibility();
 							}
-							FSectionSubdivide[i] = Pscalling * FsectionBar * Pscalling;
-							/*opserr << "This is FSectionElastic: " << sections[i]->getInitialFlexibility() << endln;
-							opserr << "This is FSectionSubdivide: " << FSectionSubdivide[i] << endln;*/
+							else {// Matrix is ill-conditioned
+								const Matrix& Fsection_elastic = sections[i]->getInitialFlexibility();
+								Matrix KsectionBarMinusI = KsectionBar - I;
+								Matrix KsectionBarMinusI_inv(NEBD, NEBD);
+								if (KsectionBarMinusI.Invert(KsectionBarMinusI_inv) < 0) {
+									return -1;
+								}
+								Matrix KplasticBar = KsectionBar - KsectionBar * KsectionBarMinusI_inv * KsectionBar;
+								Matrix FplasticBar(NEBD, NEBD);
+								double lambdaMin = 1.0e-6;
+								if (KplasticBar.computeRegularizedInverseSymmetric(FplasticBar, lambdaMin) < 0) {
+									return -1;
+								}
+								FSectionSubdivide[i] = Fsection_elastic + Pscalling * FplasticBar * Pscalling;
+								//numItersMax = 10 * maxIters;
+							}
 						}
 
 						// calculate section residual deformations de = FSection * (s - sr);
@@ -1201,7 +1228,7 @@ FBCElemSGINUS3d::update(void)
 
 					double dW = dv ^ dq;
 
-					if (j==0)
+					if (j == 0)
 					{
 						dW0 = dv ^ dq;
 					}
@@ -1209,19 +1236,19 @@ FBCElemSGINUS3d::update(void)
 					// check for convergence of this interval
 					//if (dv.Norm() < Tol)
 					if (fabs(dW) < Tol)
-					//if (fabs(dW)/(1.+fabs(dW0)) < Tol) 
-					//if (fabs(dW) < Tol && dv.Norm() < 100.*Tol)
-						//if ((vu.Norm() < Tol) && (dq.Norm() < 100000 * Tol))
-						//if (abs(vu^q)<Tol)
-						/*double normalizedResid_disp = 0.;
-						double normalizedResid_force = 0.;
-						for (int cc = 0; cc < NEBD; cc++)
-						{
-							normalizedResid_disp += abs(vu(cc) / (vin(cc) + 1e-6));
-							normalizedResid_force += abs(dq(cc) / (q(cc) + 1e-6));
-						}
-						if ((normalizedResid_disp<Tol)&& (normalizedResid_force < Tol))*/
-						//if (dq.Norm()< 100000 * Tol)
+						//if (fabs(dW)/(1.+fabs(dW0)) < Tol) 
+						//if (fabs(dW) < Tol && dv.Norm() < 100.*Tol)
+							//if ((vu.Norm() < Tol) && (dq.Norm() < 100000 * Tol))
+							//if (abs(vu^q)<Tol)
+							/*double normalizedResid_disp = 0.;
+							double normalizedResid_force = 0.;
+							for (int cc = 0; cc < NEBD; cc++)
+							{
+								normalizedResid_disp += abs(vu(cc) / (vin(cc) + 1e-6));
+								normalizedResid_force += abs(dq(cc) / (q(cc) + 1e-6));
+							}
+							if ((normalizedResid_disp<Tol)&& (normalizedResid_force < Tol))*/
+							//if (dq.Norm()< 100000 * Tol)
 					{
 						// set the target displacement
 						dvToDo -= dvTrial;
@@ -1265,7 +1292,7 @@ FBCElemSGINUS3d::update(void)
 						qTrial += dq;
 
 						//if ((j == (numItersMax - 1)) && (l == 1))
-						if ((j == (numItersMax - 1)) && (l == lMax-1))
+						if ((j == (numItersMax - 1)) && (l == lMax - 1))
 						{
 							dvTrial /= factor;
 							numSubdivide++;
