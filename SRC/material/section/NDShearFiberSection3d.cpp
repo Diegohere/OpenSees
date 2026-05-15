@@ -552,6 +552,34 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
   
   static Vector eps(3);
 
+  // ------------------------------------------------------------
+// Activate fiber FD diagnostic only near target section state
+// ------------------------------------------------------------
+  bool debugFiberFD = false;
+  // Target deformation values from debugger
+  double target_d0 = -0.021193659687159559;
+  double target_d1 = 3.772893328005567e-05;
+  double target_d2 = 4.979561793657195e-05;
+  double target_d3 = 0.006089259409455843;
+  double target_d4 = -0.0008579221082182705;
+  double target_d5 = -4.363674799782667e-07;
+  // Start slightly generous. Tighten if too many calls are activated.
+  double tol_d0 = 1.0e-7;
+  double tol_d1 = 1.0e-9;
+  double tol_d2 = 1.0e-9;
+  double tol_d3 = 1.0e-7;
+  double tol_d4 = 1.0e-8;
+  double tol_d5 = 1.0e-10;
+  if (fabs(d0 - target_d0) < tol_d0 &&
+      fabs(d1 - target_d1) < tol_d1 &&
+      fabs(d2 - target_d2) < tol_d2 &&
+      fabs(d3 - target_d3) < tol_d3 &&
+      fabs(d4 - target_d4) < tol_d4 &&
+      fabs(d5 - target_d5) < tol_d5)
+  {
+      debugFiberFD = true;
+  }
+
   for (int i = 0; i < numFibers; i++) {
     NDMaterial *theMat = theMaterials[i];
     double y = yLocs[i] - yBar;

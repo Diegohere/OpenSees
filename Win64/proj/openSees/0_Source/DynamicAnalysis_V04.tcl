@@ -57,7 +57,7 @@ analysis VariableTransient
 # ------- SET VARIABLES BEFORE ENTERING THE LOOP --------------------------------------------------------------------------------------------------------------------------------------------
 
 set dt_analysis $dt_anal_Step; # timestep of analysis
-set dt_anal_min1 [expr $dt_anal_Step/400]; # minimum time step for Variable Transient Analysis
+set dt_anal_min1 [expr $dt_anal_Step/200]; # minimum time step for Variable Transient Analysis
 # set dt_anal_min2 [expr $dt_anal_Step/60]; # minimum time step for Variable Transient Analysis
 # set dt_anal_min3 [expr $dt_anal_Step/200]; # minimum time step for Variable Transient Analysis
 

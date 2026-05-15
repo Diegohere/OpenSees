@@ -890,7 +890,7 @@ int HLBModel::timeIntegration() {
 
 		//if (isnan(strainTrial(0) + strainTrial(1) + strainTrial(2)))
 		// Modified 11/08/2025
-		if ((isnan(strainTrial(0) + strainTrial(1) + strainTrial(2))) || (abs(strainTrial(0)>2.0)))
+		if ((isnan(strainTrial(0) + strainTrial(1) + strainTrial(2))) || (abs(strainTrial(0))>2.0))
 		//if (isnan(strainTrial(0) + strainTrial(1) + strainTrial(2) + stressTrial(0) + stressTrial(1) + stressTrial(2)))
 		{
 			iterationNumber_timeIntegration = MAXIMUM_ITERATIONS_TIMEINTEGRATION + 1;
@@ -1754,7 +1754,9 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 
 		//etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
 		// Try solve issue with positive strainPostBucklingTrial(0) giving wrong etaTangent 05.02.2025
-		etaTangent = 1.;
+		//etaTangent = 1.;
+		// Updated 05/15/2026
+		etaTangent = calculateEtaTangentReduce(alphaRegularization * strainPostBucklingTrial(0));
 		LambdaC_nPlus1Diag = etaTangent * lambdaC;
 
 		// Isotropic hardening parameters
@@ -1765,7 +1767,8 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 		beta = 0.;
 		alphaTilde.Zero();
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
-			eK = calculateEk(i);
+			//eK = calculateEk(i);
+			eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed)); // updated 05/15/2026
 			beta += cK[i] / gammaK[i] * (1. - eK);
 			alphaTilde += alpha12Tot_Vector[i] * eK;
 		}
@@ -1779,7 +1782,8 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 
 		SumEKAlphaKTerm.Zero();
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
-			eK = calculateEk(i);
+			//eK = calculateEk(i);
+			eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed)); // updated 05/15/2026
 			SumEKAlphaKTerm += (alpha12Tot_Vector[i] * eK);
 		}
 		relativeStressNPlus1(0) = gammaDiag(0) * (LambdaC_nPlus1Diag(0) * (strain_nPlus1(0) - strainPlasticIntermed(0) - strainPostBucklingIntermed(0)) - SumEKAlphaKTerm(0));
@@ -1793,7 +1797,8 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 		betaPrime = 0.;
 		alphaTildePrime.Zero();
 		for (unsigned int i = 0; i < nBackstresses; ++i) {
-			eK = calculateEk(i);
+			//eK = calculateEk(i);
+			eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed)); // updated 05/15/2026
 			betaPrime = betaPrime - cK[i] * isotropicModulus / (gammaK[i] * pow(yieldStressTot, 2)) * (1. - eK)
 				+ cK[i] * eK / yieldStressTot;
 			alphaTildePrime = alphaTildePrime + gammaK[i] * eK * alpha12Tot_Vector[i];
@@ -1826,6 +1831,11 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 
 		PMatMultrelativeStressNPlus1 = PMat * relativeStressNPlus1;
 		strainPostBucklingTrial(0) = strainPostBucklingIntermed(0) + consistParam_plastic * PMatMultrelativeStressNPlus1(0);
+		// Updated 05/15/2026
+		if (strainPostBucklingTrial(0) > SMALL_NUMBER)
+		{
+			break;
+		}
 
 		// Check convergence
 		if (fabs(phiVM / (2. / 3. * pow(initialYield, 2))) < RETURN_MAP_TOL) {
@@ -1835,7 +1845,8 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 
 	// Update the variables
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		eK = calculateEk(i);
+		//eK = calculateEk(i);
+		eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed)); // updated 05/15/2026
 		alpha12Tot_Vector[i] = alpha12Tot_Vector[i] * eK + relativeStressNPlus1 / yieldStressTot * cK[i] / gammaK[i] * (1. - eK);
 		/*alphaPKTrial[i] = alpha12Tot_Vector[i] - alphaPBKConverged[i];*/
 		alphaPKTrial[i] = alpha12Tot_Vector[i] - alphaPBKIntermed[i];
@@ -1919,7 +1930,8 @@ void HLBModel::calculateConsistentTangentModulusHardening(double consistParam_pl
 	beta = 1. + beta / yieldStressTot;
 	hPrime = -(beta - 1.) * isotropicModulus * stressRelative / yieldStressTot;
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		eK = calculateEk(i);
+		//eK = calculateEk(i);
+		eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed)); // updated 05/15/2026
 		hPrime += cK[i] * eK / yieldStressTot * stressRelative - gammaK[i] * eK * alpha12Tot_Vector[i];
 	}
 	hPrime *= sqrt(2. / 3.);
@@ -2255,7 +2267,8 @@ void HLBModel::calculateConsistentTangentModulusUVCRecov(Vector strain_nPlus1, d
 
 	// Fill alphaTot_Vector with the two vector
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		alpha12Tot_Vector.push_back(alphaPKConverged[i] + alphaPBKConverged[i]); // Total backstress (P1+P2+Pb1+Pb2)
+		//alpha12Tot_Vector.push_back(alphaPKConverged[i] + alphaPBKConverged[i]); // Total backstress (P1+P2+Pb1+Pb2)
+		alpha12Tot_Vector.push_back(alphaPKIntermed[i] + alphaPBKIntermed[i]); // Updated 05/15/2026
 	}
 
 	iD3.Zero(); // 3x3 indentity matrix
@@ -2271,20 +2284,23 @@ void HLBModel::calculateConsistentTangentModulusUVCRecov(Vector strain_nPlus1, d
 	// Kinematic hardening related parameters
 	nHat = relativeStressNPlus1 / fBar;
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		eK = calculateEk(i);
+		//eK = calculateEk(i);
+		eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed)); // updated 05/15/2026
 		beta += cK[i] / gammaK[i] * (1. - eK);
 	}
 	beta = 1. + beta / yieldStressTot;
 	hPrime = -(beta - 1.) * isotropicModulus * relativeStressNPlus1 / yieldStressTot;
 	for (unsigned int i = 0; i < nBackstresses; ++i) {
-		eK = calculateEk(i);
+		//eK = calculateEk(i);
+		eK = exp(-gammaK[i] * (strainPEqTrial - strainPEqIntermed)); // updated 05/15/2026
 		hPrime += cK[i] * eK / yieldStressTot * relativeStressNPlus1 - gammaK[i] * eK * alpha12Tot_Vector[i];
 	}
 	hPrime *= sqrt(2. / 3.);
 	hOutN = hPrime % nHat;
 	aMat = matinv3(beta * iD3 + consistParam_plastic * hOutN * PMat);
 
-	dEtaTangentdEpsiPb11 = -calculateDEtaTangentdEpsiPb11();
+	//dEtaTangentdEpsiPb11 = -calculateDEtaTangentdEpsiPb11();
+	dEtaTangentdEpsiPb11 = 0.; // Updated 05/15/2026
 
 	F = -1. * (iD3 + lambdappMat) * PMat * relativeStressNPlus1 + consistParam_plastic * (iD3 + lambdappMat) * PMat * fBar * aMat * hPrime + dEtaTangentdEpsiPb11 * 2. / 3. * relativeStressNPlus1(0) * (strain_nPlus1 - strainPlasticTrial - strainPostBucklingTrial);
 	/*opserr << "This is F" << F << endln;*/

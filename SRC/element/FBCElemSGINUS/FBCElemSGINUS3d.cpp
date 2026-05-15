@@ -746,6 +746,20 @@ FBCElemSGINUS3d::update(void)
 					numItersMax = 10 * maxIters;
 				}
 
+				// Diagnostics 05/14/2026
+				Vector eBefore_Tot[maxNumSections];
+				Vector deApplied_Tot[maxNumSections];
+				Vector srBefore_Tot[maxNumSections];
+				Matrix KBefore_Tot[maxNumSections];
+				for (int kk = 0; kk < numSections; kk++)
+				{
+					int order = sections[kk]->getOrder();
+					eBefore_Tot[kk] = Vector(order);
+					deApplied_Tot[kk] = Vector(order);
+					srBefore_Tot[kk] = Vector(order);
+					KBefore_Tot[kk] = Matrix(order, order);
+				}
+
 				for (j = 0; j < numItersMax; j++)
 				{
 					// initialize f and vr for integration
@@ -878,21 +892,42 @@ FBCElemSGINUS3d::update(void)
 
 					for (i = 0; i < numSections; i++)
 					{
-						// set section deformations
+						//// set section deformations
+						//if (initialFlag != 0)
+						//{
+						//	eNonLocalSubdivide[i] += deStar_nonlocal_Tot[i];  //e_NL += deStar_nonlocal
+						//	eNonLocalSubdivide[i] += eu_nonlocal_Tot[i];  //e_NL += eu_nonlocal
+						//}
+						////opserr << "This is eNonLocalSubdivide:" << eNonLocalSubdivide[i] << endln;
+						//eLocalSubdivide[i] += deStar_local_Tot[i] + eu_local_Tot[i];
+
+						// Diagnostics 05/14/2026
+						// Store state before applying current local iteration increment
+						eBefore_Tot[i] = eLocalSubdivide[i];
+						srBefore_Tot[i] = srSubdivide[i];
+						KBefore_Tot[i] = sections[i]->getSectionTangent();
+						// Actual LOCAL deformation increment used for stress update
+						// This includes eu_local_Tot.
+						deApplied_Tot[i] = deStar_local_Tot[i];
+						deApplied_Tot[i] += eu_local_Tot[i];
 						if (initialFlag != 0)
 						{
-							eNonLocalSubdivide[i] += deStar_nonlocal_Tot[i];  //e_NL += deStar_nonlocal
-							eNonLocalSubdivide[i] += eu_nonlocal_Tot[i];  //e_NL += eu_nonlocal
+							eNonLocalSubdivide[i] += deStar_nonlocal_Tot[i];
+							eNonLocalSubdivide[i] += eu_nonlocal_Tot[i];
 						}
-						//opserr << "This is eNonLocalSubdivide:" << eNonLocalSubdivide[i] << endln;
-
-						eLocalSubdivide[i] += deStar_local_Tot[i] + eu_local_Tot[i];
+						eLocalSubdivide[i] += deApplied_Tot[i];
 					}
 
 					for (i = 0; i < numSections; i++)
 					{
 						//static Vector eu_local_interm(NEBD);  //intermediate vector to fill eu_local_tot
 						//eu_local_interm.Zero();
+
+						// Added diagnostics 05/14/2026
+						if (j > 40 && i == 0)
+						{
+							opserr << "Debug here: " <<  endln;
+						}
 
 						//Set the section deformations for section state determination
 						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
@@ -906,6 +941,58 @@ FBCElemSGINUS3d::update(void)
 
 						// get section resisting forces
 						srSubdivide[i] = sections[i]->getStressResultant();
+
+						//// Added diagnostics 05/14/2026
+						//if (j > 40 && i == 0)
+						//{
+						//	int order = sections[i]->getOrder();
+						//	Vector eA = eBefore_Tot[i];
+						//	Vector dir = deApplied_Tot[i];
+						//	sections[i]->setTrialSectionDeformation(eA);
+						//	Vector srA = sections[i]->getStressResultant();
+						//	double thetaPrev = 0.0;
+						//	double sr1Prev = srA(1);
+						//	opserr << "SECTION 0 LINE SCAN, element " << this->getTag()
+						//		<< ", iter " << j << endln;
+						//	opserr << "theta"
+						//		<< " e1"
+						//		<< " sr1"
+						//		<< " ds1_from_A"
+						//		<< " secant_slope_component1"
+						//		<< " Ktheta_de_component1"
+						//		<< endln;
+						//	for (int m = 0; m <= 100; m++)
+						//	{
+						//		double theta = 0.01 * m;
+						//		Vector eTheta = eA;
+						//		eTheta.addVector(1.0, dir, theta);  // eTheta = eA + theta*dir
+						//		sections[i]->setTrialSectionDeformation(eTheta);
+						//		Vector srTheta = sections[i]->getStressResultant();
+						//		const Matrix& Ktheta = sections[i]->getSectionTangent();
+						//		Vector Ktheta_de(order);
+						//		Ktheta_de.addMatrixVector(0.0, Ktheta, dir, 1.0);
+						//		double ds1_from_A = srTheta(1) - srA(1);
+						//		double secantSlopeComp1 = 0.0;
+						//		if (theta > 0.0)
+						//			secantSlopeComp1 = ds1_from_A / theta;
+						//		double localSlopeComp1 = 0.0;
+						//		if (m > 0)
+						//			localSlopeComp1 = (srTheta(1) - sr1Prev) / (theta - thetaPrev);
+						//		opserr << theta
+						//			<< " " << eTheta(1)
+						//			<< " " << srTheta(1)
+						//			<< " " << ds1_from_A
+						//			<< " " << secantSlopeComp1
+						//			<< " " << Ktheta_de(1)
+						//			<< " localSlope = " << localSlopeComp1
+						//			<< endln;
+						//		thetaPrev = theta;
+						//		sr1Prev = srTheta(1);
+						//	}
+						//	// Restore actual current state after diagnostic
+						//	sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]);
+						//	srSubdivide[i] = sections[i]->getStressResultant();
+						//}
 
 						if (l == 0) // Newton-Raphson scheme
 						{
@@ -1291,6 +1378,16 @@ FBCElemSGINUS3d::update(void)
 						// Added here 05/06/2026 and commented out above
 						qTrial += dq;
 
+						/*if (j>40)
+						{
+							for (int k = 0; k < numSections; k++)
+							{
+								opserr << "This is matrix Ksec of section k= " << k << " : " << sections[k]->getSectionTangent() << endln;
+							}
+							opserr << "This is matrix Ksec" << KelementTrial << endln;
+							opserr << "End iteration j= " << j << endln;
+						}*/
+
 						//if ((j == (numItersMax - 1)) && (l == 1))
 						if ((j == (numItersMax - 1)) && (l == lMax - 1))
 						{
@@ -1311,6 +1408,7 @@ FBCElemSGINUS3d::update(void)
 		opserr << "element forces & deformations for element: ";
 		opserr << this->getTag() << "(Norm dv: << " << dv.Norm() << ")\n";
 		opserr << this->getTag() << "( dv: << " << dv << ")\n";
+
 		return -1;
 	}
 
@@ -2238,9 +2336,10 @@ FBCElemSGINUS3d::initCoefficientMatrixH()
 	beamIntegr->getSectionLocations(numSections, L, secX);
 
 	Vector allDx(numSections - 1);	// spaces between all integration points
-	for (int i = 0; i < numSections; i++)
+	for (int i = 0; i < numSections-1; i++)
 	{
 		allDx[i] = L * (secX[i + 1] - secX[i]);
+		//opserr << "allDx[i]: " << allDx[i] << endln;
 	}
 
 	double bc_GI = 0.;
