@@ -923,11 +923,11 @@ FBCElemSGINUS3d::update(void)
 						//static Vector eu_local_interm(NEBD);  //intermediate vector to fill eu_local_tot
 						//eu_local_interm.Zero();
 
-						// Added diagnostics 05/14/2026
-						if (j > 40 && i == 0)
-						{
-							opserr << "Debug here: " <<  endln;
-						}
+						//// Added diagnostics 05/14/2026
+						//if (j > 40 && i == 0)
+						//{
+						//	opserr << "Debug here: " <<  endln;
+						//}
 
 						//Set the section deformations for section state determination
 						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
@@ -942,57 +942,57 @@ FBCElemSGINUS3d::update(void)
 						// get section resisting forces
 						srSubdivide[i] = sections[i]->getStressResultant();
 
-						//// Added diagnostics 05/14/2026
-						//if (j > 40 && i == 0)
-						//{
-						//	int order = sections[i]->getOrder();
-						//	Vector eA = eBefore_Tot[i];
-						//	Vector dir = deApplied_Tot[i];
-						//	sections[i]->setTrialSectionDeformation(eA);
-						//	Vector srA = sections[i]->getStressResultant();
-						//	double thetaPrev = 0.0;
-						//	double sr1Prev = srA(1);
-						//	opserr << "SECTION 0 LINE SCAN, element " << this->getTag()
-						//		<< ", iter " << j << endln;
-						//	opserr << "theta"
-						//		<< " e1"
-						//		<< " sr1"
-						//		<< " ds1_from_A"
-						//		<< " secant_slope_component1"
-						//		<< " Ktheta_de_component1"
-						//		<< endln;
-						//	for (int m = 0; m <= 100; m++)
-						//	{
-						//		double theta = 0.01 * m;
-						//		Vector eTheta = eA;
-						//		eTheta.addVector(1.0, dir, theta);  // eTheta = eA + theta*dir
-						//		sections[i]->setTrialSectionDeformation(eTheta);
-						//		Vector srTheta = sections[i]->getStressResultant();
-						//		const Matrix& Ktheta = sections[i]->getSectionTangent();
-						//		Vector Ktheta_de(order);
-						//		Ktheta_de.addMatrixVector(0.0, Ktheta, dir, 1.0);
-						//		double ds1_from_A = srTheta(1) - srA(1);
-						//		double secantSlopeComp1 = 0.0;
-						//		if (theta > 0.0)
-						//			secantSlopeComp1 = ds1_from_A / theta;
-						//		double localSlopeComp1 = 0.0;
-						//		if (m > 0)
-						//			localSlopeComp1 = (srTheta(1) - sr1Prev) / (theta - thetaPrev);
-						//		opserr << theta
-						//			<< " " << eTheta(1)
-						//			<< " " << srTheta(1)
-						//			<< " " << ds1_from_A
-						//			<< " " << secantSlopeComp1
-						//			<< " " << Ktheta_de(1)
-						//			<< " localSlope = " << localSlopeComp1
-						//			<< endln;
-						//		thetaPrev = theta;
-						//		sr1Prev = srTheta(1);
-						//	}
-						//	// Restore actual current state after diagnostic
-						//	sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]);
-						//	srSubdivide[i] = sections[i]->getStressResultant();
-						//}
+						// Added diagnostics 05/14/2026
+						if (j > 40 && i == 0)
+						{
+							int order = sections[i]->getOrder();
+							Vector eA = eBefore_Tot[i];
+							Vector dir = deApplied_Tot[i];
+							sections[i]->setTrialSectionDeformation(eA);
+							Vector srA = sections[i]->getStressResultant();
+							double thetaPrev = 0.0;
+							double sr1Prev = srA(1);
+							opserr << "SECTION 0 LINE SCAN, element " << this->getTag()
+								<< ", iter " << j << endln;
+							opserr << "theta"
+								<< " e1"
+								<< " sr1"
+								<< " ds1_from_A"
+								<< " secant_slope_component1"
+								<< " Ktheta_de_component1"
+								<< endln;
+							for (int m = 0; m <= 100; m++)
+							{
+								double theta = 0.01 * m;
+								Vector eTheta = eA;
+								eTheta.addVector(1.0, dir, theta);  // eTheta = eA + theta*dir
+								sections[i]->setTrialSectionDeformation(eTheta);
+								Vector srTheta = sections[i]->getStressResultant();
+								const Matrix& Ktheta = sections[i]->getSectionTangent();
+								Vector Ktheta_de(order);
+								Ktheta_de.addMatrixVector(0.0, Ktheta, dir, 1.0);
+								double ds1_from_A = srTheta(1) - srA(1);
+								double secantSlopeComp1 = 0.0;
+								if (theta > 0.0)
+									secantSlopeComp1 = ds1_from_A / theta;
+								double localSlopeComp1 = 0.0;
+								if (m > 0)
+									localSlopeComp1 = (srTheta(1) - sr1Prev) / (theta - thetaPrev);
+								opserr << theta
+									<< " " << eTheta(1)
+									<< " " << srTheta(1)
+									<< " " << ds1_from_A
+									<< " " << secantSlopeComp1
+									<< " " << Ktheta_de(1)
+									<< " localSlope = " << localSlopeComp1
+									<< endln;
+								thetaPrev = theta;
+								sr1Prev = srTheta(1);
+							}
+							// Restore actual current state after diagnostic
+							sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]);
+							srSubdivide[i] = sections[i]->getStressResultant();
+						}
 
 						if (l == 0) // Newton-Raphson scheme
 						{

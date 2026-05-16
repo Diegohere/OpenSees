@@ -872,6 +872,40 @@ int HLBModel::timeIntegration() {
 	double etaTangent = 0.;
 	double chi1t = 0.;
 
+	// ------------------------------------------------------------
+// Reset intermediate state to committed/converged state
+// at the beginning of every trial evaluation. added 05/16/2026
+// ------------------------------------------------------------
+	/*strainIntermed = strainConverged;
+	strainPlasticIntermed = strainPlasticConverged;
+	strainPostBucklingIntermed = strainPostBucklingConverged;
+	strainPEqIntermed = strainPEqConverged;
+	strainPBEqIntermed = strainPBEqConverged;
+	stressIntermed = stressConverged;
+	alphaPKIntermed = alphaPKConverged;
+	alphaPBKIntermed = alphaPBKConverged;
+	sumEjIntermed = sumEjConverged;
+	c1cIntermed = c1cConverged;
+	b_1tIntermed = b_1tConverged;
+	sigmaPrBezierIntermed = sigmaPrBezierConverged;
+	sigmaYrBezierIntermed = sigmaYrBezierConverged;
+	epsilonPB11UnloadIntermed = epsilonPB11UnloadConverged;
+	backstressAfterCompressionIntermed = backstressAfterCompressionConverged;
+	epsilonPB11MinIntermed = epsilonPB11MinConverged;
+	alphaPrBezierIntermed = alphaPrBezierConverged;
+	alphaYrBezierIntermed = alphaYrBezierConverged;
+	kPrBezierIntermed = kPrBezierConverged;
+	kYrBezierIntermed = kYrBezierConverged;
+	rAlphaBackstress1Intermed = rAlphaBackstress1Converged;
+	rAlphaBackstress2Intermed = rAlphaBackstress2Converged;
+	c1cUnloadIntermed = c1cUnloadConverged;
+	ErcIntermed = ErcConverged;
+	sigmaCIntermed = sigmaCConverged;
+	yieldStressPBIntermed = yieldStressPBConverged;
+	sigmaYieldAfterCompressionIntermed = sigmaYieldAfterCompressionConverged;
+	backstress11TotAfterFullPLRecovIntermed = backstress11TotAfterFullPLRecovConverged;
+	sigmaYieldTotAfterFullPLRecovIntermed = sigmaYieldTotAfterFullPLRecovConverged;*/
+
 	// Update the total strain vector
 	strainIntermed = strainConverged;
 	deltaStrain_todo = strainTrial - strainConverged;
@@ -882,6 +916,14 @@ int HLBModel::timeIntegration() {
 		double testBreak = 0.;
 		opserr << "This is strainConverged: " << strainConverged << endln;
 		opserr << "This is strainTrial: " << strainTrial << endln;
+	}*/
+	/*bool debugFiber17Transition =
+		fabs(strainTrial(0) + 0.0210026) < 8.0e-7 &&
+		fabs(strainTrial(1) + 0.0018477) < 8.0e-7 &&
+		fabs(strainTrial(2) + 0.000121581) < 1.0e-7;*/
+	/*if (debugFiber17JumpStateBeg)
+	{
+		int testBreak = 0;
 	}*/
 
 	// Loop for time integration
@@ -949,6 +991,60 @@ int HLBModel::timeIntegration() {
 					// Check if we have reduced all the epsiPb11
 					if (retVal == 0 && (strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER)) // We don't have reduced too much
 					{
+						/*if (debugFiber17Transition )
+						{
+							opserr.precision(17);
+
+							opserr << "==================================================" << endln;
+							opserr << "ACCEPTED SUBSTEP: PL_RECOVERY" << endln;
+							opserr << "timeIntegration iter = " << iterationNumber_timeIntegration << endln;
+							opserr << "retVal = " << retVal << endln;
+
+							opserr << "strainConverged = " << strainConverged << endln;
+							opserr << "strainIntermed  = " << strainIntermed << endln;
+							opserr << "strain_nPlus1   = " << strain_nPlus1 << endln;
+							opserr << "strainTrial     = " << strainTrial << endln;
+
+							opserr << "deltaStrain_trial BEFORE accept = "
+								<< deltaStrain_trial << endln;
+							opserr << "deltaStrain_todo BEFORE accept = "
+								<< deltaStrain_todo << endln;
+
+							opserr << "stressTrial = " << stressTrial << endln;
+
+							opserr << "strainPlasticIntermed = "
+								<< strainPlasticIntermed << endln;
+							opserr << "strainPlasticTrial = "
+								<< strainPlasticTrial << endln;
+
+							opserr << "strainPostBucklingIntermed = "
+								<< strainPostBucklingIntermed << endln;
+							opserr << "strainPostBucklingTrial = "
+								<< strainPostBucklingTrial << endln;
+
+							opserr << "yieldStressPBIntermed = "
+								<< yieldStressPBIntermed << endln;
+							opserr << "yieldStressPBTrial = "
+								<< yieldStressPBTrial << endln;
+
+							opserr << "alphaPKIntermed[0] = " << alphaPKIntermed[0] << endln;
+							opserr << "alphaPKIntermed[1] = " << alphaPKIntermed[1] << endln;
+							opserr << "alphaPKTrial[0] = " << alphaPKTrial[0] << endln;
+							opserr << "alphaPKTrial[1] = " << alphaPKTrial[1] << endln;
+
+							opserr << "alphaPBKIntermed[0] = " << alphaPBKIntermed[0] << endln;
+							opserr << "alphaPBKIntermed[1] = " << alphaPBKIntermed[1] << endln;
+							opserr << "alphaPBKTrial[0] = " << alphaPBKTrial[0] << endln;
+							opserr << "alphaPBKTrial[1] = " << alphaPBKTrial[1] << endln;
+
+							opserr << "stiffness row 0 = "
+								<< stiffnessTrial(0, 0) << " "
+								<< stiffnessTrial(0, 1) << " "
+								<< stiffnessTrial(0, 2) << endln;
+
+							opserr << "==================================================" << endln;
+						}*/
+
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
 						// Check if the full strain increment has been done
@@ -1039,6 +1135,60 @@ int HLBModel::timeIntegration() {
 					// Check if we have converged
 					if (retVal == 0 ) // We have converged
 					{
+						/*if (debugFiber17Transition)
+						{
+							opserr.precision(17);
+
+							opserr << "==================================================" << endln;
+							opserr << "ACCEPTED SUBSTEP: TENSION_HARDENING" << endln;
+							opserr << "timeIntegration iter = " << iterationNumber_timeIntegration << endln;
+							opserr << "retVal = " << retVal << endln;
+
+							opserr << "strainConverged = " << strainConverged << endln;
+							opserr << "strainIntermed  = " << strainIntermed << endln;
+							opserr << "strain_nPlus1   = " << strain_nPlus1 << endln;
+							opserr << "strainTrial     = " << strainTrial << endln;
+
+							opserr << "deltaStrain_trial BEFORE accept = "
+								<< deltaStrain_trial << endln;
+							opserr << "deltaStrain_todo BEFORE accept = "
+								<< deltaStrain_todo << endln;
+
+							opserr << "stressTrial = " << stressTrial << endln;
+
+							opserr << "strainPlasticIntermed = "
+								<< strainPlasticIntermed << endln;
+							opserr << "strainPlasticTrial = "
+								<< strainPlasticTrial << endln;
+
+							opserr << "strainPostBucklingIntermed = "
+								<< strainPostBucklingIntermed << endln;
+							opserr << "strainPostBucklingTrial = "
+								<< strainPostBucklingTrial << endln;
+
+							opserr << "yieldStressPBIntermed = "
+								<< yieldStressPBIntermed << endln;
+							opserr << "yieldStressPBTrial = "
+								<< yieldStressPBTrial << endln;
+
+							opserr << "alphaPKIntermed[0] = " << alphaPKIntermed[0] << endln;
+							opserr << "alphaPKIntermed[1] = " << alphaPKIntermed[1] << endln;
+							opserr << "alphaPKTrial[0] = " << alphaPKTrial[0] << endln;
+							opserr << "alphaPKTrial[1] = " << alphaPKTrial[1] << endln;
+
+							opserr << "alphaPBKIntermed[0] = " << alphaPBKIntermed[0] << endln;
+							opserr << "alphaPBKIntermed[1] = " << alphaPBKIntermed[1] << endln;
+							opserr << "alphaPBKTrial[0] = " << alphaPBKTrial[0] << endln;
+							opserr << "alphaPBKTrial[1] = " << alphaPBKTrial[1] << endln;
+
+							opserr << "stiffness row 0 = "
+								<< stiffnessTrial(0, 0) << " "
+								<< stiffnessTrial(0, 1) << " "
+								<< stiffnessTrial(0, 2) << endln;
+
+							opserr << "==================================================" << endln;
+						}*/
+
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
 						// Check if the full strain increment has been done
@@ -1240,6 +1390,105 @@ int HLBModel::timeIntegration() {
 		opserr << "This is strainTrial: " << strainTrial << endln;
 		retVal = -1;
 	}
+
+	// ------------------------------------------------------------
+// DEBUG: material-level state for fiber 17-like jump state
+// This corresponds to the dominant stress jump found in section S1.
+// Fiber 17 section diagnostic:
+// eps prev = -0.0210025 -0.00184779 -0.000121581
+// eps curr = -0.0210026 -0.00184772 -0.000121581
+// stress11 around 225.7 MPa
+// ------------------------------------------------------------
+	/*bool debugFiber17JumpState =
+		fabs(stressTrial(0) - 225.7) < 0.5 &&
+		fabs(strainTrial(0) + 0.0210026) < 5.0e-7 &&
+		fabs(strainTrial(1) + 0.0018477) < 5.0e-7 &&
+		fabs(strainTrial(2) + 0.000121581) < 5.0e-8;
+	static int debugFiber17JumpCounter = 0;
+	if (debugFiber17JumpState && debugFiber17JumpCounter < 80)
+	{
+		opserr.precision(17);
+		opserr << "==================================================" << endln;
+		opserr << "MATERIAL DEBUG fiber17 jump-like state" << endln;
+		opserr << "retVal = " << retVal
+			<< " iterationNumber_timeIntegration = "
+			<< iterationNumber_timeIntegration << endln;
+		opserr << "strainConverged = " << strainConverged << endln;
+		opserr << "strainTrial     = " << strainTrial << endln;
+		opserr << "strainIntermed  = " << strainIntermed << endln;
+		opserr << "deltaStrain_fullIncrement = "
+			<< deltaStrain_fullIncrement << endln;
+		opserr << "deltaStrain_trial = "
+			<< deltaStrain_trial << endln;
+		opserr << "deltaStrain_todo = "
+			<< deltaStrain_todo << endln;
+		opserr << "stressConverged = " << stressConverged << endln;
+		opserr << "stressTrial     = " << stressTrial << endln;
+		opserr << "elasticLoading = " << elasticLoading
+			<< " plasticLoading = " << plasticLoading
+			<< " postBucklingLoading = " << postBucklingLoading
+			<< " PlRecoveryLoading = " << PlRecoveryLoading
+			<< " UVCRecoveryLoading = " << UVCRecoveryLoading
+			<< endln;
+		opserr << "strainPlasticConverged = "
+			<< strainPlasticConverged << endln;
+		opserr << "strainPlasticTrial = "
+			<< strainPlasticTrial << endln;
+		opserr << "strainPlasticIntermed = "
+			<< strainPlasticIntermed << endln;
+		opserr << "strainPostBucklingConverged = "
+			<< strainPostBucklingConverged << endln;
+		opserr << "strainPostBucklingTrial = "
+			<< strainPostBucklingTrial << endln;
+		opserr << "strainPostBucklingIntermed = "
+			<< strainPostBucklingIntermed << endln;
+		opserr << "strainPEqConverged = " << strainPEqConverged
+			<< " strainPEqTrial = " << strainPEqTrial
+			<< " strainPEqIntermed = " << strainPEqIntermed
+			<< endln;
+		opserr << "strainPBEqConverged = " << strainPBEqConverged
+			<< " strainPBEqTrial = " << strainPBEqTrial
+			<< " strainPBEqIntermed = " << strainPBEqIntermed
+			<< endln;
+		opserr << "epsilonPB11UnloadConverged = "
+			<< epsilonPB11UnloadConverged << endln;
+		opserr << "epsilonPB11UnloadTrial = "
+			<< epsilonPB11UnloadTrial << endln;
+		opserr << "epsilonPB11UnloadIntermed = "
+			<< epsilonPB11UnloadIntermed << endln;
+		opserr << "epsilonPB11MinConverged = "
+			<< epsilonPB11MinConverged << endln;
+		opserr << "epsilonPB11MinTrial = "
+			<< epsilonPB11MinTrial << endln;
+		opserr << "epsilonPB11MinIntermed = "
+			<< epsilonPB11MinIntermed << endln;
+		opserr << "c1cConverged = " << c1cConverged
+			<< " c1cTrial = " << c1cTrial
+			<< " c1cIntermed = " << c1cIntermed
+			<< endln;
+		opserr << "yieldStressPBConverged = "
+			<< yieldStressPBConverged << endln;
+		opserr << "yieldStressPBTrial = "
+			<< yieldStressPBTrial << endln;
+		opserr << "yieldStressPBIntermed = "
+			<< yieldStressPBIntermed << endln;
+		opserr << "sigmaCConverged = " << sigmaCConverged
+			<< " sigmaCTrial = " << sigmaCTrial
+			<< " sigmaCIntermed = " << sigmaCIntermed
+			<< endln;
+		opserr << "stiffness row 0 = "
+			<< stiffnessTrial(0, 0) << " "
+			<< stiffnessTrial(0, 1) << " "
+			<< stiffnessTrial(0, 2) << endln;
+		opserr << "stiffnessTrial full = "
+			<< stiffnessTrial << endln;
+		opserr << "alphaPKTrial[0] = " << alphaPKTrial[0] << endln;
+		opserr << "alphaPKTrial[1] = " << alphaPKTrial[1] << endln;
+		opserr << "alphaPBKTrial[0] = " << alphaPBKTrial[0] << endln;
+		opserr << "alphaPBKTrial[1] = " << alphaPBKTrial[1] << endln;
+		opserr << "==================================================" << endln;
+		debugFiber17JumpCounter++;
+	}*/
 
 	return retVal;
 }
@@ -1482,6 +1731,45 @@ int HLBModel::returnMappingSoftening(Vector strain_nPlus1, Vector relativeStress
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusSoftening(strain_nPlus1, backstressTot, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
 
+	// ------------------------------------------------------------
+// DEBUG: final softening state after return mapping
+// ------------------------------------------------------------
+	/*bool debugSofteningState = false;
+	if (postBucklingLoading == 1)
+	{
+		if (fabs(stressTrial(0) + 400.192) < 2.0 ||
+			fabs(stressTrial(0) + 318.815) < 2.0 ||
+			fabs(stressTrial(0) + 261.645) < 2.0)
+		{
+			debugSofteningState = true;
+		}
+	}
+	static int softeningStateCounter = 0;
+	if (debugSofteningState && softeningStateCounter < 200)
+	{
+		opserr.precision(17);
+		opserr << "--------------------------------------------------" << endln;
+		opserr << "FINAL SOFTENING STATE, material tag = "
+			<< this->getTag() << endln;
+		opserr << "stressTrial = " << stressTrial << endln;
+		opserr << "strainTrial = " << strainTrial << endln;
+		opserr << "strainPlasticTrial = " << strainPlasticTrial << endln;
+		opserr << "strainPostBucklingTrial = "
+			<< strainPostBucklingTrial << endln;
+		opserr << "stiffness row 0 = "
+			<< stiffnessTrial(0, 0) << " "
+			<< stiffnessTrial(0, 1) << " "
+			<< stiffnessTrial(0, 2) << endln;
+		opserr << "elasticLoading = " << elasticLoading
+			<< " plasticLoading = " << plasticLoading
+			<< " postBucklingLoading = " << postBucklingLoading
+			<< " PlRecoveryLoading = " << PlRecoveryLoading
+			<< " UVCRecoveryLoading = " << UVCRecoveryLoading
+			<< endln;
+		opserr << "--------------------------------------------------" << endln;
+		softeningStateCounter++;
+	}*/
+
 	// Warn the user if the algorithm did not convergein the return mapping for softening and return -1
 	if (iterationNumber_ReturnMapping >= MAXIMUM_ITERATIONS_RETURNMAPPING && fabs(phiComp / (2. / 3. * pow(initialYield, 2))) > RETURN_MAP_TOL) {
 		/*opserr << "HLBModel::returnMappingSoftening return mapping softening stage did not converge!" << endln;
@@ -1622,7 +1910,8 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		// Do the Newton Step
 		consistParam_plRecov = consistParam_plRecov - phiTens / dPhiTensdLambdaPB;
 
-		strainPBEqTrial = strainPBEqIntermed * -psi * consistParam_plRecov;
+		//strainPBEqTrial = strainPBEqIntermed * -psi * consistParam_plRecov;
+		strainPBEqTrial = strainPBEqIntermed * -psi * consistParam_plRecov; //updated 05/16/2026
 		strainPostBucklingTrial = strainPostBucklingIntermed + consistParam_plRecov * dPhiTensdXi;
 		/*if (strainPostBucklingTrial(0) > 0)*/
 		// Updated 04/27/2026
@@ -1949,11 +2238,15 @@ void HLBModel::calculateConsistentTangentModulusHardening(double consistParam_pl
 	hTilde = hPrime + xiTilde * (PMat * nTilde);
 	theta_1 = 2. / 3. * isotropicModulus + theta_2 * dotprod3(nHat, PMat * (aMat * hTilde));
 	nOutN = nTilde % nHat;
-	stiffnessTrial.Zero();
-	stiffnessTrial = xiTilde - theta_2 / theta_1 * xiTilde * PMat * nOutN * PMat * xiTildeA;
+	//stiffnessTrial = xiTilde - theta_2 / theta_1 * xiTilde * PMat * nOutN * PMat * xiTildeA;
 
 	// Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	//stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	stiffnessTrial.Zero();
+	Matrix stiffnessTrial_notSym = xiTilde - theta_2 / theta_1 * xiTilde * PMat * nOutN * PMat * xiTildeA;
+	Matrix stiffnessTrial_notSym_transpose = Matrix(3, 3);
+	stiffnessTrial_notSym_transpose.addMatrixTranspose(0., stiffnessTrial_notSym, 1.0);
+	stiffnessTrial = 0.5 * (stiffnessTrial_notSym + stiffnessTrial_notSym_transpose);
 
 	/*stiffnessTrial.Zero();
 	opserr << "This is stiffnessTrial: " << stiffnessTrial << endln;*/
@@ -2072,11 +2365,17 @@ void HLBModel::calculateConsistentTangentModulusSoftening(const Vector& strain_n
 	CepTerm3 = I + consistParam_postBuckling * CepTerm1 + CepTerm2MultD;
 	//opserr << "This is CepTerm3" << CepTerm3 << endln;
 	CepTerm3Inverse = matinv3(CepTerm3);
-	stiffnessTrial.Zero();
-	stiffnessTrial = etaTangent * elasticMatrix * CepTerm3Inverse;
+	/*stiffnessTrial.Zero();
+	stiffnessTrial = etaTangent * elasticMatrix * CepTerm3Inverse;*/
+	//stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	Matrix stiffnessTrial_notSym = CepTerm3Inverse * (etaTangent * elasticMatrix);
+	Matrix stiffnessTrial_notSym_transpose = Matrix(3, 3);
+	stiffnessTrial_notSym_transpose.addMatrixTranspose(0., stiffnessTrial_notSym, 1.0);
+	stiffnessTrial = 0.5 * (stiffnessTrial_notSym + stiffnessTrial_notSym_transpose);
 
-	//Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	// ------------------------------------------------------------
+// DEBUG: softening tangent check for suspicious fibers
+// ------------------------------------------------------------
 	//opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
 
 	//// Try to fix flat tangent issue
@@ -2088,6 +2387,82 @@ void HLBModel::calculateConsistentTangentModulusSoftening(const Vector& strain_n
 		opserr << "This is tangentModulusSoftening" << stiffnessTrial << endln;
 		double testBreak = 0.;
 	}*/
+
+
+	// ------------------------------------------------------------
+// DEBUG: softening tangent check for suspicious fibers
+// ------------------------------------------------------------
+	//bool debugSofteningFiber = false;
+	//int matchedFiber = -1;
+	//// Tolerances
+	//double sigTol = 0.25;     // MPa
+	//double epsTol = 5.0e-7;   // strain tolerance; increase to 1e-6 if not triggered
+	//// Fiber 16 target
+	//double sig16 = -400.192;
+	//double eps16_0 = -0.026601939974474548;
+	//double eps16_1 = 0.006097809918812107;
+	//double eps16_2 = -6.255318214702947e-05;
+	//// Fiber 17 target
+	//double sig17 = -318.815;
+	//double eps17_0 = -0.02876286940671222;
+	//double eps17_1 = 0.005763112688019443;
+	//double eps17_2 = -8.757445005847722e-05;
+	//// Fiber 18 target
+	//double sig18 = -261.645;
+	//double eps18_0 = -0.030928633906867901;
+	//double eps18_1 = 0.00531674136194463;
+	//double eps18_2 = -0.00011259572786444149;
+	//bool isFiber16 =
+	//	fabs(stressTrial(0) - sig16) < sigTol &&
+	//	fabs(strainTrial(0) - eps16_0) < epsTol &&
+	//	fabs(strainTrial(1) - eps16_1) < epsTol &&
+	//	fabs(strainTrial(2) - eps16_2) < epsTol;
+	//bool isFiber17 =
+	//	fabs(stressTrial(0) - sig17) < sigTol &&
+	//	fabs(strainTrial(0) - eps17_0) < epsTol &&
+	//	fabs(strainTrial(1) - eps17_1) < epsTol &&
+	//	fabs(strainTrial(2) - eps17_2) < epsTol;
+	//bool isFiber18 =
+	//	fabs(stressTrial(0) - sig18) < sigTol &&
+	//	fabs(strainTrial(0) - eps18_0) < epsTol &&
+	//	fabs(strainTrial(1) - eps18_1) < epsTol &&
+	//	fabs(strainTrial(2) - eps18_2) < epsTol;
+	//if (isFiber16) {
+	//	debugSofteningFiber = true;
+	//	matchedFiber = 16;
+	//}
+	//else if (isFiber17) {
+	//	debugSofteningFiber = true;
+	//	matchedFiber = 17;
+	//}
+	//else if (isFiber18) {
+	//	debugSofteningFiber = true;
+	//	matchedFiber = 18;
+	//}
+	//static int softeningDebugCounter = 0;
+	//if (debugSofteningFiber && softeningDebugCounter < 100)
+	//{
+	//	opserr.precision(17);
+	//	opserr << "==================================================" << endln;
+	//	opserr << "SOFTENING TANGENT DEBUG matched fiber "
+	//		<< matchedFiber << endln;
+	//	opserr << "strainTrial = " << strainTrial << endln;
+	//	opserr << "stressTrial = " << stressTrial << endln;
+	//	opserr << "strainPlasticTrial = "
+	//		<< strainPlasticTrial << endln;
+	//	opserr << "strainPostBucklingTrial = "
+	//		<< strainPostBucklingTrial << endln;
+	//	opserr << "strainPEqTrial = "
+	//		<< strainPEqTrial << endln;
+	//	opserr << "strainPBEqTrial = "
+	//		<< strainPBEqTrial << endln;
+	//	opserr << "stiffnessTrial full = "
+	//		<< stiffnessTrial << endln;
+	//	opserr << "stiffnessTrial_test_Sym full = "
+	//		<< stiffnessTrial_test_Sym << endln;
+	//	opserr << "==================================================" << endln;
+	//	softeningDebugCounter++;
+	//}
 
 	return;
 
@@ -2213,11 +2588,15 @@ void HLBModel::calculateConsistentTangentModulusPlRecovStage(Vector strain_nPlus
 	CepTerm3 = I + consistParam_plRecov * CepTerm1 + CepTerm2MultD;
 	//opserr << "This is CepTerm3" << CepTerm3 << endln;
 	CepTerm3Inverse = matinv3(CepTerm3);
-	stiffnessTrial.Zero();
-	stiffnessTrial = etaTangent * elasticMatrix * CepTerm3Inverse;
+	/*stiffnessTrial.Zero();
+	stiffnessTrial = etaTangent * elasticMatrix * CepTerm3Inverse;*/
+	Matrix stiffnessTrial_notSym = CepTerm3Inverse * (etaTangent * elasticMatrix);
+	Matrix stiffnessTrial_notSym_transpose = Matrix(3, 3);
+	stiffnessTrial_notSym_transpose.addMatrixTranspose(0., stiffnessTrial_notSym, 1.0);
+	stiffnessTrial = 0.5 * (stiffnessTrial_notSym + stiffnessTrial_notSym_transpose);
 
 	//Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	//stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
 
 	/*opserr << "This is tangentModulusPlRecovStage" << stiffnessTrial << endln;
 	opserr << "This is strain vector:" << strainTrial << endln;*/
@@ -2324,11 +2703,48 @@ void HLBModel::calculateConsistentTangentModulusUVCRecov(Vector strain_nPlus1, d
 
 	stiffnessTrial.Zero();
 	FOutTheta3 = F % theta_3;
-	stiffnessTrial = xiTilde * (iD3 + FOutTheta3 * 1. / theta_1);
+	//stiffnessTrial = xiTilde * (iD3 + FOutTheta3 * 1. / theta_1);
 	//opserr << "This is stiffnessTrial" << stiffnessTrial << endln;
 
 	// Take the symmetric approximation
-	stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+	//stiffnessTrial.addMatrixTranspose(0.5, stiffnessTrial, 0.5);
+
+	Matrix stiffnessTrial_notSym = xiTilde * (iD3 + FOutTheta3 * 1. / theta_1);
+	Matrix stiffnessTrial_notSym_transpose = Matrix(3, 3);
+	stiffnessTrial_notSym_transpose.addMatrixTranspose(0., stiffnessTrial_notSym, 1.0);
+	//stiffnessTrial = 0.5 * (stiffnessTrial_notSym + stiffnessTrial_notSym_transpose);
+	stiffnessTrial = stiffnessTrial_notSym;
+
+	//bool debugFiber16State =
+	//	fabs(stressTrial(0) - 54.2486) < 0.05 &&
+	//	fabs(strainTrial(0) + 0.0230198) < 1.0e-7 &&
+	//	fabs(strainTrial(1) - 0.00019023) < 1.0e-8 &&
+	//	fabs(strainTrial(2) + 7.82889e-05) < 1.0e-8;
+	//static int debugUVCCount = 0;
+	//if (debugFiber16State && debugUVCCount < 20)
+	//{
+	//	opserr.precision(17);
+	//	opserr << "==================================================" << endln;
+	//	opserr << "UVCRecov TANGENT DEBUG fiber16-like state" << endln;
+	//	opserr << "strainTrial = " << strainTrial << endln;
+	//	opserr << "stressTrial = " << stressTrial << endln;
+	//	opserr << "strainPlasticTrial = " << strainPlasticTrial << endln;
+	//	opserr << "strainPostBucklingTrial = " << strainPostBucklingTrial << endln;
+	//	opserr << "UVCRecov  row 0 notSym = "
+	//		<< stiffnessTrial_notSym(0, 0) << " "
+	//		<< stiffnessTrial_notSym(0, 1) << " "
+	//		<< stiffnessTrial_notSym(0, 2) << endln;
+	//	opserr << "UVCRecov  row 0 sym = "
+	//		<< stiffnessTrial(0, 0) << " "
+	//		<< stiffnessTrial(0, 1) << " "
+	//		<< stiffnessTrial(0, 2) << endln;
+	//	opserr << "UVCRecov  full notSym = "
+	//		<< stiffnessTrial_notSym << endln;
+	//	opserr << "UVCRecov  full sym = "
+	//		<< stiffnessTrial << endln;
+	//	opserr << "==================================================" << endln;
+	//	debugUVCCount++;
+	//}
 
 	return;
 }
