@@ -917,13 +917,13 @@ int HLBModel::timeIntegration() {
 		opserr << "This is strainConverged: " << strainConverged << endln;
 		opserr << "This is strainTrial: " << strainTrial << endln;
 	}*/
-	/*bool debugFiber17Transition =
-		fabs(strainTrial(0) + 0.0210026) < 8.0e-7 &&
-		fabs(strainTrial(1) + 0.0018477) < 8.0e-7 &&
-		fabs(strainTrial(2) + 0.000121581) < 1.0e-7;*/
-	/*if (debugFiber17JumpStateBeg)
+	/*bool debugFiber1JumpState_init =
+		fabs(strainTrial(0) + 0.0436071) < 5.0e-7 &&
+		fabs(strainTrial(1) + 2.7709e-06) < 5.0e-8 &&
+		fabs(strainTrial(2) - 0.000655535) < 5.0e-7;
+	if (debugFiber1JumpState_init)
 	{
-		int testBreak = 0;
+		int testDebug = 1;
 	}*/
 
 	// Loop for time integration
@@ -982,14 +982,14 @@ int HLBModel::timeIntegration() {
 
 			}
 			else { //if not elastic
-				if (abs(strainPostBucklingIntermed(0)) > SMALL_NUMBER && abs(epsilonPB11UnloadIntermed) >= abs(epsilonPB11MinIntermed))
+				if (abs(strainPostBucklingIntermed(0)) > SMALL_NUMBER_STRAIN && abs(epsilonPB11UnloadIntermed) >= abs(epsilonPB11MinIntermed))
 				{ // Plastic recovery stage
 					PlRecoveryLoading = 1;
 
 					retVal = returnMappingPlRecovStage(strain_nPlus1);
 
 					// Check if we have reduced all the epsiPb11
-					if (retVal == 0 && (strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER)) // We don't have reduced too much
+					if (retVal == 0 && (strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER_STRAIN)) // We don't have reduced too much
 					{
 						/*if (debugFiber17Transition )
 						{
@@ -1062,7 +1062,7 @@ int HLBModel::timeIntegration() {
 						} // end check if full strain increment has been done
 
 						// If we have reduced all the epsiPb11-->switch PlRecov to UVC hardening
-						if (abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER)
+						if (abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER_STRAIN)
 						{
 							strainPBEqIntermed = strainPBEqTrial;
 							strainPostBucklingIntermed = strainPostBucklingTrial;
@@ -1080,14 +1080,14 @@ int HLBModel::timeIntegration() {
 
 				} // end Plastic recovery stage
 
-				else if (abs(strainPostBucklingIntermed(0)) > SMALL_NUMBER && abs(epsilonPB11UnloadTrial) < abs(epsilonPB11MinTrial))
+				else if (abs(strainPostBucklingIntermed(0)) > SMALL_NUMBER_STRAIN && abs(epsilonPB11UnloadTrial) < abs(epsilonPB11MinTrial))
 				{//UVC recovery stage
 					UVCRecoveryLoading = 1;
 
 					retVal = returnMappingUVCRecovStage(strain_nPlus1, alphaTot);
 
 					// Check if we have reduced all the epsiPb11
-					if (retVal == 0 && (strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER)) // We don't have reduced too much
+					if (retVal == 0 && (strainPostBucklingTrial(0) <= 0. || abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER_STRAIN)) // We don't have reduced too much
 					{
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
@@ -1108,7 +1108,7 @@ int HLBModel::timeIntegration() {
 						} // end check if full strain increment has been done
 
 						// If we have reduced all the epsiPb11-->switch UVCRecov to UVC hardening
-						if (abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER)
+						if (abs(strainPostBucklingTrial(0)) <= SMALL_NUMBER_STRAIN)
 						{
 							strainPBEqIntermed = strainPBEqTrial;
 							strainPostBucklingIntermed = strainPostBucklingTrial;
@@ -1235,7 +1235,7 @@ int HLBModel::timeIntegration() {
 				double sigmaVMConverged = pow((3. / 2. * (2. / 3. * pow(stressConverged(0), 2) + 2. * pow(stressConverged(1), 2) + 2. * pow(stressConverged(2), 2))), 0.5);
 				double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));*/
 				//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
-				if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress,2) <= SMALL_NUMBER) { // not yet at capping point
+				if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress,2) <= SMALL_NUMBER_STRESS) { // not yet at capping point
 					deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
 					// Check if the full strain increment has been done
@@ -1252,10 +1252,10 @@ int HLBModel::timeIntegration() {
 					//double sigmaVM = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
 					//double diffStress = 3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaC, 2);
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
-					if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // capping point is reached
-						if (abs(strainPostBucklingIntermed(0)) < SMALL_NUMBER)
+					if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER_STRESS) { // capping point is reached
+						if (abs(strainPostBucklingIntermed(0)) < SMALL_NUMBER_STRAIN)
 						{
-							strainPostBucklingIntermed(0) = -SMALL_NUMBER;
+							strainPostBucklingIntermed(0) = -SMALL_NUMBER_STRAIN;
 							strainPostBucklingTrial = strainPostBucklingIntermed;
 						}
 						calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
@@ -1274,7 +1274,7 @@ int HLBModel::timeIntegration() {
 			else { // if not elastic
 
 				// Check if hardening or softening response
-				if (abs(strainPostBucklingIntermed(0)) < SMALL_NUMBER) {
+				if (abs(strainPostBucklingIntermed(0)) < SMALL_NUMBER_STRAIN) {
 					// Do a step in the hardening direction
 					plasticLoading = 1;
 					retVal = returnMappingHardening(strain_nPlus1, alphaTot, etaTrial);
@@ -1284,7 +1284,7 @@ int HLBModel::timeIntegration() {
 					double sigmaVMConverged = pow((3. / 2. * (2. / 3. * pow(stressConverged(0), 2) + 2. * pow(stressConverged(1), 2) + 2. * pow(stressConverged(2), 2))), 0.5);
 					double diff4Capping = abs(pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2));*/
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
-					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // not yet at capping point
+					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER_STRESS) { // not yet at capping point
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
 						// Check if the full strain increment has been done
@@ -1302,8 +1302,8 @@ int HLBModel::timeIntegration() {
 
 						// Check if capping point is reached
 						//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
-						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER) { // capping point is reached
-							strainPostBucklingIntermed(0) = -SMALL_NUMBER;
+						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER_STRESS) { // capping point is reached
+							strainPostBucklingIntermed(0) = -SMALL_NUMBER_STRAIN;
 							strainPostBucklingTrial = strainPostBucklingIntermed;
 							strainPlasticIntermed = strainPlasticTrial;
 							strainPEqIntermed = strainPEqTrial;
@@ -1331,7 +1331,7 @@ int HLBModel::timeIntegration() {
 					//double sigmaVMTrial = pow((3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2))), 0.5);
 					//double diff4Capping = pow(sigmaVMTrial, 2) - pow(sigmaCTrial, 2);
 					//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) <= SMALL_NUMBER) { // not yet at capping point
-					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER) { // not yet at capping point
+					if (retVal == 0 && (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <= SMALL_NUMBER_STRESS) { // not yet at capping point
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
 						// Check if the full strain increment has been done
@@ -1348,7 +1348,7 @@ int HLBModel::timeIntegration() {
 
 						// Check if capping point is reached
 						//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
-						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER) { // capping point is reached
+						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER_STRESS) { // capping point is reached
 							calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
 						}
 					}
@@ -1392,36 +1392,26 @@ int HLBModel::timeIntegration() {
 	}
 
 	// ------------------------------------------------------------
-// DEBUG: material-level state for fiber 17-like jump state
-// This corresponds to the dominant stress jump found in section S1.
-// Fiber 17 section diagnostic:
-// eps prev = -0.0210025 -0.00184779 -0.000121581
-// eps curr = -0.0210026 -0.00184772 -0.000121581
-// stress11 around 225.7 MPa
+// DEBUG: material-level state for fiber 1 jump-like state
+// Dominant section jump:
+// strain ? [-0.0436071, -2.7709e-06, 0.000655535]
+// stress11 ? -480.68 MPa
 // ------------------------------------------------------------
-	/*bool debugFiber17JumpState =
-		fabs(stressTrial(0) - 225.7) < 0.5 &&
-		fabs(strainTrial(0) + 0.0210026) < 5.0e-7 &&
-		fabs(strainTrial(1) + 0.0018477) < 5.0e-7 &&
-		fabs(strainTrial(2) + 0.000121581) < 5.0e-8;
-	static int debugFiber17JumpCounter = 0;
-	if (debugFiber17JumpState && debugFiber17JumpCounter < 80)
+	/*bool debugFiber1JumpState =
+		fabs(strainTrial(0) + 0.0436071) < 5.0e-7 &&
+		fabs(strainTrial(1) + 2.7709e-06) < 5.0e-8 &&
+		fabs(strainTrial(2) - 0.000655535) < 5.0e-7 &&
+		fabs(stressTrial(0) + 480.68) < 2.0;
+	if (debugFiber1JumpState)
 	{
 		opserr.precision(17);
 		opserr << "==================================================" << endln;
-		opserr << "MATERIAL DEBUG fiber17 jump-like state" << endln;
+		opserr << "MATERIAL DEBUG fiber1 jump-like state" << endln;
 		opserr << "retVal = " << retVal
 			<< " iterationNumber_timeIntegration = "
 			<< iterationNumber_timeIntegration << endln;
 		opserr << "strainConverged = " << strainConverged << endln;
 		opserr << "strainTrial     = " << strainTrial << endln;
-		opserr << "strainIntermed  = " << strainIntermed << endln;
-		opserr << "deltaStrain_fullIncrement = "
-			<< deltaStrain_fullIncrement << endln;
-		opserr << "deltaStrain_trial = "
-			<< deltaStrain_trial << endln;
-		opserr << "deltaStrain_todo = "
-			<< deltaStrain_todo << endln;
 		opserr << "stressConverged = " << stressConverged << endln;
 		opserr << "stressTrial     = " << stressTrial << endln;
 		opserr << "elasticLoading = " << elasticLoading
@@ -1434,60 +1424,41 @@ int HLBModel::timeIntegration() {
 			<< strainPlasticConverged << endln;
 		opserr << "strainPlasticTrial = "
 			<< strainPlasticTrial << endln;
-		opserr << "strainPlasticIntermed = "
-			<< strainPlasticIntermed << endln;
 		opserr << "strainPostBucklingConverged = "
 			<< strainPostBucklingConverged << endln;
 		opserr << "strainPostBucklingTrial = "
 			<< strainPostBucklingTrial << endln;
-		opserr << "strainPostBucklingIntermed = "
-			<< strainPostBucklingIntermed << endln;
 		opserr << "strainPEqConverged = " << strainPEqConverged
-			<< " strainPEqTrial = " << strainPEqTrial
-			<< " strainPEqIntermed = " << strainPEqIntermed
-			<< endln;
+			<< " strainPEqTrial = " << strainPEqTrial << endln;
 		opserr << "strainPBEqConverged = " << strainPBEqConverged
-			<< " strainPBEqTrial = " << strainPBEqTrial
-			<< " strainPBEqIntermed = " << strainPBEqIntermed
-			<< endln;
-		opserr << "epsilonPB11UnloadConverged = "
-			<< epsilonPB11UnloadConverged << endln;
-		opserr << "epsilonPB11UnloadTrial = "
-			<< epsilonPB11UnloadTrial << endln;
-		opserr << "epsilonPB11UnloadIntermed = "
-			<< epsilonPB11UnloadIntermed << endln;
-		opserr << "epsilonPB11MinConverged = "
-			<< epsilonPB11MinConverged << endln;
-		opserr << "epsilonPB11MinTrial = "
-			<< epsilonPB11MinTrial << endln;
-		opserr << "epsilonPB11MinIntermed = "
-			<< epsilonPB11MinIntermed << endln;
-		opserr << "c1cConverged = " << c1cConverged
-			<< " c1cTrial = " << c1cTrial
-			<< " c1cIntermed = " << c1cIntermed
-			<< endln;
-		opserr << "yieldStressPBConverged = "
-			<< yieldStressPBConverged << endln;
-		opserr << "yieldStressPBTrial = "
-			<< yieldStressPBTrial << endln;
-		opserr << "yieldStressPBIntermed = "
-			<< yieldStressPBIntermed << endln;
+			<< " strainPBEqTrial = " << strainPBEqTrial << endln;
 		opserr << "sigmaCConverged = " << sigmaCConverged
-			<< " sigmaCTrial = " << sigmaCTrial
-			<< " sigmaCIntermed = " << sigmaCIntermed
-			<< endln;
+			<< " sigmaCTrial = " << sigmaCTrial << endln;
+		opserr << "yieldStressPBConverged = "
+			<< yieldStressPBConverged
+			<< " yieldStressPBTrial = "
+			<< yieldStressPBTrial << endln;
+		opserr << "c1cConverged = " << c1cConverged
+			<< " c1cTrial = " << c1cTrial << endln;
+		opserr << "epsilonPB11UnloadConverged = "
+			<< epsilonPB11UnloadConverged
+			<< " epsilonPB11UnloadTrial = "
+			<< epsilonPB11UnloadTrial << endln;
+		opserr << "epsilonPB11MinConverged = "
+			<< epsilonPB11MinConverged
+			<< " epsilonPB11MinTrial = "
+			<< epsilonPB11MinTrial << endln;
+		opserr << "alphaPKTrial[0] = " << alphaPKTrial[0] << endln;
+		opserr << "alphaPKTrial[1] = " << alphaPKTrial[1] << endln;
+		opserr << "alphaPBKTrial[0] = " << alphaPBKTrial[0] << endln;
+		opserr << "alphaPBKTrial[1] = " << alphaPBKTrial[1] << endln;
 		opserr << "stiffness row 0 = "
 			<< stiffnessTrial(0, 0) << " "
 			<< stiffnessTrial(0, 1) << " "
 			<< stiffnessTrial(0, 2) << endln;
 		opserr << "stiffnessTrial full = "
 			<< stiffnessTrial << endln;
-		opserr << "alphaPKTrial[0] = " << alphaPKTrial[0] << endln;
-		opserr << "alphaPKTrial[1] = " << alphaPKTrial[1] << endln;
-		opserr << "alphaPBKTrial[0] = " << alphaPBKTrial[0] << endln;
-		opserr << "alphaPBKTrial[1] = " << alphaPBKTrial[1] << endln;
 		opserr << "==================================================" << endln;
-		debugFiber17JumpCounter++;
 	}*/
 
 	return retVal;
@@ -1587,7 +1558,7 @@ int HLBModel::returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vect
 
 		// Newton step
 		phiVM = 1. / 2. * f2bar - 1. / 3. * pow(yieldStressTot, 2);
-		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + SMALL_NUMBER);
+		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + SMALL_NUMBER_STRESS);
 		/*strainPEqTrial = strainPEqConverged + sqrt(2. / 3.) * consistParam_plastic * fBar;*/
 		strainPEqTrial = strainPEqIntermed + sqrt(2. / 3.) * consistParam_plastic * fBar;
 
@@ -1915,7 +1886,7 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		strainPostBucklingTrial = strainPostBucklingIntermed + consistParam_plRecov * dPhiTensdXi;
 		/*if (strainPostBucklingTrial(0) > 0)*/
 		// Updated 04/27/2026
-		if (strainPostBucklingTrial(0) > SMALL_NUMBER)
+		if (strainPostBucklingTrial(0) > SMALL_NUMBER_STRAIN)
 		{
 			break;
 		}
@@ -2115,13 +2086,13 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 
 		// Newton step
 		phiVM = 1. / 2. * f2bar - 1. / 3. * pow(yieldStressTot, 2);
-		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + SMALL_NUMBER);
+		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + SMALL_NUMBER_STRESS);
 		strainPEqTrial = strainPEqIntermed + sqrt(2. / 3.) * consistParam_plastic * fBar;
 
 		PMatMultrelativeStressNPlus1 = PMat * relativeStressNPlus1;
 		strainPostBucklingTrial(0) = strainPostBucklingIntermed(0) + consistParam_plastic * PMatMultrelativeStressNPlus1(0);
 		// Updated 05/15/2026
-		if (strainPostBucklingTrial(0) > SMALL_NUMBER)
+		if (strainPostBucklingTrial(0) > SMALL_NUMBER_STRAIN)
 		{
 			break;
 		}
@@ -3628,7 +3599,7 @@ double HLBModel::calculateSigmaSurSigmaY_WebPlate(double epsiPb11) {
 		W = sqrt(alpha + 2. * y);
 
 
-		double bound4Smoothin = 2. * SMALL_NUMBER;
+		double bound4Smoothin = 2. * SMALL_NUMBER_STRAIN;
 
 		double sigmaSurSigmaY1XTilda = -EHat / (4. * DHat) + (+W + sqrt(-(3. * alpha + 2. * y + 2. * beta / W))) / 2.;
 		if (-(3. * alpha + 2. * y + 2. * beta / W)<0)
@@ -3637,7 +3608,7 @@ double HLBModel::calculateSigmaSurSigmaY_WebPlate(double epsiPb11) {
 		}
 		double sigmaSurSigmaY2XTilda = floorF1c + (strainPB11TrialRegularized - 1) * 1. / 1000.;
 
-		double xTilda = (strainPB11TrialRegularized - 1. + SMALL_NUMBER) / bound4Smoothin;
+		double xTilda = (strainPB11TrialRegularized - 1. + SMALL_NUMBER_STRAIN) / bound4Smoothin;
 		double fXTilda = 0.;
 		double f1MinusXTilda = 0.;
 		if (xTilda > 0.)
@@ -3780,7 +3751,7 @@ double HLBModel::calculateSigmaSurSigmaY_FlangePlate(double epsiPb11) {
 		W = sqrt(alpha + 2. * y);
 
 
-		double bound4Smoothin = 2. * SMALL_NUMBER;
+		double bound4Smoothin = 2. * SMALL_NUMBER_STRAIN;
 
 		double sigmaSurSigmaY1XTilda = -EHat / (4. * DHat) + (+W + sqrt(-(3. * alpha + 2. * y + 2. * beta / W))) / 2.;
 		if (-(3. * alpha + 2. * y + 2. * beta / W) < 0)
@@ -3789,7 +3760,7 @@ double HLBModel::calculateSigmaSurSigmaY_FlangePlate(double epsiPb11) {
 		}
 		double sigmaSurSigmaY2XTilda = floorF1c + (strainPB11TrialRegularized - 1) * 1. / 1000.;
 
-		double xTilda = (strainPB11TrialRegularized - 1. + SMALL_NUMBER) / bound4Smoothin;
+		double xTilda = (strainPB11TrialRegularized - 1. + SMALL_NUMBER_STRAIN) / bound4Smoothin;
 		double fXTilda = 0.;
 		double f1MinusXTilda = 0.;
 		if (xTilda > 0.)
@@ -3903,12 +3874,12 @@ double HLBModel::calculateDSigmaSurSigmaYdEpsilonPB11_WebPlate() {
 
 
 
-	double bound4Smoothin = 2. * SMALL_NUMBER;
+	double bound4Smoothin = 2. * SMALL_NUMBER_STRAIN;
 
 	double dSigmaSurSigmaYdEpsilonPBeq1XTilda = imag(sol4eq1_V02) / hStep;
 	double dSigmaSurSigmaYdEpsilonPBeq2XTilda = 1./1000.;
 
-	double xTilda = (real(epsilonPB11Regularized) - 1. + SMALL_NUMBER) / bound4Smoothin;
+	double xTilda = (real(epsilonPB11Regularized) - 1. + SMALL_NUMBER_STRAIN) / bound4Smoothin;
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -4014,12 +3985,12 @@ double HLBModel::calculateDSigmaSurSigmaYdEpsilonPB11_FlangePlate() {
 
 
 
-	double bound4Smoothin = 2. * SMALL_NUMBER;
+	double bound4Smoothin = 2. * SMALL_NUMBER_STRAIN;
 
 	double dSigmaSurSigmaYdEpsilonPBeq1XTilda = imag(sol4eq1_V02) / hStep;
 	double dSigmaSurSigmaYdEpsilonPBeq2XTilda = 1. / 1000.;
 
-	double xTilda = (real(epsilonPB11Regularized) - 1. + SMALL_NUMBER) / bound4Smoothin;
+	double xTilda = (real(epsilonPB11Regularized) - 1. + SMALL_NUMBER_STRAIN) / bound4Smoothin;
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -4319,7 +4290,7 @@ void HLBModel::calculateC1c(double yieldStress, Vector alphaTot, double epsiPb11
 	//double stress4C1c = stressTrial(0) + stressTol;
 	//c1cTrial = (pow(yieldStress, 2) - pow((-sigmaC + stressTol), 2)) / pow(stress4C1c, 2);
 
-	double stressTol = elasticMatrix(0, 0) * SMALL_NUMBER; // Additional stress component due to tolerance
+	double stressTol = elasticMatrix(0, 0) * SMALL_NUMBER_STRESS; // Additional stress component due to tolerance
 	//double stressTol = 0.; // Additional stress component due to tolerance
 	double sigma11UpdatedTol = stressTrial(0) + stressTol;
 	Vector xiTrial = (stressTrial + pVect * stressTol) - alphaTot;
@@ -4441,7 +4412,7 @@ double HLBModel::calculateF1t(double yieldStressTot, double alphaTot11, double e
 	}
 
 	// Update f1t if no post-buckling strain
-	if (abs(epsiPb11) < SMALL_NUMBER)
+	if (abs(epsiPb11) < SMALL_NUMBER_STRAIN)
 	{
 		f1t = 1.; // I do this because during tensile hardening stage alphaTot11 and yieldStress change --> f1t not equal 1
 	}
@@ -4481,13 +4452,13 @@ double HLBModel::calculateTBezier(double epsiPb11) {
 	std::complex<double> x2SolCubic = -oneComplex / (threeComplex * a) * (b + pow(xiCubic, 1) * Delta2 + Delta0 / (pow(xiCubic, 1) * Delta2));
 	std::complex<double> x3SolCubic = -oneComplex / (threeComplex * a) * (b + pow(xiCubic, 2) * Delta2 + Delta0 / (pow(xiCubic, 2) * Delta2));
 
-	if (imag(x1SolCubic) <= SMALL_NUMBER && real(x1SolCubic) >= 0. - SMALL_NUMBER && real(x1SolCubic) <= 1. + SMALL_NUMBER) {
+	if (imag(x1SolCubic) <= SMALL_NUMBER_STRESS && real(x1SolCubic) >= 0. - SMALL_NUMBER_STRESS && real(x1SolCubic) <= 1. + SMALL_NUMBER_STRESS) {
 		tBezier = real(x1SolCubic);
 	}
-	else if (imag(x2SolCubic) <= SMALL_NUMBER && real(x2SolCubic) >= 0. - SMALL_NUMBER && real(x2SolCubic) <= 1. + SMALL_NUMBER) {
+	else if (imag(x2SolCubic) <= SMALL_NUMBER_STRESS && real(x2SolCubic) >= 0. - SMALL_NUMBER_STRESS && real(x2SolCubic) <= 1. + SMALL_NUMBER_STRESS) {
 		tBezier = real(x2SolCubic);
 	}
-	else if (imag(x3SolCubic) <= SMALL_NUMBER && real(x3SolCubic) >= 0. - SMALL_NUMBER && real(x3SolCubic) <= 1. + SMALL_NUMBER) {
+	else if (imag(x3SolCubic) <= SMALL_NUMBER_STRESS && real(x3SolCubic) >= 0. - SMALL_NUMBER_STRESS && real(x3SolCubic) <= 1. + SMALL_NUMBER_STRESS) {
 		tBezier = real(x3SolCubic);
 	}
 
@@ -4551,13 +4522,13 @@ void HLBModel::computeSigmaCDegradation() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 Vector HLBModel::computeBackstressTotPlRecovStage(double epsiPb11) {
 	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
-	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER_STRAIN);
 
 	double a1XTilda = backstress11TotAfterFullPLRecovTrial;
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial(0) - backstress11TotAfterFullPLRecovTrial) * epsiPb11 + backstress11TotAfterFullPLRecovTrial;
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (epsiPb11 + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (epsiPb11 + SMALL_NUMBER_STRAIN + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -4584,13 +4555,13 @@ Vector HLBModel::computeBackstressTotPlRecovStage(double epsiPb11) {
 
 double HLBModel::computeYieldStressTotPlRecovStage(double epsiPb11) {
 	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
-	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER_STRAIN);
 
 	double a1XTilda = sigmaYieldTotAfterFullPLRecovTrial;
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (sigmaYieldAfterCompressionTrial - sigmaYieldTotAfterFullPLRecovTrial) * epsiPb11 + sigmaYieldTotAfterFullPLRecovTrial;
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (epsiPb11 + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (epsiPb11 + SMALL_NUMBER_STRAIN + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -4612,13 +4583,13 @@ double HLBModel::computeYieldStressTotPlRecovStage(double epsiPb11) {
 /* ----------------------------------------------------------------------------------------------------------------- */
 double HLBModel::computeDAlpha11TotDEpsiPb11PlRecovStage() {
 	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
-	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER_STRAIN);
 
 	double a1XTilda = 0.;
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (backstressAfterCompressionTrial(0) - backstress11TotAfterFullPLRecovTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER_STRAIN + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -4640,13 +4611,13 @@ double HLBModel::computeDAlpha11TotDEpsiPb11PlRecovStage() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 double HLBModel::computeDSigmaYieldTotDEpsiPb11PlRecovStage() {
 	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
-	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER_STRAIN);
 
 	double a1XTilda = 0.;
 	double a2XTilda = 1 / epsilonPB11UnloadTrial * (sigmaYieldAfterCompressionTrial - sigmaYieldTotAfterFullPLRecovTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER_STRAIN + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)
@@ -4668,13 +4639,13 @@ double HLBModel::computeDSigmaYieldTotDEpsiPb11PlRecovStage() {
 /* ----------------------------------------------------------------------------------------------------------------- */
 void HLBModel::computeReduceC1cLinearEvol() {
 	/*double bound4Smoothin = 5. / 100. * abs(SMALL_NUMBER);*/
-	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER);
+	double bound4Smoothin = 200. / 100. * abs(SMALL_NUMBER_STRAIN);
 
 	double a1XTilda = 0.;
 	double a2XTilda = c1cUnloadTrial * (alphaRegularization * strainPostBucklingTrial(0) / epsilonPB11UnloadTrial);
 
 	/*double xTilda = (abs(strainPostBucklingTrial(0)) + SMALL_NUMBER + bound4Smoothin) / (2. * bound4Smoothin);*/
-	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER + bound4Smoothin) / (bound4Smoothin);
+	double xTilda = (alphaRegularization * strainPostBucklingTrial(0) + SMALL_NUMBER_STRAIN + bound4Smoothin) / (bound4Smoothin);
 	double fXTilda = 0.;
 	double f1MinusXTilda = 0.;
 	if (xTilda > 0.)

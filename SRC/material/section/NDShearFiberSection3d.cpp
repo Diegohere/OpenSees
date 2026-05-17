@@ -559,7 +559,7 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
   //// Current problematic line scan has e1 = d1 around -4.20842e-05.
   //// Use only section tag 1 for section 0 in the element diagnostic.
   //if (this->getTag() == 1 &&
-  //    fabs(d1 + 4.20842e-05) < 5.0e-7)
+  //    fabs(d1 - 9.11977e-06) < 5.0e-7)
   //{
   //    debugFiberFD = true;
   //}
@@ -623,8 +623,6 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
   //    topJumpC01[kk] = 0.0;
   //    topJumpC02[kk] = 0.0;
   //}
-  //static int stressJumpPrintCounter = 0;
-  //const int maxStressJumpPrints = 20;
 
   for (int i = 0; i < numFibers; i++) {
     NDMaterial *theMat = theMaterials[i];
@@ -827,8 +825,7 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
   //if (debugFiberFD)
   //{
   //    if (prevValid &&
-  //        fabs(sumFD_S1) > 500.0 &&
-  //        stressJumpPrintCounter < maxStressJumpPrints)
+  //        fabs(sumFD_S1) > 50.0)
   //    {
   //        opserr.precision(17);
   //        opserr << "##################################################" << endln;
@@ -900,7 +897,6 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
   //            }
   //        }
   //        opserr << "##################################################" << endln;
-  //        stressJumpPrintCounter++;
   //    }
   //    // First active call only initializes previous values.
   //    // From the second active call onward, comparisons are valid.
