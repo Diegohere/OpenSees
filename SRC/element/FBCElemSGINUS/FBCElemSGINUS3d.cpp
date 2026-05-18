@@ -902,7 +902,7 @@ FBCElemSGINUS3d::update(void)
 						eLocalSubdivide[i] += deStar_local_Tot[i] + eu_local_Tot[i];
 
 						//// Diagnostics 05/14/2026
-						//// Store state before applying current local iteration increment
+						////Store state before applying current local iteration increment
 						//eBefore_Tot[i] = eLocalSubdivide[i];
 						//srBefore_Tot[i] = srSubdivide[i];
 						//KBefore_Tot[i] = sections[i]->getSectionTangent();
@@ -942,7 +942,7 @@ FBCElemSGINUS3d::update(void)
 						// get section resisting forces
 						srSubdivide[i] = sections[i]->getStressResultant();
 
-						//// Added diagnostics 05/14/2026
+						// Added diagnostics 05/14/2026
 						//if (j > 40 && i == 0)
 						//{
 						//	int order = sections[i]->getOrder();

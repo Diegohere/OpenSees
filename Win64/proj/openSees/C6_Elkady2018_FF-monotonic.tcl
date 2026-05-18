@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_C6_Elkady2018_l0_dw1e6;			# name of output folder
+	set dataDir results_C6_Elkady2018_FFMono_l0_dw1e6;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -71,7 +71,7 @@
 	# command:  fix nodeID dxFixity dyFixity rzFixity
 	# fixity values: 1 = constrained; 0 = unconstrained
 	fix 1 1 1 1 1 1 1;
-	fix 3 0 0 1 1 1 0;
+	fix 3 0 0 1 1 1 1;
 	
 #Constraints for zero length
 	equalDOF 1 2 1 2 3 4 5 
@@ -243,13 +243,16 @@ puts "Recorders ..."
 # set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize12_lowPassFiltered2.txt"
 # set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize12_lowPassFiltered2.txt"
 # set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize12_lowPassFiltered2.txt"
-set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize12_generated.txt"
-set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize12_generated.txt"
-set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize12_generated.txt"
+# set lateralDispXFile "C6_Elkady2018_InPlaneTopDisp_resize12_generated.txt"
+# set lateralDispZFile "C6_Elkady2018_OutPlaneTopDisp_resize12_generated.txt"
+# set topRotationFile "C6_Elkady2018_InPlaneTopRot_resize12_generated.txt"
 #set TotalNumberOfSteps 1144;	# number of steps in ground motion for resize 100
 # set TotalNumberOfSteps 2265;	# number of steps in ground motion for resize 50
 # set TotalNumberOfSteps 4514;	# number of steps in ground motion for resize 25
-set TotalNumberOfSteps 9386;	# number of steps in ground motion for resize 12
+# set TotalNumberOfSteps 9386;	# number of steps in ground motion for resize 12
+
+set lateralDispXFile "Elkady2018_monotonic.txt"
+set TotalNumberOfSteps 999;	# number of steps in ground motion for monotonic
 
 
 # Start timer
@@ -313,8 +316,8 @@ set tStart [clock seconds];
 
 
 set lateralDispXSeries "Series -dt $dt -filePath $lateralDispXFile -factor [expr 1]";
-set lateralDispZSeries "Series -dt $dt -filePath $lateralDispZFile -factor [expr 1]";
-set topRotationZSeries "Series -dt $dt -filePath $topRotationFile -factor [expr 1]";
+# set lateralDispZSeries "Series -dt $dt -filePath $lateralDispZFile -factor [expr 1]";
+# set topRotationZSeries "Series -dt $dt -filePath $topRotationFile -factor [expr 1]";
 set GMtime [expr $dt*$TotalNumberOfSteps + 0.0];	# total time of ground motion + free vibration
 set FloorNodes [list  1 3 ]; 
 
@@ -324,11 +327,11 @@ set FloorNodes [list  1 3 ];
 	# pattern UniformExcitation 4 $CtrlDOFRotZ -disp $topRotationZSeries;
 	pattern MultipleSupport 2  {
 		groundMotion 1 Plain -disp  $lateralDispXSeries 
-		groundMotion 2 Plain -disp  $lateralDispZSeries 
-		groundMotion 3 Plain -disp  $topRotationZSeries 
+		# groundMotion 2 Plain -disp  $lateralDispZSeries 
+		# groundMotion 3 Plain -disp  $topRotationZSeries 
 	    imposedMotion $CtrlNode  $CtrlDOFLatX 1	
-		imposedMotion $CtrlNode  $CtrlDOFLatZ 2	
-		imposedMotion $CtrlNode  $CtrlDOFRotZ 3	
+		# imposedMotion $CtrlNode  $CtrlDOFLatZ 2	
+		# imposedMotion $CtrlNode  $CtrlDOFRotZ 3	
 	};	# end pattern
 	
 	

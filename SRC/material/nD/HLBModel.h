@@ -278,11 +278,16 @@ private:
 	const unsigned int N_SOFTENING_PARAMS = 3;
 	const unsigned int N_PARAM_PER_BACK = 2;
 	const double RETURN_MAP_TOL = 1.0e-8;
-	//const double SMALL_NUMBER = 1.0e-6;
-	const double SMALL_NUMBER_STRAIN = 1e-10;
-	const double SMALL_NUMBER_STRESS = 1e-6;
+	const double SMALL_NUMBER_STRAIN = 1.0e-10;
+	const double SMALL_NUMBER_STRESS = 1.0e-5;   // for normalized cap residual checks
+	const double DENOM_TOL = 1.0e-14;            // only for Newton denominator protection
+	// Updated 05/18/2026
+	const double RETURN_MAP_TOL_PLRECOV = RETURN_MAP_TOL;
+	const double RETURN_MAP_STAGNATION_TOL_PLRECOV = 1.0e-7;
+	const double DLAMBDA_TOL_PLRECOV = 1.0e-15;
+
 	const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 1000;
-	//const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 10000;
+	//const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 100000;
 	const unsigned int MAXIMUM_ITERATIONS_RETURNMAPPING = 500;
 	const unsigned int N_DIRECT = 1;
 	const unsigned int N_DIMS = 3;

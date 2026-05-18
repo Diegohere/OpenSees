@@ -1259,12 +1259,13 @@ int HLBModel::timeIntegration() {
 							strainPostBucklingTrial = strainPostBucklingIntermed;
 						}
 						calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
+						c1cIntermed = c1cTrial; // Updated 05/18/2026
 					}
 				}
 				else { // the capping point has been passed
 					deltaStrain_trial = deltaStrain_trial / 2.;
 					//Try solving issue with high shear strains 05.02.2025
-					if (iterationNumber_timeIntegration >= 0.2 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
+					if (iterationNumber_timeIntegration >= 0.5 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
 					{
 						//sigmaCTrial = yieldStressTot;
 						sigmaCTrial = sqrt(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)));
@@ -1308,6 +1309,19 @@ int HLBModel::timeIntegration() {
 							strainPlasticIntermed = strainPlasticTrial;
 							strainPEqIntermed = strainPEqTrial;
 							alphaPKIntermed = alphaPKTrial;
+
+							// Updated 05/18/2026
+							// Initialize the softening surface at the accepted plastic capping state
+							Vector alphaTotCap = Vector(N_DIMS);
+							alphaTotCap.Zero();
+							for (unsigned int i = 0; i < nBackstresses; ++i)
+							{
+								alphaTotCap = alphaTotCap + alphaPKIntermed[i] + alphaPBKIntermed[i];
+							}
+							double yieldStressPCap = calculateYieldStressPlastic(strainPEqIntermed);
+							double yieldStressTotCap = yieldStressPCap + yieldStressPBIntermed;
+							calculateC1c(yieldStressTotCap, alphaTotCap, strainPostBucklingIntermed(0));
+							c1cIntermed = c1cTrial;
 						}
 
 					}
@@ -1315,7 +1329,7 @@ int HLBModel::timeIntegration() {
 						//deltaStrain_trial /= 2.;
 						deltaStrain_trial = deltaStrain_trial / 2.;
 						//Try solving issue with high shear strains 18.12.2023
-						if (iterationNumber_timeIntegration >= 0.2 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
+						if (iterationNumber_timeIntegration >= 0.5 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
 						{
 							//sigmaCTrial = yieldStressTot;
 							sigmaCTrial = sqrt(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)));
@@ -1346,16 +1360,21 @@ int HLBModel::timeIntegration() {
 							strainPBEqIntermed = strainPBEqTrial;
 						}
 
-						// Check if capping point is reached
-						//if (3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2) >= -SMALL_NUMBER) { // capping point is reached
-						if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER_STRESS) { // capping point is reached
+						 //Check if capping point is reached
+						//if (abs(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)) - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) <=SMALL_NUMBER_STRESS) { // capping point is reached // updated 05/18/2026
+						if ((3. / 2. * (2. / 3. * pow(stressTrial(0), 2)
+							+ 2. * pow(stressTrial(1), 2)
+							+ 2. * pow(stressTrial(2), 2))
+							- pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2) >= -SMALL_NUMBER_STRESS)
+						{
 							calculateC1c(yieldStressTot, alphaTot, strainPostBucklingIntermed(0));
+							c1cIntermed = c1cTrial;
 						}
 					}
 					else { // the capping point has been passed or if we have not converged
 						deltaStrain_trial = deltaStrain_trial / 2.;
 						//Try solving issue with high shear strains 18.12.2023
-						if (iterationNumber_timeIntegration >= 0.2 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
+						if (iterationNumber_timeIntegration >= 0.5 * MAXIMUM_ITERATIONS_TIMEINTEGRATION)
 						{
 							//sigmaCTrial = yieldStressTot;
 							sigmaCTrial = sqrt(3. / 2. * (2. / 3. * pow(stressTrial(0), 2) + 2. * pow(stressTrial(1), 2) + 2. * pow(stressTrial(2), 2)));
@@ -1392,21 +1411,27 @@ int HLBModel::timeIntegration() {
 	}
 
 	// ------------------------------------------------------------
-// DEBUG: material-level state for fiber 1 jump-like state
+// DEBUG: material-level state for fiber jump-like state
 // Dominant section jump:
-// strain ? [-0.0436071, -2.7709e-06, 0.000655535]
-// stress11 ? -480.68 MPa
+// strain ? [-0.0370387, -2.87479e-05, 0.00112010]
+// stress11 switches around -481.641 to -481.644 MPa
 // ------------------------------------------------------------
-	/*bool debugFiber1JumpState =
-		fabs(strainTrial(0) + 0.0436071) < 5.0e-7 &&
-		fabs(strainTrial(1) + 2.7709e-06) < 5.0e-8 &&
-		fabs(strainTrial(2) - 0.000655535) < 5.0e-7 &&
-		fabs(stressTrial(0) + 480.68) < 2.0;
-	if (debugFiber1JumpState)
+		/*bool debugFiber4Jump =
+		fabs(strainTrial(0) + 0.134) < 5.0e-7 &&
+		fabs(strainTrial(1) - 0.0021113) < 5.0e-7 &&
+		fabs(strainTrial(2) - 0.00109305) < 5.0e-7;
+	if (debugFiber4Jump)
 	{
+		double sigmaVM2 =
+			3. / 2. *
+			(2. / 3. * pow(stressTrial(0), 2)
+				+ 2. * pow(stressTrial(1), 2)
+				+ 2. * pow(stressTrial(2), 2));
+		double capResidualNorm =
+			(sigmaVM2 - pow(sigmaCTrial, 2)) / pow(sigmaC0Stress, 2);
 		opserr.precision(17);
 		opserr << "==================================================" << endln;
-		opserr << "MATERIAL DEBUG fiber1 jump-like state" << endln;
+		opserr << "MATERIAL DEBUG fiber jump-like state" << endln;
 		opserr << "retVal = " << retVal
 			<< " iterationNumber_timeIntegration = "
 			<< iterationNumber_timeIntegration << endln;
@@ -1414,50 +1439,44 @@ int HLBModel::timeIntegration() {
 		opserr << "strainTrial     = " << strainTrial << endln;
 		opserr << "stressConverged = " << stressConverged << endln;
 		opserr << "stressTrial     = " << stressTrial << endln;
+		opserr << "sigmaVM = " << sqrt(sigmaVM2) << endln;
+		opserr << "sigmaCTrial = " << sigmaCTrial << endln;
+		opserr << "sigmaCConverged = " << sigmaCConverged << endln;
+		opserr << "capResidualNorm = " << capResidualNorm << endln;
 		opserr << "elasticLoading = " << elasticLoading
 			<< " plasticLoading = " << plasticLoading
 			<< " postBucklingLoading = " << postBucklingLoading
 			<< " PlRecoveryLoading = " << PlRecoveryLoading
 			<< " UVCRecoveryLoading = " << UVCRecoveryLoading
 			<< endln;
-		opserr << "strainPlasticConverged = "
-			<< strainPlasticConverged << endln;
+		opserr << "strainPlasticIntermed = "
+			<< strainPlasticIntermed << endln;
 		opserr << "strainPlasticTrial = "
 			<< strainPlasticTrial << endln;
-		opserr << "strainPostBucklingConverged = "
-			<< strainPostBucklingConverged << endln;
+		opserr << "strainPostBucklingIntermed = "
+			<< strainPostBucklingIntermed << endln;
 		opserr << "strainPostBucklingTrial = "
 			<< strainPostBucklingTrial << endln;
-		opserr << "strainPEqConverged = " << strainPEqConverged
+		opserr << "strainPEqIntermed = " << strainPEqIntermed
 			<< " strainPEqTrial = " << strainPEqTrial << endln;
-		opserr << "strainPBEqConverged = " << strainPBEqConverged
+		opserr << "strainPBEqIntermed = " << strainPBEqIntermed
 			<< " strainPBEqTrial = " << strainPBEqTrial << endln;
-		opserr << "sigmaCConverged = " << sigmaCConverged
-			<< " sigmaCTrial = " << sigmaCTrial << endln;
-		opserr << "yieldStressPBConverged = "
-			<< yieldStressPBConverged
-			<< " yieldStressPBTrial = "
-			<< yieldStressPBTrial << endln;
-		opserr << "c1cConverged = " << c1cConverged
+		opserr << "c1cIntermed = " << c1cIntermed
 			<< " c1cTrial = " << c1cTrial << endln;
-		opserr << "epsilonPB11UnloadConverged = "
-			<< epsilonPB11UnloadConverged
-			<< " epsilonPB11UnloadTrial = "
-			<< epsilonPB11UnloadTrial << endln;
-		opserr << "epsilonPB11MinConverged = "
-			<< epsilonPB11MinConverged
-			<< " epsilonPB11MinTrial = "
-			<< epsilonPB11MinTrial << endln;
+		opserr << "yieldStressPBIntermed = " << yieldStressPBIntermed
+			<< " yieldStressPBTrial = " << yieldStressPBTrial << endln;
+		opserr << "alphaPKIntermed[0] = " << alphaPKIntermed[0] << endln;
+		opserr << "alphaPKIntermed[1] = " << alphaPKIntermed[1] << endln;
 		opserr << "alphaPKTrial[0] = " << alphaPKTrial[0] << endln;
 		opserr << "alphaPKTrial[1] = " << alphaPKTrial[1] << endln;
+		opserr << "alphaPBKIntermed[0] = " << alphaPBKIntermed[0] << endln;
+		opserr << "alphaPBKIntermed[1] = " << alphaPBKIntermed[1] << endln;
 		opserr << "alphaPBKTrial[0] = " << alphaPBKTrial[0] << endln;
 		opserr << "alphaPBKTrial[1] = " << alphaPBKTrial[1] << endln;
 		opserr << "stiffness row 0 = "
 			<< stiffnessTrial(0, 0) << " "
 			<< stiffnessTrial(0, 1) << " "
 			<< stiffnessTrial(0, 2) << endln;
-		opserr << "stiffnessTrial full = "
-			<< stiffnessTrial << endln;
 		opserr << "==================================================" << endln;
 	}*/
 
@@ -1558,7 +1577,7 @@ int HLBModel::returnMappingHardening(Vector strain_nPlus1, Vector alphaTot, Vect
 
 		// Newton step
 		phiVM = 1. / 2. * f2bar - 1. / 3. * pow(yieldStressTot, 2);
-		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + SMALL_NUMBER_STRESS);
+		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + DENOM_TOL);
 		/*strainPEqTrial = strainPEqConverged + sqrt(2. / 3.) * consistParam_plastic * fBar;*/
 		strainPEqTrial = strainPEqIntermed + sqrt(2. / 3.) * consistParam_plastic * fBar;
 
@@ -1699,6 +1718,47 @@ int HLBModel::returnMappingSoftening(Vector strain_nPlus1, Vector relativeStress
 		}
 	}
 
+	// Updated 05/18/2026
+	Vector sigmaCap = stressTrial;
+
+	double sigmaVM =
+		sqrt(3. / 2. * (
+			2. / 3. * pow(stressTrial(0), 2)
+			+ 2. * pow(stressTrial(1), 2)
+			+ 2. * pow(stressTrial(2), 2)
+			));
+
+	if (sigmaVM > sigmaCTrial)
+	{
+		double scaleToCap = sigmaCTrial / sigmaVM;
+		sigmaCap = scaleToCap * stressTrial;
+		Matrix compliance = calculateComplianceMatrix();
+		Vector compSigma = compliance * sigmaCap;
+		// Solve scalar fixed-point/Newton problem for epsPB11
+		double e = strainPostBucklingTrial(0); // initial guess
+		for (int k = 0; k < 20; ++k)
+		{
+			double eta = calculateEtaTangentReduce(alphaRegularization * e);
+			double eNew =
+				strain_nPlus1(0)
+				- strainPlasticIntermed(0)
+				- compSigma(0) / eta;
+			if (fabs(eNew - e) < 1.0e-12)
+			{
+				e = eNew;
+				break;
+			}
+			e = eNew;
+		}
+		double etaFinal = calculateEtaTangentReduce(alphaRegularization * e);
+		Vector elasticStrainCap = (1.0 / etaFinal) * compSigma;
+		strainPostBucklingTrial =
+			strain_nPlus1 - strainPlasticIntermed - elasticStrainCap;
+		stressTrial = sigmaCap;
+		relativeStressNPlus1 = stressTrial - backstressTot;
+		calculateC1c(yieldStressTot, backstressTot, strainPostBucklingTrial(0));
+	}
+
 	// Calculate the consistent tangent modulus for softening stage
 	calculateConsistentTangentModulusSoftening(strain_nPlus1, backstressTot, relativeStressNPlus1, stressTrial, consistParam_postBuckling);
 
@@ -1820,6 +1880,10 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 		double testError = 1.;
 	}*/
+	/*bool debugPlRecovFiber4 =
+		fabs(strainTrial(0) + 0.134) < 5.0e-7 &&
+		fabs(strainTrial(1) - 0.0021113) < 5.0e-7 &&
+		fabs(strainTrial(2) - 0.00109305) < 5.0e-7;*/
 
 	strainPostBucklingTrial = strainPostBucklingIntermed;
 
@@ -1829,6 +1893,29 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	backstressTot = computeBackstressTotPlRecovStage(alphaRegularization * strainPostBucklingTrial(0));
 	f1t = calculateF1t(yieldStressTot, backstressTot(0), alphaRegularization * strainPostBucklingTrial(0));
 	chi1t = b_1tTrial * (1 - f1t);
+
+	// Diagnostics
+	/*if (debugPlRecovFiber4)
+	{
+		opserr.precision(17);
+		opserr << "==================================================" << endln;
+		opserr << "ENTER returnMappingPlRecovStage" << endln;
+		opserr << "strainTrial = " << strainTrial << endln;
+		opserr << "strain_nPlus1 = " << strain_nPlus1 << endln;
+		opserr << "strainPostBucklingIntermed = " << strainPostBucklingIntermed << endln;
+		opserr << "strainPostBucklingTrial BEFORE = " << strainPostBucklingTrial << endln;
+		opserr << "strainPBEqIntermed = " << strainPBEqIntermed << endln;
+		opserr << "strainPBEqTrial BEFORE = " << strainPBEqTrial << endln;
+		opserr << "yieldStressPBIntermed = " << yieldStressPBIntermed << endln;
+		opserr << "yieldStressPBTrial BEFORE = " << yieldStressPBTrial << endln;
+		opserr << "c1cIntermed = " << c1cIntermed << endln;
+		opserr << "c1cTrial BEFORE = " << c1cTrial << endln;
+		opserr << "alphaPBKIntermed[0] = " << alphaPBKIntermed[0] << endln;
+		opserr << "alphaPBKIntermed[1] = " << alphaPBKIntermed[1] << endln;
+	}
+	double phiPrev_debug = 0.0;
+	double lambdaPrev_debug = 0.0;
+	bool havePrev_debug = false;*/
 
 	// Do the return mapping algorithm for plastic recovery stage
 	while (!convergedReturnMapping && iterationNumber_ReturnMapping < MAXIMUM_ITERATIONS_RETURNMAPPING)
@@ -1878,8 +1965,76 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 
 		dPhiTensdLambdaPB = 2. * dXidLambda(0) * (relativeStressNPlus1(0) + chi1t * stressTrial(0)) + 6. * dXidLambda(1) * relativeStressNPlus1(1) + 6. * dXidLambda(2) * relativeStressNPlus1(2) + pow(stressTrial(0), 2) * dChi1tDLambdaPB + 2 * chi1t * stressTrial(0) * dAlpha11TotDLambdaPb - 2 * dSigmaYieldTotDLambdaPb * yieldStressTot;
 
+		// Diagnostics
+		/*if(debugPlRecovFiber4)
+		{
+			double phiNorm =
+				phiTens / (2. / 3. * pow(initialYield, 2));
+			double lambdaCurr = consistParam_plRecov;
+			double denom = dPhiTensdLambdaPB;
+			double dLambdaNewton = 0.0;
+			if (fabs(denom) > 0.0)
+			{
+				dLambdaNewton = -phiTens / denom;
+			}
+			opserr.precision(17);
+			opserr << "PLRECOV NEWTON DIAG " << iterationNumber_ReturnMapping << endln;
+			opserr << "  lambdaCurr = " << lambdaCurr << endln;
+			opserr << "  phiTens = " << phiTens << endln;
+			opserr << "  phiNorm = " << phiNorm << endln;
+			opserr << "  dPhiTensdLambdaPB = " << dPhiTensdLambdaPB << endln;
+			opserr << "  dLambdaNewton = " << dLambdaNewton << endln;
+			opserr << "  rel_dLambda = "
+				<< fabs(dLambdaNewton) / (1.0 + fabs(lambdaCurr)) << endln;
+			if (havePrev_debug)
+			{
+				double dLambdaSecant = lambdaCurr - lambdaPrev_debug;
+				double dPhiSecant = phiTens - phiPrev_debug;
+
+				opserr << "  dLambdaSecant = " << dLambdaSecant << endln;
+				opserr << "  dPhiSecant = " << dPhiSecant << endln;
+				if (fabs(dLambdaSecant) > 1.0e-30)
+				{
+					double secantSlope = dPhiSecant / dLambdaSecant;
+					opserr << "  secantSlope dPhi/dLambda = "
+						<< secantSlope << endln;
+					if (fabs(secantSlope) > 0.0)
+					{
+						opserr << "  analytic/secant slope ratio = "
+							<< dPhiTensdLambdaPB / secantSlope << endln;
+					}
+				}
+				opserr << "  phi sign product = "
+					<< phiTens * phiPrev_debug << endln;
+			}
+			opserr << "  stressTrial = " << stressTrial << endln;
+			opserr << "  strainPostBucklingTrial = "
+				<< strainPostBucklingTrial << endln;
+			opserr << "  relativeStressNPlus1 = "
+				<< relativeStressNPlus1 << endln;
+			opserr << "  backstressTot = " << backstressTot << endln;
+			opserr << "--------------------------------------------------" << endln;
+		}*/
+		/*phiPrev_debug = phiTens;
+		lambdaPrev_debug = consistParam_plRecov;
+		havePrev_debug = true;*/
+
 		// Do the Newton Step
-		consistParam_plRecov = consistParam_plRecov - phiTens / dPhiTensdLambdaPB;
+		//consistParam_plRecov = consistParam_plRecov - phiTens / dPhiTensdLambdaPB;
+		// Updated 05/18/2026
+		double phiNorm = phiTens / (2. / 3. * pow(initialYield, 2));
+		double dLambdaNewton = -phiTens / (dPhiTensdLambdaPB + DENOM_TOL);
+		double relDLambda = fabs(dLambdaNewton) / (1.0 + fabs(consistParam_plRecov));
+		if (fabs(phiNorm) < RETURN_MAP_TOL_PLRECOV ||
+			(fabs(phiNorm) < RETURN_MAP_STAGNATION_TOL_PLRECOV &&
+				relDLambda < DLAMBDA_TOL_PLRECOV))
+		{
+			convergedReturnMapping = true;
+		}
+		else
+		{
+			consistParam_plRecov += dLambdaNewton;
+		}
 
 		//strainPBEqTrial = strainPBEqIntermed * -psi * consistParam_plRecov;
 		strainPBEqTrial = strainPBEqIntermed * -psi * consistParam_plRecov; //updated 05/16/2026
@@ -1904,11 +2059,24 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 		//	break;
 		//}
 
-		// Check convergence
-		if (fabs(phiTens / (2. / 3. * pow(initialYield, 2))) < RETURN_MAP_TOL) {
-			//if (fabs(phiTens) < RETURN_MAP_TOL*2./3.*pow(yieldStress,2)) {
+		//Diagnostics
+		/*if (debugPlRecovFiber4)
+		{
+			opserr << "PLRECOV RM ITER " << iterationNumber_ReturnMapping << endln;
+			opserr << "  phiTens = " << phiTens << endln;
+			opserr << "  phiNorm = " << phiTens / (2. / 3. * pow(initialYield, 2)) << endln;
+			opserr << "  consistParam_plRecov = " << consistParam_plRecov << endln;
+			opserr << "  stressTrial = " << stressTrial << endln;
+			opserr << "  relativeStressNPlus1 = " << relativeStressNPlus1 << endln;
+			opserr << "  backstressTot = " << backstressTot << endln;
+			opserr << "  strainPostBucklingTrial = " << strainPostBucklingTrial << endln;
+		}*/
+
+		// Check convergence // Updated 05/18/2026
+		/*if (fabs(phiTens / (2. / 3. * pow(initialYield, 2))) < RETURN_MAP_TOL) {
 			convergedReturnMapping = true;
-		}
+		}*/
+		
 
 	} // end loop for return mapping iterations
 
@@ -1958,6 +2126,27 @@ int HLBModel::returnMappingPlRecovStage(Vector strain_nPlus1) {
 	//{
 	//	retVal = -1;
 	//}
+
+	// Diagnostics
+	/*if (debugPlRecovFiber4)
+	{
+		opserr << "EXIT returnMappingPlRecovStage" << endln;
+		opserr << "retVal = " << retVal << endln;
+		opserr << "iterationNumber_ReturnMapping = "
+			<< iterationNumber_ReturnMapping << endln;
+		opserr << "stressTrial FINAL = " << stressTrial << endln;
+		opserr << "strainPostBucklingTrial FINAL = " << strainPostBucklingTrial << endln;
+		opserr << "strainPBEqTrial FINAL = " << strainPBEqTrial << endln;
+		opserr << "yieldStressPBTrial FINAL = " << yieldStressPBTrial << endln;
+		opserr << "c1cTrial FINAL = " << c1cTrial << endln;
+		opserr << "alphaPBKTrial[0] FINAL = " << alphaPBKTrial[0] << endln;
+		opserr << "alphaPBKTrial[1] FINAL = " << alphaPBKTrial[1] << endln;
+		opserr << "stiffness row 0 FINAL = "
+			<< stiffnessTrial(0, 0) << " "
+			<< stiffnessTrial(0, 1) << " "
+			<< stiffnessTrial(0, 2) << endln;
+		opserr << "==================================================" << endln;
+	}*/
 
 	return retVal;
 }
@@ -2086,7 +2275,7 @@ int HLBModel::returnMappingUVCRecovStage(Vector strain_nPlus1, Vector alphaTot) 
 
 		// Newton step
 		phiVM = 1. / 2. * f2bar - 1. / 3. * pow(yieldStressTot, 2);
-		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + SMALL_NUMBER_STRESS);
+		consistParam_plastic = consistParam_plastic - phiVM / (consistDenom + DENOM_TOL);
 		strainPEqTrial = strainPEqIntermed + sqrt(2. / 3.) * consistParam_plastic * fBar;
 
 		PMatMultrelativeStressNPlus1 = PMat * relativeStressNPlus1;
@@ -4290,8 +4479,9 @@ void HLBModel::calculateC1c(double yieldStress, Vector alphaTot, double epsiPb11
 	//double stress4C1c = stressTrial(0) + stressTol;
 	//c1cTrial = (pow(yieldStress, 2) - pow((-sigmaC + stressTol), 2)) / pow(stress4C1c, 2);
 
-	double stressTol = elasticMatrix(0, 0) * SMALL_NUMBER_STRESS; // Additional stress component due to tolerance
-	//double stressTol = 0.; // Additional stress component due to tolerance
+	//double stressTol = elasticMatrix(0, 0) * SMALL_NUMBER_STRESS; // Additional stress component due to tolerance
+	
+	double stressTol = 0.; // Additional stress component due to tolerance //Updated 05/18/2026
 	double sigma11UpdatedTol = stressTrial(0) + stressTol;
 	Vector xiTrial = (stressTrial + pVect * stressTol) - alphaTot;
 	double xiVonMisesSquared = 3. / 2. * (2. / 3. * pow(xiTrial(0), 2) + 2. * pow(xiTrial(1), 2) + 2. * pow(xiTrial(2), 2));
@@ -4306,6 +4496,41 @@ void HLBModel::calculateC1c(double yieldStress, Vector alphaTot, double epsiPb11
 	double sigmaSurSigmaYTerm = b_chi1c * pow((1. - sigmaSurSigmaY), 2);
 	c1cTrial = chi_1c - sigmaSurSigmaYTerm;
 
+
+	//// Updated 05/18/2026
+	//// Compute equivalent stress of the current trial stress
+	//double sigmaVM2 =
+	//	3. / 2. * (
+	//		2. / 3. * pow(stressTrial(0), 2)
+	//		+ 2. * pow(stressTrial(1), 2)
+	//		+ 2. * pow(stressTrial(2), 2)
+	//		);
+	//double sigmaVM = sqrt(sigmaVM2);
+	//// Stress used only for c1c computation.
+	//// It has the same direction as stressTrial, but lies exactly on sigmaCTrial.
+	//Vector stressForC1c = stressTrial;
+	//if (sigmaVM > 0.0)
+	//{
+	//	double scaleToCap = sigmaCTrial / sigmaVM;
+	//	stressForC1c = scaleToCap * stressTrial;
+	//}
+	//// Relative stress for c1c computation
+	//Vector xiForC1c = stressForC1c - alphaTot;
+	//double xiVM2 =
+	//	3. / 2. * (
+	//		2. / 3. * pow(xiForC1c(0), 2)
+	//		+ 2. * pow(xiForC1c(1), 2)
+	//		+ 2. * pow(xiForC1c(2), 2)
+	//		);
+	//double sigma11ForC1c = stressForC1c(0);
+	//double chi_1c =
+	//	(pow(yieldStress, 2) - xiVM2)
+	//	/ pow(sigma11ForC1c, 2);
+	//double sigmaSurSigmaY =
+	//	(this->*calculateSigmaSurSigmaY)(epsiPb11);
+	//double sigmaSurSigmaYTerm =
+	//	b_chi1c * pow((1.0 - sigmaSurSigmaY), 2);
+	//c1cTrial = chi_1c - sigmaSurSigmaYTerm;
 }
 
 /* ----------------------------------------------------------------------------------------------------------------- */

@@ -559,7 +559,7 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
   //// Current problematic line scan has e1 = d1 around -4.20842e-05.
   //// Use only section tag 1 for section 0 in the element diagnostic.
   //if (this->getTag() == 1 &&
-  //    fabs(d1 - 9.11977e-06) < 5.0e-7)
+  //    fabs(d1 + 6.62295e-05) < 5.0e-8)
   //{
   //    debugFiberFD = true;
   //}
@@ -822,86 +822,83 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
   // ------------------------------------------------------------
 // DEBUG print: only when a large actual S1 jump occurs
 // ------------------------------------------------------------
-  //if (debugFiberFD)
-  //{
-  //    if (prevValid &&
-  //        fabs(sumFD_S1) > 50.0)
-  //    {
-  //        opserr.precision(17);
-  //        opserr << "##################################################" << endln;
-  //        opserr << "LARGE S1 STRESS JUMP DETECTED" << endln;
-  //        opserr << "section tag = " << this->getTag() << endln;
-  //        opserr << "deforms = " << deforms << endln;
-  //        opserr << "sumFD_S1  = " << sumFD_S1 << endln;
-  //        opserr << "sumTan_S1 = " << sumTan_S1 << endln;
-  //        opserr << "sumErr_S1 = " << sumErr_S1 << endln;
-  //        if (fabs(sumFD_S1) > 1.0e-20)
-  //        {
-  //            opserr << "ratio sumTan/sumFD = "
-  //                << sumTan_S1 / sumFD_S1 << endln;
-  //        }
-  //        opserr << "Top fiber stress jumps for S1:" << endln;
-  //        for (int kk = 0; kk < 10; kk++)
-  //        {
-  //            if (topJumpFiber[kk] >= 0)
-  //            {
-  //                double dsig =
-  //                    topJumpStressCurr[kk] - topJumpStressPrev[kk];
-  //                double deps0 =
-  //                    topJumpEpsCurr0[kk] - topJumpEpsPrev0[kk];
-  //                double deps1 =
-  //                    topJumpEpsCurr1[kk] - topJumpEpsPrev1[kk];
-  //                double deps2 =
-  //                    topJumpEpsCurr2[kk] - topJumpEpsPrev2[kk];
-  //                double dsigTan =
-  //                    topJumpC00[kk] * deps0 +
-  //                    topJumpC01[kk] * deps1 +
-  //                    topJumpC02[kk] * deps2;
-  //                opserr << "rank " << kk
-  //                    << " fiber " << topJumpFiber[kk]
-  //                    << " y = " << topJumpY[kk]
-  //                    << " z = " << topJumpZ[kk]
-  //                    << " A = " << topJumpA[kk]
-  //                    << endln;
-  //                opserr << "  fdS1 = " << topJumpFD[kk]
-  //                    << " tanS1 = " << topJumpTan[kk]
-  //                    << " errS1 = " << topJumpErr[kk]
-  //                    << " abs(fdS1) = " << topJumpAbs[kk]
-  //                    << endln;
-  //                opserr << "  stress11 prev = " << topJumpStressPrev[kk]
-  //                    << " curr = " << topJumpStressCurr[kk]
-  //                    << " dsigFD = " << dsig
-  //                    << endln;
-  //                opserr << "  eps prev = "
-  //                    << topJumpEpsPrev0[kk] << " "
-  //                    << topJumpEpsPrev1[kk] << " "
-  //                    << topJumpEpsPrev2[kk] << endln;
-  //                opserr << "  eps curr = "
-  //                    << topJumpEpsCurr0[kk] << " "
-  //                    << topJumpEpsCurr1[kk] << " "
-  //                    << topJumpEpsCurr2[kk] << endln;
-  //                opserr << "  deps = "
-  //                    << deps0 << " "
-  //                    << deps1 << " "
-  //                    << deps2 << endln;
-  //                opserr << "  prev C00 C01 C02 = "
-  //                    << topJumpC00[kk] << " "
-  //                    << topJumpC01[kk] << " "
-  //                    << topJumpC02[kk] << endln;
-  //                opserr << "  dsigTan = " << dsigTan << endln;
-  //                if (fabs(dsig) > 1.0e-20)
-  //                {
-  //                    opserr << "  ratio dsigTan/dsigFD = "
-  //                        << dsigTan / dsig << endln;
-  //                }
-  //            }
-  //        }
-  //        opserr << "##################################################" << endln;
-  //    }
-  //    // First active call only initializes previous values.
-  //    // From the second active call onward, comparisons are valid.
-  //    prevValid = true;
-  //}
+  /*if (debugFiberFD)
+  {
+      if (prevValid)
+      {
+          opserr.precision(17);
+          opserr << "##################################################" << endln;
+          opserr << "LARGE S1 STRESS JUMP DETECTED" << endln;
+          opserr << "section tag = " << this->getTag() << endln;
+          opserr << "deforms = " << deforms << endln;
+          opserr << "sumFD_S1  = " << sumFD_S1 << endln;
+          opserr << "sumTan_S1 = " << sumTan_S1 << endln;
+          opserr << "sumErr_S1 = " << sumErr_S1 << endln;
+          if (fabs(sumFD_S1) > 1.0e-20)
+          {
+              opserr << "ratio sumTan/sumFD = "
+                  << sumTan_S1 / sumFD_S1 << endln;
+          }
+          opserr << "Top fiber stress jumps for S1:" << endln;
+          for (int kk = 0; kk < 10; kk++)
+          {
+              if (topJumpFiber[kk] >= 0)
+              {
+                  double dsig =
+                      topJumpStressCurr[kk] - topJumpStressPrev[kk];
+                  double deps0 =
+                      topJumpEpsCurr0[kk] - topJumpEpsPrev0[kk];
+                  double deps1 =
+                      topJumpEpsCurr1[kk] - topJumpEpsPrev1[kk];
+                  double deps2 =
+                      topJumpEpsCurr2[kk] - topJumpEpsPrev2[kk];
+                  double dsigTan =
+                      topJumpC00[kk] * deps0 +
+                      topJumpC01[kk] * deps1 +
+                      topJumpC02[kk] * deps2;
+                  opserr << "rank " << kk
+                      << " fiber " << topJumpFiber[kk]
+                      << " y = " << topJumpY[kk]
+                      << " z = " << topJumpZ[kk]
+                      << " A = " << topJumpA[kk]
+                      << endln;
+                  opserr << "  fdS1 = " << topJumpFD[kk]
+                      << " tanS1 = " << topJumpTan[kk]
+                      << " errS1 = " << topJumpErr[kk]
+                      << " abs(fdS1) = " << topJumpAbs[kk]
+                      << endln;
+                  opserr << "  stress11 prev = " << topJumpStressPrev[kk]
+                      << " curr = " << topJumpStressCurr[kk]
+                      << " dsigFD = " << dsig
+                      << endln;
+                  opserr << "  eps prev = "
+                      << topJumpEpsPrev0[kk] << " "
+                      << topJumpEpsPrev1[kk] << " "
+                      << topJumpEpsPrev2[kk] << endln;
+                  opserr << "  eps curr = "
+                      << topJumpEpsCurr0[kk] << " "
+                      << topJumpEpsCurr1[kk] << " "
+                      << topJumpEpsCurr2[kk] << endln;
+                  opserr << "  deps = "
+                      << deps0 << " "
+                      << deps1 << " "
+                      << deps2 << endln;
+                  opserr << "  prev C00 C01 C02 = "
+                      << topJumpC00[kk] << " "
+                      << topJumpC01[kk] << " "
+                      << topJumpC02[kk] << endln;
+                  opserr << "  dsigTan = " << dsigTan << endln;
+                  if (fabs(dsig) > 1.0e-20)
+                  {
+                      opserr << "  ratio dsigTan/dsigFD = "
+                          << dsigTan / dsig << endln;
+                  }
+              }
+          }
+          opserr << "##################################################" << endln;
+      }
+      prevValid = true;
+  }*/
 
   //opserr << "This is ks" << *ks << endln;
 
