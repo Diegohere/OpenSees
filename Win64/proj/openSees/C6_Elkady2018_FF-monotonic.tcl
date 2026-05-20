@@ -133,15 +133,15 @@
 	# set integration "Simpson 1 21"
 	# element testNonlocalElementDH 23 2 3 $ColTransfTag $integration 20 1e-5 $lc
 	
-	set Lp1 [expr 2.0*$d/$L];
-	set nIPs_Lp1 3;
-	set Lp2 $Lp1;
-	set nIPs_Lp2 $nIPs_Lp1;
-	set Le [expr (1-$Lp1-$Lp2)];
-	set nIPs_Le 1;
-	set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
-	set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
-	# set integration "Simpson 1 21"
+	# set Lp1 [expr 2.0*$d/$L];
+	# set nIPs_Lp1 9;
+	# set Lp2 $Lp1;
+	# set nIPs_Lp2 $nIPs_Lp1;
+	# set Le [expr (1-$Lp1-$Lp2)];
+	# set nIPs_Le 1;
+	# set integration "SimpsonNonUniformSpacedBeamIntegration 1 $Lp1 $nIPs_Lp1 $Lp2 $nIPs_Lp2 $Le $nIPs_Le"
+	# set nIPs_Label "${nIPs_Lp1}-${nIPs_Le}-${nIPs_Lp2}"
+	set integration "Simpson 1 21"
 	element FBCElemSGINUS 23 2 3 $ColTransfTag $integration 50 1e-6 $lc
 
 # Zero length element definition
@@ -155,14 +155,14 @@
 puts "Recorders ..."
 
 # Record displacements 
-	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_Disp.txt -time -node 3 -dof 1 2 3 4 5 6 disp;
-	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_Disp.txt -time -node 3 -dof 1 2 3 4 5 6 disp;
+	# recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_Disp.txt -time -node 3 -dof 1 2 3 4 5 6 disp;
+	recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_Disp.txt -time -node 3 -dof 1 2 3 4 5 6 disp;
 	
 # Record reactions
-	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RBase.txt -time -node 1 -dof 1 2 3 4 5 6 reaction;
-	recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
-	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RBase.txt -time -node 1 -dof 1 2 3 4 5 6 reaction;
-	# recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
+	# recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RBase.txt -time -node 1 -dof 1 2 3 4 5 6 reaction;
+	# recorder Node -file $dataDir/C6_Elkady2018_nonUniformSpace_${nIPs_Label}IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RBase.txt -time -node 1 -dof 1 2 3 4 5 6 reaction;
+	recorder Node -file $dataDir/C6_Elkady2018_equalSpace_21IPs_RTop.txt -time -node 3 -dof 1 2 3 4 5 6 reaction;
 	
 # # Record section connectivity and coordinate matrices
 # recorder Element -file $dataDir/C6_Elkady2018_${nIPs_Label}IPs_connectivityMatrix.txt -ele 23 section 1 connectivity; 

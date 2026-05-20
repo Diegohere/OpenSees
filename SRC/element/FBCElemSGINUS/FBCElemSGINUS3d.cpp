@@ -942,7 +942,7 @@ FBCElemSGINUS3d::update(void)
 						// get section resisting forces
 						srSubdivide[i] = sections[i]->getStressResultant();
 
-						// Added diagnostics 05/14/2026
+						// //Added diagnostics 05/14/2026
 						//if (j > 40 && i == 0)
 						//{
 						//	int order = sections[i]->getOrder();
@@ -1321,8 +1321,8 @@ FBCElemSGINUS3d::update(void)
 					}
 
 					// check for convergence of this interval
-					//if (dv.Norm() < Tol)
-					if (fabs(dW) < Tol)
+					if (dv.Norm() < Tol)
+					//if (fabs(dW) < Tol)
 						//if (fabs(dW)/(1.+fabs(dW0)) < Tol) 
 						//if (fabs(dW) < Tol && dv.Norm() < 100.*Tol)
 							//if ((vu.Norm() < Tol) && (dq.Norm() < 100000 * Tol))

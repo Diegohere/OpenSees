@@ -268,6 +268,36 @@ private:
 	// Returns the inverse of a 3x3 matrix
 	Matrix matinv3(const Matrix& m);
 
+	// Updated 05/19/2026
+	// Event locators replacing step-halving
+	double determineCappingElastic(const Vector& strainStart,
+		const Vector& deltaStrain);
+
+	double determineCappingHardening(const Vector& strainStart,
+		const Vector& deltaStrain);
+
+	double determineTransitionPlRecoveryToHardening(const Vector& strainStart,
+		const Vector& deltaStrain);
+
+	double determineTransitionUVCRecoveryToHardening(const Vector& strainStart,
+		const Vector& deltaStrain);
+
+	double computeSigmaVM2(const Vector& sigma) const;
+
+	double solveQuadraticSmallestRoot01(double A,
+		double B,
+		double C0) const;
+
+	bool solveLinear2x2(double A00, double A01,
+		double A10, double A11,
+		double b0, double b1,
+		double& x0, double& x1) const;
+
+	bool solveLinear3x3(const Matrix& A,
+		const Vector& b,
+		Vector& x) const;
+
+
 	/* ------------------------------------------------------------------------ */
 	/* Members                                                                  */
 	/* ------------------------------------------------------------------------ */
@@ -282,9 +312,11 @@ private:
 	const double SMALL_NUMBER_STRESS = 1.0e-5;   // for normalized cap residual checks
 	const double DENOM_TOL = 1.0e-14;            // only for Newton denominator protection
 	// Updated 05/18/2026
-	const double RETURN_MAP_TOL_PLRECOV = RETURN_MAP_TOL;
-	const double RETURN_MAP_STAGNATION_TOL_PLRECOV = 1.0e-7;
+	const double RETURN_MAP_TOL_PLRECOV = 1.0e-10;
 	const double DLAMBDA_TOL_PLRECOV = 1.0e-15;
+	// Updated 05/19/2026
+	const unsigned int MAXIMUM_ITERATIONS_TRANSITIONS= 50;
+	const double TOL_TRANSITION_SOLVER = 1.0e-10;
 
 	const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 1000;
 	//const unsigned int MAXIMUM_ITERATIONS_TIMEINTEGRATION = 100000;

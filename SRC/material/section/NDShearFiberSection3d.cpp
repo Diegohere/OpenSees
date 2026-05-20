@@ -556,10 +556,9 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
 // DEBUG: stress-jump diagnostic for S1 during section line scan
 // ------------------------------------------------------------
   //bool debugFiberFD = false;
-  //// Current problematic line scan has e1 = d1 around -4.20842e-05.
+  //// Current problematic line scan has e1 = d1 .
   //// Use only section tag 1 for section 0 in the element diagnostic.
-  //if (this->getTag() == 1 &&
-  //    fabs(d1 + 6.62295e-05) < 5.0e-8)
+  //if (fabs(d1 + 6.74344e-05) < 5.0e-8)
   //{
   //    debugFiberFD = true;
   //}
@@ -654,6 +653,7 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
 
         break;
     }
+
     const Vector &stress = theMat->getStress();
     const Matrix &tangent = theMat->getTangent();
     
@@ -824,7 +824,9 @@ NDShearFiberSection3d::setTrialSectionDeformation(const Vector& deforms)
 // ------------------------------------------------------------
   /*if (debugFiberFD)
   {
-      if (prevValid)
+      if (prevValid &&
+          fabs(sumTan_S1) < 10.0 &&
+          (fabs(sumFD_S1) > 20.0 || fabs(sumErr_S1) > 20.0))
       {
           opserr.precision(17);
           opserr << "##################################################" << endln;
