@@ -3,7 +3,7 @@
 ###################################################################################################
 	wipe all;							# clear memory of past model definitions
 	model BasicBuilder -ndm 3 -ndf 6;	# Define the model builder, ndm = #dimension, ndf = #dofs
-	set dataDir results_C6_Elkady2018_FFMono_l0_dw1e6;			# name of output folder
+	set dataDir results_C6_Elkady2018_FFMono_l0_dv1e6;			# name of output folder
 	file mkdir $dataDir;						# create output folder
 	
 	#source DisplayModel2D.tcl;
@@ -251,7 +251,7 @@ puts "Recorders ..."
 # set TotalNumberOfSteps 4514;	# number of steps in ground motion for resize 25
 # set TotalNumberOfSteps 9386;	# number of steps in ground motion for resize 12
 
-set lateralDispXFile "Elkady2018_monotonic.txt"
+set lateralDispXFile "Elkady2018_monotonic_latDisp.txt"
 set TotalNumberOfSteps 999;	# number of steps in ground motion for monotonic
 
 

@@ -174,6 +174,8 @@ private:
 	//double DeltaWSectionTol = 1e-4;
 	bool isSoftening;
 
+	int isLocalizationSection[maxNumSections];
+
 	bool isTorsion;
 
 	//// Added fpr debug purpose

@@ -95,11 +95,16 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 
 
 	// Check if the number of input arguments is correct
-	if (argc != 12 && argc != 17) {
+	int isSimpsonNonUniformCommand = 0;
+	if (argc > 6 && strcmp(argv[6], "SimpsonNonUniformSpacedBeamIntegration") == 0)
+		isSimpsonNonUniformCommand = 1;
+
+	if (argc != 12 && argc != 17 && !(isSimpsonNonUniformCommand == 1 && argc > 17)) {
 		opserr << "WARNING insufficient arguments\n";
 		printCommand(argc, argv);
 		opserr << "If standard integration - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, sec, numSec, maxNumiters, tolerance, lc\n";
-		opserr << "If SimpsonNonUniformSpacedBeamIntegration - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, sec, numSec, maxNumiters, tolerance, lc\n";
+		opserr << "If SimpsonNonUniformSpacedBeamIntegration with one section - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, SimpsonNonUniformSpacedBeamIntegration, sec, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, maxNumiters, tolerance, lc\n";
+		opserr << "If SimpsonNonUniformSpacedBeamIntegration with multiple sections - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, SimpsonNonUniformSpacedBeamIntegration, -sections, secTag1 ... secTagN, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, maxNumiters, tolerance, lc\n";
 		return TCL_ERROR;
 	}
 
@@ -236,63 +241,122 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 
 	else if (strcmp(argv[6], "SimpsonNonUniformSpacedBeamIntegration") == 0)
 	{
-		if (Tcl_GetInt(interp, argv[7], &integrSecTag) != TCL_OK) {
-			opserr << "WARNING invalid integrSecTag\n";
+		int useMultipleSections = 0;
+		int numSectionTags = 0;
+		int firstSectionArg = 7;
+		int firstIntegrationArg = 8;
+
+		if (strcmp(argv[7], "-sections") == 0) {
+			useMultipleSections = 1;
+			numSectionTags = argc - 17;
+			firstSectionArg = 8;
+			firstIntegrationArg = firstSectionArg + numSectionTags;
+
+			if (numSectionTags <= 0) {
+				opserr << "WARNING no section tags specified after -sections\n";
+				opserr << argv[1] << " element: " << eleTag << endln;
+				return TCL_ERROR;
+			}
+		}
+		else if (argc != 17) {
+			opserr << "WARNING invalid number of arguments for SimpsonNonUniformSpacedBeamIntegration without -sections\n";
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		if (Tcl_GetDouble(interp, argv[8], &Lp1) != TCL_OK) {
+		if (useMultipleSections == 0) {
+			if (Tcl_GetInt(interp, argv[7], &integrSecTag) != TCL_OK) {
+				opserr << "WARNING invalid integrSecTag\n";
+				opserr << argv[1] << " element: " << eleTag << endln;
+				return TCL_ERROR;
+			}
+		}
+
+		if (Tcl_GetDouble(interp, argv[firstIntegrationArg], &Lp1) != TCL_OK) {
 			opserr << "WARNING invalid Lp1\n";
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		if (Tcl_GetInt(interp, argv[9], &nIPs_Lp1) != TCL_OK) {
+		if (Tcl_GetInt(interp, argv[firstIntegrationArg + 1], &nIPs_Lp1) != TCL_OK) {
 			opserr << "WARNING invalid nIPs_Lp1\n";
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		if (Tcl_GetDouble(interp, argv[10], &Lp2) != TCL_OK) {
+		if (Tcl_GetDouble(interp, argv[firstIntegrationArg + 2], &Lp2) != TCL_OK) {
 			opserr << "WARNING invalid Lp2\n";
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		if (Tcl_GetInt(interp, argv[11], &nIPs_Lp2) != TCL_OK) {
+		if (Tcl_GetInt(interp, argv[firstIntegrationArg + 3], &nIPs_Lp2) != TCL_OK) {
 			opserr << "WARNING invalid nIPs_Lp2\n";
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		if (Tcl_GetDouble(interp, argv[12], &Le) != TCL_OK) {
+		if (Tcl_GetDouble(interp, argv[firstIntegrationArg + 4], &Le) != TCL_OK) {
 			opserr << "WARNING invalid Le\n";
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		if (Tcl_GetInt(interp, argv[13], &nIPs_Le) != TCL_OK) {
+		if (Tcl_GetInt(interp, argv[firstIntegrationArg + 5], &nIPs_Le) != TCL_OK) {
 			opserr << "WARNING invalid nIPs_Le\n";
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		SectionForceDeformation* theIntegrSection = theTclBuilder->getSection(integrSecTag);
-		if (theIntegrSection == 0) {
-			opserr << "WARNING integration section not found\n";
-			opserr << "Section: " << integrSecTag;
+		numIntegrPts = nIPs_Lp1 + nIPs_Lp2 + nIPs_Le; // total number of integrations points
+
+		if (useMultipleSections == 1 && numSectionTags != numIntegrPts) {
+			opserr << "WARNING number of section tags specified after -sections must match total number of integration points\n";
+			opserr << "numSectionTags: " << numSectionTags << ", numIntegrPts: " << numIntegrPts << endln;
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		numIntegrPts = nIPs_Lp1 + nIPs_Lp2 + nIPs_Le; // total number of integrations points
 		IntegrSections = new SectionForceDeformation * [numIntegrPts];
-		for (int i = 0; i < numIntegrPts; i++)
-			IntegrSections[i] = theIntegrSection;
+
+		if (useMultipleSections == 0) {
+			SectionForceDeformation* theIntegrSection = theTclBuilder->getSection(integrSecTag);
+			if (theIntegrSection == 0) {
+				opserr << "WARNING integration section not found\n";
+				opserr << "Section: " << integrSecTag;
+				opserr << argv[1] << " element: " << eleTag << endln;
+				delete[] IntegrSections;
+				return TCL_ERROR;
+			}
+
+			for (int i = 0; i < numIntegrPts; i++)
+				IntegrSections[i] = theIntegrSection;
+		}
+		else {
+			for (int i = 0; i < numIntegrPts; i++) {
+				if (Tcl_GetInt(interp, argv[firstSectionArg + i], &integrSecTag) != TCL_OK) {
+					opserr << "WARNING invalid integrSecTag in -sections list\n";
+					opserr << argv[1] << " element: " << eleTag << endln;
+					delete[] IntegrSections;
+					return TCL_ERROR;
+				}
+
+				SectionForceDeformation* theIntegrSection = theTclBuilder->getSection(integrSecTag);
+				if (theIntegrSection == 0) {
+					opserr << "WARNING integration section not found\n";
+					opserr << "Section: " << integrSecTag;
+					opserr << argv[1] << " element: " << eleTag << endln;
+					delete[] IntegrSections;
+					return TCL_ERROR;
+				}
+
+				IntegrSections[i] = theIntegrSection;
+			}
+		}
+
 		beamIntegr = new SimpsonNonUniformSpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
 
-		skipInput = 5;
+		skipInput = 5 + numSectionTags;
 	}
 
 	else {

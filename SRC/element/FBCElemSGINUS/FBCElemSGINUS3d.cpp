@@ -133,6 +133,12 @@ isTorsion(false)
 	theNodes[1] = 0;
 
 	load.Zero();
+
+	// Added 05/25/2026
+	for (int i = 0; i < maxNumSections; i++)
+	{
+		isLocalizationSection[i] = 0;
+	}
 }
 
 // Constructor 1 (for normal processing) invoked by a FEM_ObjectBroker
@@ -179,6 +185,12 @@ FBCElemSGINUS3d::FBCElemSGINUS3d(int tag, int nodeI, int nodeJ, CrdTransf& CT, B
 
 	//get copy of sections
 	this->setSectionPointers(numSec, sec);
+
+	// Added 05/25/2026
+	for (int i = 0; i < numSec; i++)
+	{
+		isLocalizationSection[i] = 0;
+	}
 
 	/*Matrix A(6, 6);
 	A(0, 0) = 1.0e-08;  A(0, 1) = 9.0e-05;  A(0, 2) = 3.0e-05;  A(0, 3) = 5.0e-05;  A(0, 4) = -2.0e-05; A(0, 5) = 1.0e-05;
@@ -449,6 +461,12 @@ FBCElemSGINUS3d::revertToStart(void)
 
 	WSofteningCommit = 0.;
 	WSofteningTrial = 0.;
+
+	// Reset localization active-set flags at the start of a new analysis
+	for (int i = 0; i < maxNumSections; i++)
+	{
+		isLocalizationSection[i] = 0;
+	}
 
 	initialFlag = 0;
 	return err;
@@ -1248,6 +1266,7 @@ FBCElemSGINUS3d::update(void)
 						if (WDot_isec < 0.)
 						{
 							WDot_cumulativeSoft += WDot_isec;
+							isLocalizationSection[i] = 1; // updated 05/25/2026
 						}
 						/*else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
 						{
@@ -1267,6 +1286,7 @@ FBCElemSGINUS3d::update(void)
 						{
 							elasticUnload += 1;
 							WDot_cumulativeElasticUnload += WDot_isec;
+							isLocalizationSection[i] = 0; // updated 05/25/2026
 						}
 					}
 					if (elasticUnload == numSections)
@@ -2387,9 +2407,19 @@ FBCElemSGINUS3d::computeCoefficientMatrixH()
 	coeffs_H(0, 0) = 1.;
 	for (int i = 1; i < numSections - 1; i++)
 	{
-		coeffs_H(i, 0) = gXStar * 0 + (1 - gXStar) * coeffs_H_GI(i, 0);
-		coeffs_H(i, 1) = gXStar * 1 + (1 - gXStar) * coeffs_H_GI(i, 1);
-		coeffs_H(i, 2) = gXStar * 0 + (1 - gXStar) * coeffs_H_GI(i, 2);
+		if (isLocalizationSection[i]==0)
+		{
+			coeffs_H(i, 0) = gXStar * 0 + (1 - gXStar) * coeffs_H_GI(i, 0);
+			coeffs_H(i, 1) = gXStar * 1 + (1 - gXStar) * coeffs_H_GI(i, 1);
+			coeffs_H(i, 2) = gXStar * 0 + (1 - gXStar) * coeffs_H_GI(i, 2);
+		}
+		else
+		{
+			coeffs_H(i, 0) = 0.;
+			coeffs_H(i, 1) = 1.;
+			coeffs_H(i, 2) = 0.;
+		}
+		
 	}
 	coeffs_H(numSections - 1, 2) = 1.;
 
