@@ -27,6 +27,127 @@
 
 extern void printCommand(int argc, TCL_Char** argv);
 
+
+static int
+TclFBCElemSGINUS_computeNumIPs(int nSegments, const int* nIPs)
+{
+	if (nSegments == 3) {
+		// Original 3-segment convention:
+		// Lp1 and Lp2 include their end points, while Le uses interior points only.
+		return nIPs[0] + nIPs[1] + nIPs[2];
+	}
+
+	// General/RBS convention:
+	// each segment includes its two end points and adjacent segments share one point.
+	int n = 0;
+	for (int i = 0; i < nSegments; i++)
+		n += nIPs[i];
+
+	return n - (nSegments - 1);
+}
+
+static int
+TclFBCElemSGINUS_parseSimpsonSegments(Tcl_Interp* interp, TCL_Char** argv,
+	int firstIntegrationArg, int nSegments, double* Lseg, int* nIPs)
+{
+	for (int i = 0; i < nSegments; i++) {
+		if (Tcl_GetDouble(interp, argv[firstIntegrationArg + 2 * i], &Lseg[i]) != TCL_OK)
+			return TCL_ERROR;
+
+		if (Tcl_GetInt(interp, argv[firstIntegrationArg + 2 * i + 1], &nIPs[i]) != TCL_OK)
+			return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+
+static int
+TclFBCElemSGINUS_isValidSimpsonCandidate(int nSegments, const double* Lseg, const int* nIPs, int numSectionTags)
+{
+	if (TclFBCElemSGINUS_computeNumIPs(nSegments, nIPs) != numSectionTags)
+		return 0;
+
+	double Lsum = 0.0;
+	for (int i = 0; i < nSegments; i++) {
+		if (Lseg[i] <= 0.0)
+			return 0;
+		Lsum += Lseg[i];
+	}
+
+	// The rule is normalized by the element length. This check also prevents
+	// a section tag from being accidentally interpreted as a segment length
+	// when both the 3- and 5-segment layouts are being tested.
+	if (fabs(Lsum - 1.0) > 1.0e-8)
+		return 0;
+
+	if (nSegments == 3) {
+		if (nIPs[0] < 3 || nIPs[0] % 2 == 0 || nIPs[1] < 3 || nIPs[1] % 2 == 0)
+			return 0;
+		if (nIPs[2] < 1 || nIPs[2] % 2 == 0)
+			return 0;
+		return 1;
+	}
+
+	if (nSegments == 5) {
+		for (int i = 0; i < nSegments; i++) {
+			if (nIPs[i] < 3 || nIPs[i] % 2 == 0)
+				return 0;
+		}
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+TclFBCElemSGINUS_checkSimpsonSegments(int nSegments, const double* Lseg, const int* nIPs)
+{
+	double Lsum = 0.0;
+	for (int i = 0; i < nSegments; i++) {
+		if (Lseg[i] <= 0.0) {
+			opserr << "WARNING SimpsonNonUniformSpacedBeamIntegration segment "
+				<< i + 1 << " has non-positive length\n";
+			return TCL_ERROR;
+		}
+		Lsum += Lseg[i];
+	}
+
+	if (fabs(Lsum - 1.0) > 1.0e-10) {
+		opserr << "WARNING SimpsonNonUniformSpacedBeamIntegration segment lengths sum to "
+			<< Lsum << ", not 1.0\n";
+		return TCL_ERROR;
+	}
+
+	if (nSegments == 3) {
+		// Original convention: Lp1 and Lp2 are full Simpson segments; Le has interior points.
+		if (nIPs[0] < 3 || nIPs[0] % 2 == 0 || nIPs[1] < 3 || nIPs[1] % 2 == 0) {
+			opserr << "WARNING SimpsonNonUniformSpacedBeamIntegration: nIPs_Lp1 and nIPs_Lp2 must be odd and >= 3\n";
+			return TCL_ERROR;
+		}
+		if (nIPs[2] < 1 || nIPs[2] % 2 == 0) {
+			opserr << "WARNING SimpsonNonUniformSpacedBeamIntegration: nIPs_Le must be odd and >= 1\n";
+			return TCL_ERROR;
+		}
+	}
+	else if (nSegments == 5) {
+		// RBS/general segment convention: every segment is a Simpson segment including endpoints.
+		for (int i = 0; i < nSegments; i++) {
+			if (nIPs[i] < 3 || nIPs[i] % 2 == 0) {
+				opserr << "WARNING SimpsonNonUniformSpacedBeamIntegration: all 5-segment nIPs must be odd and >= 3\n";
+				return TCL_ERROR;
+			}
+		}
+	}
+	else {
+		opserr << "WARNING SimpsonNonUniformSpacedBeamIntegration supports only 3 or 5 segments\n";
+		return TCL_ERROR;
+	}
+
+	return TCL_OK;
+}
+
+
 int
 TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 	int inArgc,
@@ -94,17 +215,23 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 	Tcl_Free((char*)List);
 
 
-	// Check if the number of input arguments is correct
+	// Check if the number of input arguments is correct.
+	// Standard integrations still have argc = 12.
+	// SimpsonNonUniformSpacedBeamIntegration is checked more carefully below because
+	// it now supports both 3-segment and 5-segment layouts, each with either one
+	// repeated section or an explicit list of section tags.
 	int isSimpsonNonUniformCommand = 0;
 	if (argc > 6 && strcmp(argv[6], "SimpsonNonUniformSpacedBeamIntegration") == 0)
 		isSimpsonNonUniformCommand = 1;
 
-	if (argc != 12 && argc != 17 && !(isSimpsonNonUniformCommand == 1 && argc > 17)) {
+	if (argc != 12 && isSimpsonNonUniformCommand == 0) {
 		opserr << "WARNING insufficient arguments\n";
 		printCommand(argc, argv);
-		opserr << "If standard integration - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, beamIntegr, sec, numSec, maxNumiters, tolerance, lc\n";
-		opserr << "If SimpsonNonUniformSpacedBeamIntegration with one section - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, SimpsonNonUniformSpacedBeamIntegration, sec, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, maxNumiters, tolerance, lc\n";
-		opserr << "If SimpsonNonUniformSpacedBeamIntegration with multiple sections - Want: element " << argv[1] << " eleTag,  nodeI,  nodeJ, coordTransf, SimpsonNonUniformSpacedBeamIntegration, -sections, secTag1 ... secTagN, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, maxNumiters, tolerance, lc\n";
+		opserr << "If standard integration - Want: element " << argv[1] << " eleTag, nodeI, nodeJ, coordTransf, beamIntegr, sec, numSec, maxNumiters, tolerance, lc\n";
+		opserr << "If SimpsonNonUniformSpacedBeamIntegration 3 segments, one section - Want: element " << argv[1] << " eleTag, nodeI, nodeJ, coordTransf, SimpsonNonUniformSpacedBeamIntegration, sec, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, maxNumiters, tolerance, lc\n";
+		opserr << "If SimpsonNonUniformSpacedBeamIntegration 3 segments, multiple sections - Want: element " << argv[1] << " eleTag, nodeI, nodeJ, coordTransf, SimpsonNonUniformSpacedBeamIntegration, -sections, secTag1 ... secTagN, Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le, maxNumiters, tolerance, lc\n";
+		opserr << "If SimpsonNonUniformSpacedBeamIntegration 5 segments, one section - Want: element " << argv[1] << " eleTag, nodeI, nodeJ, coordTransf, SimpsonNonUniformSpacedBeamIntegration, sec, L1, nIPs_L1, L2, nIPs_L2, L3, nIPs_L3, L4, nIPs_L4, L5, nIPs_L5, maxNumiters, tolerance, lc\n";
+		opserr << "If SimpsonNonUniformSpacedBeamIntegration 5 segments, multiple sections - Want: element " << argv[1] << " eleTag, nodeI, nodeJ, coordTransf, SimpsonNonUniformSpacedBeamIntegration, -sections, secTag1 ... secTagN, L1, nIPs_L1, L2, nIPs_L2, L3, nIPs_L3, L4, nIPs_L4, L5, nIPs_L5, maxNumiters, tolerance, lc\n";
 		return TCL_ERROR;
 	}
 
@@ -124,7 +251,9 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 	//Get the characteristic length
 	double lc;
 	// Added for SimpsonNonUniformSpacedBeamIntegration
-	double Lp1; double Lp2; double Le; int nIPs_Lp1; int nIPs_Lp2; int nIPs_Le;
+	double Lseg[5];
+	int nIPsSeg[5];
+	int nSegments = 0;
 	int skipInput = 0;
 
 	// Check element tag
@@ -246,69 +375,118 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 		int firstSectionArg = 7;
 		int firstIntegrationArg = 8;
 
-		if (strcmp(argv[7], "-sections") == 0) {
-			useMultipleSections = 1;
-			numSectionTags = argc - 17;
-			firstSectionArg = 8;
-			firstIntegrationArg = firstSectionArg + numSectionTags;
-
-			if (numSectionTags <= 0) {
-				opserr << "WARNING no section tags specified after -sections\n";
-				opserr << argv[1] << " element: " << eleTag << endln;
-				return TCL_ERROR;
-			}
-		}
-		else if (argc != 17) {
-			opserr << "WARNING invalid number of arguments for SimpsonNonUniformSpacedBeamIntegration without -sections\n";
+		if (argc <= 7) {
+			opserr << "WARNING invalid SimpsonNonUniformSpacedBeamIntegration input\n";
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		if (useMultipleSections == 0) {
+		if (strcmp(argv[7], "-sections") == 0) {
+			useMultipleSections = 1;
+			firstSectionArg = 8;
+
+			// Try to identify the layout from the number of section tags and the
+			// expected number of unique integration points. This is necessary because
+			// the section tags appear before the segment lengths.
+			int foundLayout = 0;
+
+			// Candidate 5-segment layout:
+			// element ... SimpsonNonUniformSpacedBeamIntegration -sections secTags... L1 n1 L2 n2 L3 n3 L4 n4 L5 n5 maxIter tol lc
+			if (argc >= 21) {
+				int candidateNumSectionTags = argc - 21;
+				int candidateFirstIntegrationArg = firstSectionArg + candidateNumSectionTags;
+				double candidateLseg[5];
+				int candidateNIPs[5];
+
+				if (candidateNumSectionTags > 0 &&
+					TclFBCElemSGINUS_parseSimpsonSegments(interp, argv, candidateFirstIntegrationArg, 5, candidateLseg, candidateNIPs) == TCL_OK &&
+					TclFBCElemSGINUS_isValidSimpsonCandidate(5, candidateLseg, candidateNIPs, candidateNumSectionTags) == 1) {
+
+					nSegments = 5;
+					numSectionTags = candidateNumSectionTags;
+					firstIntegrationArg = candidateFirstIntegrationArg;
+					for (int i = 0; i < 5; i++) {
+						Lseg[i] = candidateLseg[i];
+						nIPsSeg[i] = candidateNIPs[i];
+					}
+					foundLayout = 1;
+				}
+			}
+
+			// Candidate 3-segment layout:
+			// element ... SimpsonNonUniformSpacedBeamIntegration -sections secTags... Lp1 nLp1 Lp2 nLp2 Le nLe maxIter tol lc
+			if (foundLayout == 0 && argc >= 17) {
+				int candidateNumSectionTags = argc - 17;
+				int candidateFirstIntegrationArg = firstSectionArg + candidateNumSectionTags;
+				double candidateLseg[5];
+				int candidateNIPs[5];
+
+				if (candidateNumSectionTags > 0 &&
+					TclFBCElemSGINUS_parseSimpsonSegments(interp, argv, candidateFirstIntegrationArg, 3, candidateLseg, candidateNIPs) == TCL_OK &&
+					TclFBCElemSGINUS_isValidSimpsonCandidate(3, candidateLseg, candidateNIPs, candidateNumSectionTags) == 1) {
+
+					nSegments = 3;
+					numSectionTags = candidateNumSectionTags;
+					firstIntegrationArg = candidateFirstIntegrationArg;
+					for (int i = 0; i < 3; i++) {
+						Lseg[i] = candidateLseg[i];
+						nIPsSeg[i] = candidateNIPs[i];
+					}
+					foundLayout = 1;
+				}
+			}
+
+			if (foundLayout == 0) {
+				opserr << "WARNING could not identify SimpsonNonUniformSpacedBeamIntegration layout with -sections\n";
+				opserr << "For 3 segments, number of section tags must be nIPs_Lp1 + nIPs_Lp2 + nIPs_Le\n";
+				opserr << "For 5 segments, number of section tags must be nIPs_L1 + nIPs_L2 + nIPs_L3 + nIPs_L4 + nIPs_L5 - 4\n";
+				opserr << argv[1] << " element: " << eleTag << endln;
+				return TCL_ERROR;
+			}
+		}
+		else {
+			useMultipleSections = 0;
+
 			if (Tcl_GetInt(interp, argv[7], &integrSecTag) != TCL_OK) {
 				opserr << "WARNING invalid integrSecTag\n";
 				opserr << argv[1] << " element: " << eleTag << endln;
 				return TCL_ERROR;
 			}
+
+			// One repeated section, 3 segments: argc = 17.
+			if (argc == 17) {
+				nSegments = 3;
+				firstIntegrationArg = 8;
+				if (TclFBCElemSGINUS_parseSimpsonSegments(interp, argv, firstIntegrationArg, nSegments, Lseg, nIPsSeg) != TCL_OK) {
+					opserr << "WARNING invalid 3-segment SimpsonNonUniformSpacedBeamIntegration input\n";
+					opserr << argv[1] << " element: " << eleTag << endln;
+					return TCL_ERROR;
+				}
+			}
+			// One repeated section, 5 segments: argc = 21.
+			else if (argc == 21) {
+				nSegments = 5;
+				firstIntegrationArg = 8;
+				if (TclFBCElemSGINUS_parseSimpsonSegments(interp, argv, firstIntegrationArg, nSegments, Lseg, nIPsSeg) != TCL_OK) {
+					opserr << "WARNING invalid 5-segment SimpsonNonUniformSpacedBeamIntegration input\n";
+					opserr << argv[1] << " element: " << eleTag << endln;
+					return TCL_ERROR;
+				}
+			}
+			else {
+				opserr << "WARNING invalid number of arguments for SimpsonNonUniformSpacedBeamIntegration without -sections\n";
+				opserr << "Expected argc = 17 for 3 segments or argc = 21 for 5 segments\n";
+				opserr << argv[1] << " element: " << eleTag << endln;
+				return TCL_ERROR;
+			}
 		}
 
-		if (Tcl_GetDouble(interp, argv[firstIntegrationArg], &Lp1) != TCL_OK) {
-			opserr << "WARNING invalid Lp1\n";
+		if (TclFBCElemSGINUS_checkSimpsonSegments(nSegments, Lseg, nIPsSeg) != TCL_OK) {
 			opserr << argv[1] << " element: " << eleTag << endln;
 			return TCL_ERROR;
 		}
 
-		if (Tcl_GetInt(interp, argv[firstIntegrationArg + 1], &nIPs_Lp1) != TCL_OK) {
-			opserr << "WARNING invalid nIPs_Lp1\n";
-			opserr << argv[1] << " element: " << eleTag << endln;
-			return TCL_ERROR;
-		}
-
-		if (Tcl_GetDouble(interp, argv[firstIntegrationArg + 2], &Lp2) != TCL_OK) {
-			opserr << "WARNING invalid Lp2\n";
-			opserr << argv[1] << " element: " << eleTag << endln;
-			return TCL_ERROR;
-		}
-
-		if (Tcl_GetInt(interp, argv[firstIntegrationArg + 3], &nIPs_Lp2) != TCL_OK) {
-			opserr << "WARNING invalid nIPs_Lp2\n";
-			opserr << argv[1] << " element: " << eleTag << endln;
-			return TCL_ERROR;
-		}
-
-		if (Tcl_GetDouble(interp, argv[firstIntegrationArg + 4], &Le) != TCL_OK) {
-			opserr << "WARNING invalid Le\n";
-			opserr << argv[1] << " element: " << eleTag << endln;
-			return TCL_ERROR;
-		}
-
-		if (Tcl_GetInt(interp, argv[firstIntegrationArg + 5], &nIPs_Le) != TCL_OK) {
-			opserr << "WARNING invalid nIPs_Le\n";
-			opserr << argv[1] << " element: " << eleTag << endln;
-			return TCL_ERROR;
-		}
-
-		numIntegrPts = nIPs_Lp1 + nIPs_Lp2 + nIPs_Le; // total number of integrations points
+		numIntegrPts = TclFBCElemSGINUS_computeNumIPs(nSegments, nIPsSeg);
 
 		if (useMultipleSections == 1 && numSectionTags != numIntegrPts) {
 			opserr << "WARNING number of section tags specified after -sections must match total number of integration points\n";
@@ -354,9 +532,22 @@ TclModelBuilder_addFBCElemSGINUS(ClientData clientData, Tcl_Interp* interp,
 			}
 		}
 
-		beamIntegr = new SimpsonNonUniformSpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
-
-		skipInput = 5 + numSectionTags;
+		if (nSegments == 3) {
+			beamIntegr = new SimpsonNonUniformSpacedBeamIntegration(
+				Lseg[0], nIPsSeg[0],
+				Lseg[1], nIPsSeg[1],
+				Lseg[2], nIPsSeg[2]);
+			skipInput = 5 + numSectionTags;
+		}
+		else {
+			beamIntegr = new SimpsonNonUniformSpacedBeamIntegration(
+				Lseg[0], nIPsSeg[0],
+				Lseg[1], nIPsSeg[1],
+				Lseg[2], nIPsSeg[2],
+				Lseg[3], nIPsSeg[3],
+				Lseg[4], nIPsSeg[4]);
+			skipInput = 9 + numSectionTags;
+		}
 	}
 
 	else {

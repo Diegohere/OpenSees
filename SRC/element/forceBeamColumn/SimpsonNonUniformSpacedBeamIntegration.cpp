@@ -26,6 +26,7 @@
 #include <elementAPI.h>
 #include <ID.h>
 
+
 void* OPS_SimpsonNonUniformSpacedBeamIntegration(int& integrationTag, ID& secTags)
 {
   int nArgs = OPS_GetNumRemainingInputArgs();
@@ -103,13 +104,67 @@ void* OPS_SimpsonNonUniformSpacedBeamIntegration(int& integrationTag, ID& secTag
   return new SimpsonNonUniformSpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
 }
 
-SimpsonNonUniformSpacedBeamIntegration::SimpsonNonUniformSpacedBeamIntegration(double the_Lp1, int the_nIPs_Lp1, double the_Lp2, int the_nIPs_Lp2, double the_Le, int the_nIPs_Le) :
-BeamIntegration(BEAM_INTEGRATION_TAG_SimpsonNonUniformSpacedBeamIntegration), Lp1(the_Lp1), nIPs_Lp1(the_nIPs_Lp1), Lp2(the_Lp2), nIPs_Lp2(std::max(1,the_nIPs_Lp2)), Le(the_Le), nIPs_Le(the_nIPs_Le),
-wAll(Vector(nIPs_Lp1+nIPs_Lp2+nIPs_Le)), xAll(Vector(nIPs_Lp1 + nIPs_Lp2 + nIPs_Le))
+SimpsonNonUniformSpacedBeamIntegration::SimpsonNonUniformSpacedBeamIntegration(
+    double the_Lp1, int the_nIPs_Lp1,
+    double the_Lp2, int the_nIPs_Lp2,
+    double the_Le, int the_nIPs_Le) :
+    BeamIntegration(BEAM_INTEGRATION_TAG_SimpsonNonUniformSpacedBeamIntegration),
+    nSegments(0), segLengths(0), segNIPs(0), xAll(0), wAll(0)
 {
-	// Compute locations and weights of integrations points
-    computeSectionLocations();
-    computeSectionWeights();
+    // Preserve the original 3-segment input convention:
+    // input order is Lp1, Lp2, Le, but the physical order is
+    // Lp1 | Le | Lp2.
+    // nIPs_Lp1 and nIPs_Lp2 include segment endpoints.
+    // nIPs_Le is the number of interior points in Le.
+    Vector lengths(3);
+    lengths(0) = the_Lp1;
+    lengths(1) = the_Le;
+    lengths(2) = the_Lp2;
+
+    Vector nIPs(3);
+    nIPs(0) = the_nIPs_Lp1;
+    nIPs(1) = the_nIPs_Le + 2; // convert interior points to Simpson points including endpoints
+    nIPs(2) = the_nIPs_Lp2;
+
+    setSegments(lengths, nIPs);
+}
+
+SimpsonNonUniformSpacedBeamIntegration::SimpsonNonUniformSpacedBeamIntegration(
+    double the_L1, int the_nIPs_L1,
+    double the_L2, int the_nIPs_L2,
+    double the_L3, int the_nIPs_L3,
+    double the_L4, int the_nIPs_L4,
+    double the_L5, int the_nIPs_L5) :
+    BeamIntegration(BEAM_INTEGRATION_TAG_SimpsonNonUniformSpacedBeamIntegration),
+    nSegments(0), segLengths(0), segNIPs(0), xAll(0), wAll(0)
+{
+    // New 5-segment convention:
+    // physical order is L1 | L2 | L3 | L4 | L5.
+    // All nIPs include the segment endpoints; shared interface points
+    // are merged internally.
+    Vector lengths(5);
+    lengths(0) = the_L1;
+    lengths(1) = the_L2;
+    lengths(2) = the_L3;
+    lengths(3) = the_L4;
+    lengths(4) = the_L5;
+
+    Vector nIPs(5);
+    nIPs(0) = the_nIPs_L1;
+    nIPs(1) = the_nIPs_L2;
+    nIPs(2) = the_nIPs_L3;
+    nIPs(3) = the_nIPs_L4;
+    nIPs(4) = the_nIPs_L5;
+
+    setSegments(lengths, nIPs);
+}
+
+SimpsonNonUniformSpacedBeamIntegration::SimpsonNonUniformSpacedBeamIntegration(
+    const Vector& lengths, const Vector& nIPs) :
+    BeamIntegration(BEAM_INTEGRATION_TAG_SimpsonNonUniformSpacedBeamIntegration),
+    nSegments(0), segLengths(0), segNIPs(0), xAll(0), wAll(0)
+{
+    setSegments(lengths, nIPs);
 }
 
 SimpsonNonUniformSpacedBeamIntegration::~SimpsonNonUniformSpacedBeamIntegration()
@@ -120,61 +175,100 @@ SimpsonNonUniformSpacedBeamIntegration::~SimpsonNonUniformSpacedBeamIntegration(
 BeamIntegration*
 SimpsonNonUniformSpacedBeamIntegration::getCopy(void)
 {
-	return new SimpsonNonUniformSpacedBeamIntegration(Lp1, nIPs_Lp1, Lp2, nIPs_Lp2, Le, nIPs_Le);
+    return new SimpsonNonUniformSpacedBeamIntegration(segLengths, segNIPs);
 }
 
-void 
-SimpsonNonUniformSpacedBeamIntegration::computeSectionLocations()
+static int
+SimpsonNonUniformSpacedBeamIntegration_getInt(const Vector& v, int i)
 {
-    double start_xLp1 = 0;
-    double distance_xLp1 = Lp1 / (nIPs_Lp1 - 1.0);
-    for (int i = 0; i < nIPs_Lp1; i++)
-    {
-        xAll[i] = start_xLp1 + i * distance_xLp1;
-    }
-
-    double distance_xLe = Le / (nIPs_Le + 1.0);
-    double start_xLe = Lp1;
-    for (int i = 0; i < nIPs_Le; i++)
-    {
-        xAll[i+nIPs_Lp1] = start_xLe + (i+1.0) * distance_xLe;
-    }
-
-    double start_xLp2 = 1.0 - Lp2;
-    double distance_xLp2 = Lp2 / (nIPs_Lp2 - 1.0 + 1e-12);
-    for (int i = 0; i < nIPs_Lp2; i++)
-    {
-        xAll[i + nIPs_Lp1 + nIPs_Le] = start_xLp2 + i * distance_xLp2;
-    }
-    //opserr << "This is xAll: " << xAll << endln;
+    return (int)(v(i) + 0.5);
 }
 
 void
-SimpsonNonUniformSpacedBeamIntegration::computeSectionWeights()
+SimpsonNonUniformSpacedBeamIntegration::setSegments(const Vector& lengths,
+    const Vector& nIPs)
 {
-    int nIPsTot = nIPs_Lp1+ nIPs_Lp2+nIPs_Le;
-    int nSubIntervalTot = nIPsTot - 1;
-    //Loop through each tripletand distribute weights
-    for (int i = 0; i < nSubIntervalTot / 2; ++i) {
-        double h2i = xAll[2 * i + 1] - xAll[2 * i ];
-        double h2iPlus1 = xAll[2 * i + 2] - xAll[2 * i + 1];
+    nSegments = lengths.Size();
 
-        wAll[2 * i ] += (h2i + h2iPlus1) / 6.0 * (2.0 - h2iPlus1 / h2i);
-        wAll[2 * i + 1] += (h2i + h2iPlus1) / 6.0 * ((h2i + h2iPlus1) * (h2i + h2iPlus1) / (h2i * h2iPlus1));
-        wAll[2 * i + 2] += (h2i + h2iPlus1) / 6.0 * (2.0 - h2i / h2iPlus1);
+    segLengths = Vector(nSegments);
+    segNIPs = Vector(nSegments);
+
+    for (int i = 0; i < nSegments; i++) {
+        segLengths(i) = lengths(i);
+        segNIPs(i) = nIPs(i);
     }
 
-    if (nSubIntervalTot % 2 != 0) // if odd number of subintervals
-    {
-        double hnMinus1 = xAll[nIPsTot - 1] - xAll[nIPsTot - 2];
-        double hnMinus2 = xAll[nIPsTot - 2] - xAll[nIPsTot - 3];
-        wAll[nIPsTot - 3] = wAll[nIPsTot - 3] - (pow(hnMinus1,3)) / (6 * hnMinus2 * (hnMinus2 + hnMinus1));
-        wAll[nIPsTot - 2] = wAll[nIPsTot - 2] + (pow(hnMinus1,2) + 3 * hnMinus1 * hnMinus2) / (6 * hnMinus2);
-        wAll[nIPsTot - 1] = wAll[nIPsTot - 1] + (2 * pow(hnMinus1,2) + 3 * hnMinus1 * hnMinus2) / (6 * (hnMinus2 + hnMinus1));
+    const int nIP = getNumUniqueIPs();
+
+    xAll = Vector(nIP);
+    wAll = Vector(nIP);
+
+    computeSectionLocationsAndWeights();
+}
+
+int
+SimpsonNonUniformSpacedBeamIntegration::getNumUniqueIPs(void) const
+{
+    if (nSegments <= 0)
+        return 0;
+
+    int nIP = SimpsonNonUniformSpacedBeamIntegration_getInt(segNIPs, 0);
+
+    for (int i = 1; i < nSegments; i++)
+        nIP += SimpsonNonUniformSpacedBeamIntegration_getInt(segNIPs, i) - 1;
+
+    return nIP;
+}
+
+void
+SimpsonNonUniformSpacedBeamIntegration::computeSectionLocationsAndWeights()
+{
+    double xStart = 0.0;
+    int nextGlobal = 0;
+
+    for (int s = 0; s < nSegments; s++) {
+        const double H = segLengths(s);
+        const int nPts = SimpsonNonUniformSpacedBeamIntegration_getInt(segNIPs, s);
+
+        if (nPts < 2) {
+            opserr << "SimpsonNonUniformSpacedBeamIntegration -- segment "
+                << s + 1 << " has fewer than 2 points" << endln;
+            return;
+        }
+
+        const double dx = H / (double)(nPts - 1);
+
+        // For s > 0, local point j = 0 is the same physical point as
+        // the last point of the previous segment, so do not insert it again.
+        const int baseGlobal = (s == 0) ? 0 : nextGlobal - 1;
+        const int firstLocalPointToInsert = (s == 0) ? 0 : 1;
+
+        for (int j = firstLocalPointToInsert; j < nPts; j++) {
+            xAll(nextGlobal) = xStart + (double)j * dx;
+            nextGlobal++;
+        }
+
+        // Composite Simpson over this segment only. The weights are added
+        // to shared interface points, which gives the merged/shared-point rule.
+        for (int j = 0; j < nPts - 2; j += 2) {
+            const double h0 = dx;
+            const double h1 = dx;
+
+            const double w0 = (h0 + h1) / 6.0 * (2.0 - h1 / h0);
+            const double w1 = (h0 + h1) / 6.0 *
+                ((h0 + h1) * (h0 + h1) / (h0 * h1));
+            const double w2 = (h0 + h1) / 6.0 * (2.0 - h0 / h1);
+
+            wAll(baseGlobal + j) += w0;
+            wAll(baseGlobal + j + 1) += w1;
+            wAll(baseGlobal + j + 2) += w2;
+        }
+
+        xStart += H;
     }
 
-    //opserr << "This is wAll: " << wAll << endln;
-      
+    // opserr << "This is xAll: " << xAll << endln;
+    // opserr << "This is wAll: " << wAll << endln;
 }
 
 void
@@ -202,5 +296,6 @@ double *wt)
 void
 SimpsonNonUniformSpacedBeamIntegration::Print(OPS_Stream &s, int flag)
 {
-	s << "Simpson" << endln;
+    s << "SimpsonNonUniformSpacedBeamIntegration" << endln;
+    s << "  number of segments: " << nSegments << endln;
 }
