@@ -377,6 +377,87 @@ NDTestNonlocalFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
   double d4 = deforms(4);
   double d5 = deforms(5);
 
+
+  // ------------------------------------------------------------
+// DEBUG: capture two section states across tangent jump
+// ------------------------------------------------------------
+  /*const int debugSectionTag = 131;
+
+  const double d1A_target = -6.96028e-05;
+  const double d1B_target = -6.95522e-05;
+  const double d1Tol = 1.0e-09;
+
+  bool captureA = (this->getTag() == debugSectionTag &&
+      fabs(d1 - d1A_target) < d1Tol);
+
+  bool captureB = (this->getTag() == debugSectionTag &&
+      fabs(d1 - d1B_target) < d1Tol);
+
+  bool debugFiberFD = captureA || captureB;
+
+  static bool haveA = false;
+  static int haveATag = -1;
+
+  static double A_eps0[10000];
+  static double A_eps1[10000];
+  static double A_eps2[10000];
+  static double A_sig0[10000];
+  static double A_C00[10000];
+  static double A_C01[10000];
+  static double A_C02[10000];
+  static double A_y[10000];
+  static double A_z[10000];
+  static double A_area[10000];
+
+  double sum_dK11 = 0.0;
+  double sum_K11A = 0.0;
+  double sum_K11B = 0.0;
+
+  double topAbsDK[10];
+  int    topFiber[10];
+  double topY[10];
+  double topZ[10];
+  double topArea[10];
+  double topK11A[10];
+  double topK11B[10];
+  double topDK11[10];
+  double topC00A[10];
+  double topC00B[10];
+  double topSigA[10];
+  double topSigB[10];
+  double topEpsA[10];
+  double topEpsB[10];
+
+  for (int kk = 0; kk < 10; kk++)
+  {
+      topAbsDK[kk] = 0.0;
+      topFiber[kk] = -1;
+      topY[kk] = 0.0;
+      topZ[kk] = 0.0;
+      topArea[kk] = 0.0;
+      topK11A[kk] = 0.0;
+      topK11B[kk] = 0.0;
+      topDK11[kk] = 0.0;
+      topC00A[kk] = 0.0;
+      topC00B[kk] = 0.0;
+      topSigA[kk] = 0.0;
+      topSigB[kk] = 0.0;
+      topEpsA[kk] = 0.0;
+      topEpsB[kk] = 0.0;
+  }
+
+  if (debugFiberFD)
+  {
+      opserr.precision(17);
+      opserr << "\n================ SECTION DEBUG STATE ================" << endln;
+      opserr << "section tag = " << this->getTag() << endln;
+      opserr << "captureA = " << captureA << endln;
+      opserr << "captureB = " << captureB << endln;
+      opserr << "d1 = " << d1 << endln;
+      opserr << "deforms = " << deforms << endln;
+      opserr << "=====================================================" << endln;
+  }*/
+
   static double yLocs[10000];
   static double zLocs[10000];
   static double fiberArea[10000];
@@ -434,6 +515,83 @@ NDTestNonlocalFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     const Matrix &tangent = theMat->getTangent();
     //const Matrix& strainIncrementDecomposition = theMat->getStrainIncrementDecomposition();
     //opserr << "This is strainIncrementDecomposition" << strainIncrementDecomposition << endln;
+
+
+    // Diagnostics 06/02/2026
+    // ------------------------------------------------------------
+// DEBUG: store state A, compare state B
+// ------------------------------------------------------------
+    /*if (captureA)
+    {
+        A_eps0[i] = eps(0);
+        A_eps1[i] = eps(1);
+        A_eps2[i] = eps(2);
+
+        A_sig0[i] = stress(0);
+
+        A_C00[i] = tangent(0, 0);
+        A_C01[i] = tangent(0, 1);
+        A_C02[i] = tangent(0, 2);
+
+        A_y[i] = y;
+        A_z[i] = z;
+        A_area[i] = A;
+    }
+
+    if (captureB && haveA && haveATag == this->getTag())
+    {
+        double K11A = y * y * A * A_C00[i];
+        double K11B = y * y * A * tangent(0, 0);
+        double dK11 = K11B - K11A;
+
+        sum_K11A += K11A;
+        sum_K11B += K11B;
+        sum_dK11 += dK11;
+
+        double absDK = fabs(dK11);
+
+        for (int kk = 0; kk < 10; kk++)
+        {
+            if (absDK > topAbsDK[kk])
+            {
+                for (int mm = 9; mm > kk; mm--)
+                {
+                    topAbsDK[mm] = topAbsDK[mm - 1];
+                    topFiber[mm] = topFiber[mm - 1];
+                    topY[mm] = topY[mm - 1];
+                    topZ[mm] = topZ[mm - 1];
+                    topArea[mm] = topArea[mm - 1];
+                    topK11A[mm] = topK11A[mm - 1];
+                    topK11B[mm] = topK11B[mm - 1];
+                    topDK11[mm] = topDK11[mm - 1];
+                    topC00A[mm] = topC00A[mm - 1];
+                    topC00B[mm] = topC00B[mm - 1];
+                    topSigA[mm] = topSigA[mm - 1];
+                    topSigB[mm] = topSigB[mm - 1];
+                    topEpsA[mm] = topEpsA[mm - 1];
+                    topEpsB[mm] = topEpsB[mm - 1];
+                }
+
+                topAbsDK[kk] = absDK;
+                topFiber[kk] = i;
+                topY[kk] = y;
+                topZ[kk] = z;
+                topArea[kk] = A;
+                topK11A[kk] = K11A;
+                topK11B[kk] = K11B;
+                topDK11[kk] = dK11;
+                topC00A[kk] = A_C00[i];
+                topC00B[kk] = tangent(0, 0);
+                topSigA[kk] = A_sig0[i];
+                topSigB[kk] = stress(0);
+                topEpsA[kk] = A_eps0[i];
+                topEpsB[kk] = eps(0);
+
+                break;
+            }
+        }
+    }*/
+
 
     double d00 = tangent(0,0)*A;
     double d01 = tangent(0,1)*A;
@@ -519,6 +677,80 @@ NDTestNonlocalFiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     si(4) += rootAlpha*sig2;
     si(5) += -z*sig1 + y*sig2;
   }
+
+  // ------------------------------------------------------------
+// DEBUG: finalize two-state comparison
+// ------------------------------------------------------------
+  /*if (captureA)
+  {
+      haveA = true;
+      haveATag = this->getTag();
+
+      opserr.precision(17);
+      opserr << "\n***** STORED SECTION STATE A *****" << endln;
+      opserr << "section tag = " << this->getTag() << endln;
+      opserr << "d1A = " << d1 << endln;
+      opserr << "**********************************" << endln;
+  }
+
+  if (captureB)
+  {
+      opserr.precision(17);
+      opserr << "\n##################################################" << endln;
+      opserr << "SECTION TANGENT JUMP FIBER DIAGNOSTIC" << endln;
+      opserr << "section tag = " << this->getTag() << endln;
+      opserr << "d1B = " << d1 << endln;
+      opserr << "haveA = " << haveA << endln;
+      opserr << "haveATag = " << haveATag << endln;
+
+      if (haveA && haveATag == this->getTag())
+      {
+          opserr << "sum_K11A = " << sum_K11A << endln;
+          opserr << "sum_K11B = " << sum_K11B << endln;
+          opserr << "sum_dK11 = " << sum_dK11 << endln;
+
+          opserr << "\nTop fibers contributing to K11 jump:" << endln;
+
+          for (int kk = 0; kk < 10; kk++)
+          {
+              if (topFiber[kk] >= 0)
+              {
+                  opserr << "\nrank " << kk
+                      << " fiber " << topFiber[kk]
+                      << " y = " << topY[kk]
+                      << " z = " << topZ[kk]
+                      << " A = " << topArea[kk]
+                      << endln;
+
+                  opserr << "  K11A = " << topK11A[kk]
+                      << " K11B = " << topK11B[kk]
+                      << " dK11 = " << topDK11[kk]
+                      << endln;
+
+                  opserr << "  C00A = " << topC00A[kk]
+                      << " C00B = " << topC00B[kk]
+                      << " dC00 = " << topC00B[kk] - topC00A[kk]
+                      << endln;
+
+                  opserr << "  sig0A = " << topSigA[kk]
+                      << " sig0B = " << topSigB[kk]
+                      << " dsig0 = " << topSigB[kk] - topSigA[kk]
+                      << endln;
+
+                  opserr << "  eps0A = " << topEpsA[kk]
+                      << " eps0B = " << topEpsB[kk]
+                      << " deps0 = " << topEpsB[kk] - topEpsA[kk]
+                      << endln;
+              }
+          }
+      }
+      else
+      {
+          opserr << "WARNING: state B was reached, but state A was not stored first." << endln;
+      }
+
+      opserr << "##################################################" << endln;
+  }*/
 
   if (alpha != 1.0) {
 

@@ -912,6 +912,11 @@ int HLBModel::timeIntegration() {
 	deltaStrain_fullIncrement = strainTrial - strainConverged;
 	deltaStrain_trial = deltaStrain_todo;
 
+	// Updated 06/02/2026
+	const double FULL_INC_NORM = deltaStrain_fullIncrement.Norm();
+	const double TODO_TOL = 1.0e-10 * (1.0 + FULL_INC_NORM);
+
+
 	/*if (strainConverged(0) <= -0.0203703 && strainConverged(0) > -0.0203705 && strainTrial(0) <= -0.0203203 && strainTrial(0) > -0.0203205) {
 		double testBreak = 0.;
 		opserr << "This is strainConverged: " << strainConverged << endln;
@@ -922,22 +927,41 @@ int HLBModel::timeIntegration() {
 		fabs(strainTrial(1) - 0.00195523) < 2.0e-5 &&
 		fabs(strainTrial(2) - 0.00111068) < 2.0e-5;*/
 
-	//// Diagnostics 05/20/2026
-	//if (debugFiber3Jump) {
-	//	opserr.precision(17);
-	//	opserr << "================ MATERIAL DEBUG FIBER 3 JUMP ================" << endln;
-	//	opserr << "strainConverged = " << strainConverged << endln;
-	//	opserr << "strainTrial     = " << strainTrial << endln;
-	//	opserr << "deltaStrain     = " << strainTrial - strainConverged << endln;
+	/*bool debugSmallFail =
+		fabs(strainConverged(0) + 0.00468241) < 2.0e-7 &&
+		fabs(strainConverged(1) + 0.00041248) < 2.0e-7 &&
+		fabs(strainConverged(2) - 0.000279847) < 2.0e-7 &&
+		fabs(strainTrial(0) + 0.00467377) < 2.0e-7 &&
+		fabs(strainTrial(1) + 0.000411497) < 2.0e-7 &&
+		fabs(strainTrial(2) - 0.000279897) < 2.0e-7;
 
-	//	opserr << "stressConverged = " << stressConverged << endln;
-	//	opserr << "strainPlasticConverged = " << strainPlasticConverged << endln;
-	//	opserr << "strainPostBucklingConverged = " << strainPostBucklingConverged << endln;
-	//	opserr << "strainPEqConverged = " << strainPEqConverged << endln;
-	//	opserr << "sigmaCConverged = " << sigmaCConverged << endln;
-	//	opserr << "yieldStressPBConverged = " << yieldStressPBConverged << endln;
-	//	opserr << "==============================================================" << endln;
-	//}
+	if (debugSmallFail)
+	{
+		opserr.precision(17);
+		opserr << "\n================ MATERIAL SMALL-STEP FAIL DEBUG BEFORE ================" << endln;
+		opserr << "material tag = " << this->getTag() << endln;
+		opserr << "strainConverged = " << strainConverged << endln;
+		opserr << "strainTrial     = " << strainTrial << endln;
+		opserr << "deltaStrain     = " << strainTrial - strainConverged << endln;
+		opserr << "deltaStrain norm = " << (strainTrial - strainConverged).Norm() << endln;
+
+		opserr << "stressConverged = " << stressConverged << endln;
+		opserr << "strainPlasticConverged = " << strainPlasticConverged << endln;
+		opserr << "strainPostBucklingConverged = " << strainPostBucklingConverged << endln;
+		opserr << "strainPEqConverged = " << strainPEqConverged << endln;
+		opserr << "strainPBEqConverged = " << strainPBEqConverged << endln;
+
+		opserr << "sigmaCConverged = " << sigmaCConverged << endln;
+		opserr << "yieldStressPBConverged = " << yieldStressPBConverged << endln;
+		opserr << "epsilonPB11UnloadConverged = " << epsilonPB11UnloadConverged << endln;
+		opserr << "epsilonPB11MinConverged = " << epsilonPB11MinConverged << endln;
+
+		opserr << "stiffnessConverged row 0 = "
+			<< stiffnessConverged(0, 0) << " "
+			<< stiffnessConverged(0, 1) << " "
+			<< stiffnessConverged(0, 2) << endln;
+		opserr << "=======================================================================" << endln;
+	}*/
 
 	// Loop for time integration
 	while (!convergedMatLaw && iterationNumber_timeIntegration < MAXIMUM_ITERATIONS_TIMEINTEGRATION) {
@@ -985,7 +1009,8 @@ int HLBModel::timeIntegration() {
 
 				// Check if we have done the full strain increment
 				deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
-				if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+				//if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+				if (deltaStrain_todo.Norm() <= TODO_TOL) { // full strain increment has been done // updated 06/02/2026
 					convergedMatLaw = true;
 				}
 				else { // converged but there is more strain increment to do
@@ -1061,7 +1086,8 @@ int HLBModel::timeIntegration() {
 						deltaStrain_todo = deltaStrain_todo - deltaStrain_trial;
 
 						// Check if the full strain increment has been done
-						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= TODO_TOL) { // full strain increment has been done // updated 06/02/2026
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -1156,7 +1182,8 @@ int HLBModel::timeIntegration() {
 
 						// Check if the full strain increment has been done
 						//if (deltaStrain_todo.Norm() <= SMALL_NUMBER) { // full strain increment has been done
-						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= TODO_TOL) { // full strain increment has been done // updated 06/02/2026
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -1240,7 +1267,8 @@ int HLBModel::timeIntegration() {
 
 						// Check if the full strain increment has been done
 						//if (deltaStrain_todo.Norm() <= SMALL_NUMBER) { // full strain increment has been done
-						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= TODO_TOL) { // full strain increment has been done // updated 06/02/2026
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -1287,7 +1315,8 @@ int HLBModel::timeIntegration() {
 
 					// Check if the full strain increment has been done
 					//if (deltaStrain_todo.Norm() <= SMALL_NUMBER) { // full strain increment has been done
-					if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+					//if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+					if (deltaStrain_todo.Norm() <= TODO_TOL) { // full strain increment has been done // updated 06/02/2026
 						convergedMatLaw = true;
 					}
 					else { // converged but there is more strain increment to do
@@ -1344,7 +1373,8 @@ int HLBModel::timeIntegration() {
 
 						// Check if the full strain increment has been done
 						//if (deltaStrain_todo.Norm() <= SMALL_NUMBER) { // full strain increment has been done
-						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= TODO_TOL) { // full strain increment has been done // updated 06/02/2026
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -1419,7 +1449,8 @@ int HLBModel::timeIntegration() {
 
 						// Check if the full strain increment has been done
 						//if (deltaStrain_todo.Norm() <= SMALL_NUMBER) { // full strain increment has been done
-						if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						//if (deltaStrain_todo.Norm() <= 0.) { // full strain increment has been done
+						if (deltaStrain_todo.Norm() <= TODO_TOL) { // full strain increment has been done // updated 06/02/2026
 							convergedMatLaw = true;
 						}
 						else { // converged but there is more strain increment to do
@@ -1480,21 +1511,78 @@ int HLBModel::timeIntegration() {
 	}
 
 	//// Diagnostics 05/20/2026
-	//if (debugFiber3Jump) {
+	//if (debugSmallFail)
+	//{
 	//	opserr.precision(17);
-	//	opserr << "================ MATERIAL DEBUG FIBER 3 AFTER ================" << endln;
+
+	//	double sigmaVMsq =
+	//		3.0 / 2.0 * (
+	//			2.0 / 3.0 * pow(stressTrial(0), 2.0)
+	//			+ 2.0 * pow(stressTrial(1), 2.0)
+	//			+ 2.0 * pow(stressTrial(2), 2.0)
+	//			);
+
+	//	double sigmaVM = sqrt(sigmaVMsq);
+	//	double capFunction = sigmaVMsq - pow(sigmaCTrial, 2.0);
+
+	//	opserr << "\n================ MATERIAL SMALL-STEP FAIL DEBUG AFTER ================" << endln;
+	//	opserr << "material tag = " << this->getTag() << endln;
 	//	opserr << "retVal = " << retVal << endln;
+	//	opserr << "convergedMatLaw = " << static_cast<int>(convergedMatLaw) << endln;
+	//	opserr << "iterationNumber_timeIntegration = "
+	//		<< iterationNumber_timeIntegration << endln;
+
+	//	opserr << "\n--- strain increments ---" << endln;
+	//	opserr << "strainConverged = " << strainConverged << endln;
+	//	opserr << "strainTrial     = " << strainTrial << endln;
+	//	opserr << "strainIntermed  = " << strainIntermed << endln;
+	//	opserr << "deltaStrain_todo  = " << deltaStrain_todo << endln;
+	//	opserr << "deltaStrain_trial = " << deltaStrain_trial << endln;
+	//	opserr << "deltaStrain_todo norm  = " << deltaStrain_todo.Norm() << endln;
+	//	opserr << "deltaStrain_trial norm = " << deltaStrain_trial.Norm() << endln;
+
+	//	opserr << "\n--- final trial state ---" << endln;
 	//	opserr << "stressTrial = " << stressTrial << endln;
 	//	opserr << "strainPlasticTrial = " << strainPlasticTrial << endln;
 	//	opserr << "strainPostBucklingTrial = " << strainPostBucklingTrial << endln;
 	//	opserr << "strainPEqTrial = " << strainPEqTrial << endln;
+	//	opserr << "strainPBEqTrial = " << strainPBEqTrial << endln;
+
+	//	opserr << "\n--- surfaces ---" << endln;
+	//	opserr << "sigmaVM = " << sigmaVM << endln;
 	//	opserr << "sigmaCTrial = " << sigmaCTrial << endln;
-	//	opserr << "yieldStressPBTrial = " << yieldStressPBTrial << endln;
-	//	opserr << "alphaPKTrial[0] = " << alphaPKTrial[0] << endln;
-	//	opserr << "alphaPKTrial[1] = " << alphaPKTrial[1] << endln;
-	//	opserr << "alphaPBKTrial[0] = " << alphaPBKTrial[0] << endln;
-	//	opserr << "alphaPBKTrial[1] = " << alphaPBKTrial[1] << endln;
-	//	opserr << "==============================================================" << endln;
+	//	opserr << "sigmaVM - sigmaCTrial = " << sigmaVM - sigmaCTrial << endln;
+	//	opserr << "capFunction = " << capFunction << endln;
+	//	opserr << "capFunctionNorm = " << capFunction / pow(sigmaC0Stress, 2.0) << endln;
+
+	//	opserr << "phiTension = " << phiTension << endln;
+	//	opserr << "phiCompression = " << phiCompression << endln;
+	//	opserr << "phiTensionNorm = "
+	//		<< phiTension / (2.0 / 3.0 * pow(initialYield, 2.0)) << endln;
+	//	opserr << "phiCompressionNorm = "
+	//		<< phiCompression / (2.0 / 3.0 * pow(initialYield, 2.0)) << endln;
+
+	//	opserr << "\n--- branch flags ---" << endln;
+	//	opserr << "elasticLoading = " << elasticLoading << endln;
+	//	opserr << "plasticLoading = " << plasticLoading << endln;
+	//	opserr << "postBucklingLoading = " << postBucklingLoading << endln;
+	//	opserr << "PlRecoveryLoading = " << PlRecoveryLoading << endln;
+	//	opserr << "UVCRecoveryLoading = " << UVCRecoveryLoading << endln;
+
+	//	opserr << "\n--- PB/recovery variables ---" << endln;
+	//	opserr << "strainPostBucklingIntermed = " << strainPostBucklingIntermed << endln;
+	//	opserr << "epsilonPB11UnloadIntermed = " << epsilonPB11UnloadIntermed << endln;
+	//	opserr << "epsilonPB11MinIntermed = " << epsilonPB11MinIntermed << endln;
+	//	opserr << "epsilonPB11UnloadTrial = " << epsilonPB11UnloadTrial << endln;
+	//	opserr << "epsilonPB11MinTrial = " << epsilonPB11MinTrial << endln;
+
+	//	opserr << "\n--- tangent ---" << endln;
+	//	opserr << "stiffnessTrial row 0 = "
+	//		<< stiffnessTrial(0, 0) << " "
+	//		<< stiffnessTrial(0, 1) << " "
+	//		<< stiffnessTrial(0, 2) << endln;
+
+	//	opserr << "======================================================================" << endln;
 	//}
 
 	return retVal;
