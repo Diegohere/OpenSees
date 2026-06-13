@@ -1020,6 +1020,15 @@ TclCommand_addFiberSection (ClientData clientData, Tcl_Interp *interp, int argc,
     currentSectionIsND = false;
     currentSectionIsWarping = false;
     currentSectionComputeCentroid = true;
+
+	currentSectionIsNDFiberTestNonlocal = false;
+	currentSectionIsNDTestShear4RectangleFiberSection3d = false;
+	currentSectionIsNDTestShear4WFFiberSection3d = false;
+	currentSectionIsNDTestShear4HSSFiberSection3d = false;
+	currentSectionIsNDShearFiberSection3d = false;
+
+	// Updated by Diego Heredia 06.13.2026
+
     if (strcmp(argv[1],"NDFiber") == 0)
       currentSectionIsND = true;
     if (strcmp(argv[1],"NDFiberWarping") == 0) {
