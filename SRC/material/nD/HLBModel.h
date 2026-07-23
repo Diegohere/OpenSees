@@ -312,7 +312,8 @@ private:
 	const double SMALL_NUMBER_STRESS = 1.0e-5;   // for normalized cap residual checks
 	const double DENOM_TOL = 1.0e-14;            // only for Newton denominator protection
 	// Updated 05/18/2026
-	const double RETURN_MAP_TOL_PLRECOV = 1.0e-10;
+	//const double RETURN_MAP_TOL_PLRECOV = 1.0e-10;
+	const double RETURN_MAP_TOL_PLRECOV = 1.0e-8;
 	const double DLAMBDA_TOL_PLRECOV = 1.0e-15;
 	// Updated 05/19/2026
 	const unsigned int MAXIMUM_ITERATIONS_TRANSITIONS= 50;

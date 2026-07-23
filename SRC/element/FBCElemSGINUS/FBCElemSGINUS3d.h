@@ -174,7 +174,9 @@ private:
 	//double DeltaWSectionTol = 1e-4;
 	bool isSoftening;
 
-	int isLocalizationSection[maxNumSections];
+	int isLocalizationSectionTrial[maxNumSections];
+	int isLocalizationSectionCommit[maxNumSections];
+	const double unloadTol = 1.0e-14;
 
 	bool isTorsion;
 

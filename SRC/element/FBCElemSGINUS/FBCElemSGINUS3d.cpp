@@ -137,7 +137,8 @@ isTorsion(false)
 	// Added 05/25/2026
 	for (int i = 0; i < maxNumSections; i++)
 	{
-		isLocalizationSection[i] = 0;
+		isLocalizationSectionTrial[i] = 0;
+		isLocalizationSectionCommit[i] = 0;
 	}
 }
 
@@ -189,7 +190,8 @@ FBCElemSGINUS3d::FBCElemSGINUS3d(int tag, int nodeI, int nodeJ, CrdTransf& CT, B
 	// Added 05/25/2026
 	for (int i = 0; i < numSec; i++)
 	{
-		isLocalizationSection[i] = 0;
+		isLocalizationSectionTrial[i] = 0;
+		isLocalizationSectionCommit[i] = 0;
 	}
 
 	/*Matrix A(6, 6);
@@ -382,6 +384,8 @@ FBCElemSGINUS3d::commitState()
 		eNonlocalCommit[i] = eNonlocal[i];
 		eLocalCommit[i] = eLocal[i];
 		srCommit[i] = sr[i];
+
+		isLocalizationSectionCommit[i] = isLocalizationSectionTrial[i];
 	}
 
 	// Commit the element variables state
@@ -416,6 +420,7 @@ FBCElemSGINUS3d::revertToLastCommit(void)
 		//sr[i] = sections[i]->getStressResultant();
 		sr[i] = srCommit[i];
 		FSection[i] = sections[i]->getSectionFlexibility();
+		isLocalizationSectionTrial[i] =isLocalizationSectionCommit[i];
 	}
 	// Revert coordinate transformation object to last committed state
 	if ((err = crdTransf->revertToLastCommit()))
@@ -465,7 +470,8 @@ FBCElemSGINUS3d::revertToStart(void)
 	// Reset localization active-set flags at the start of a new analysis
 	for (int i = 0; i < maxNumSections; i++)
 	{
-		isLocalizationSection[i] = 0;
+		isLocalizationSectionTrial[i] = 0;
+		isLocalizationSectionCommit[i] = 0;	
 	}
 
 	initialFlag = 0;
@@ -764,19 +770,19 @@ FBCElemSGINUS3d::update(void)
 					numItersMax = 10 * maxIters;
 				}
 
-				// Diagnostics 05/14/2026
-				Vector eBefore_Tot[maxNumSections];
-				Vector deApplied_Tot[maxNumSections];
-				Vector srBefore_Tot[maxNumSections];
-				Matrix KBefore_Tot[maxNumSections];
-				for (int kk = 0; kk < numSections; kk++)
-				{
-					int order = sections[kk]->getOrder();
-					eBefore_Tot[kk] = Vector(order);
-					deApplied_Tot[kk] = Vector(order);
-					srBefore_Tot[kk] = Vector(order);
-					KBefore_Tot[kk] = Matrix(order, order);
-				}
+				//// Diagnostics 05/14/2026
+				//Vector eBefore_Tot[maxNumSections];
+				//Vector deApplied_Tot[maxNumSections];
+				//Vector srBefore_Tot[maxNumSections];
+				//Matrix KBefore_Tot[maxNumSections];
+				//for (int kk = 0; kk < numSections; kk++)
+				//{
+				//	int order = sections[kk]->getOrder();
+				//	eBefore_Tot[kk] = Vector(order);
+				//	deApplied_Tot[kk] = Vector(order);
+				//	srBefore_Tot[kk] = Vector(order);
+				//	KBefore_Tot[kk] = Matrix(order, order);
+				//}
 
 				for (j = 0; j < numItersMax; j++)
 				{
@@ -787,6 +793,11 @@ FBCElemSGINUS3d::update(void)
 					//Compute matrices H and Hinv for nonlocal
 					//computeMatrixH();
 					computeCoefficientMatrixH();
+
+
+					// Diagnostics 07/11/2026
+					// Save the H actually used during this element iteration
+					Matrix HUsed(coeffs_H);
 
 					//todo store this in matri and use and the end
 					//if (beamIntegr->addElasticFlexibility(L, Felement) < 0)
@@ -910,7 +921,7 @@ FBCElemSGINUS3d::update(void)
 
 					for (i = 0; i < numSections; i++)
 					{
-						// set section deformations
+						//// set section deformations
 						if (initialFlag != 0)
 						{
 							eNonLocalSubdivide[i] += deStar_nonlocal_Tot[i];  //e_NL += deStar_nonlocal
@@ -941,12 +952,6 @@ FBCElemSGINUS3d::update(void)
 						//static Vector eu_local_interm(NEBD);  //intermediate vector to fill eu_local_tot
 						//eu_local_interm.Zero();
 
-						//// Added diagnostics 05/14/2026
-						//if (j > 40 && i == 0)
-						//{
-						//	opserr << "Debug here: " <<  endln;
-						//}
-
 						//Set the section deformations for section state determination
 						if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i]) < 0)
 							//if (sections[i]->setTrialSectionDeformation(eLocalSubdivide[i], eNonlocalCommit[i], allSectionFibersDSigma11Dx[i]) < 0)
@@ -960,8 +965,8 @@ FBCElemSGINUS3d::update(void)
 						// get section resisting forces
 						srSubdivide[i] = sections[i]->getStressResultant();
 
-						// //Added diagnostics 05/14/2026
-						//if (j > 40 && i == 0)
+						 //Added diagnostics 05/14/2026
+						//if (j > 40 && i == 3)
 						//{
 						//	int order = sections[i]->getOrder();
 						//	Vector eA = eBefore_Tot[i];
@@ -1248,6 +1253,14 @@ FBCElemSGINUS3d::update(void)
 						return -1;
 					}
 
+					// Measure whether deformation actually changed // Updated 07/11/2026
+					double maxAbsDeltaESection[maxNumSections];
+					double maxAbsDeltaEElement = 0.0;
+					for (int k = 0; k < numSections; k++)
+					{
+						maxAbsDeltaESection[k] = 0.0;
+					}
+
 					// Check if section experiences softening
 					double WDot_isec;
 					double WDot_cumulativeSoft = 0.;
@@ -1266,7 +1279,7 @@ FBCElemSGINUS3d::update(void)
 						if (WDot_isec < 0.)
 						{
 							WDot_cumulativeSoft += WDot_isec;
-							isLocalizationSection[i] = 1; // updated 05/25/2026
+							isLocalizationSectionTrial[i] = 1; // updated 05/25/2026
 						}
 						/*else if (eLocalSubdivide[i].Norm() - eLocalCommit[i].Norm() < 0.)
 						{
@@ -1277,6 +1290,30 @@ FBCElemSGINUS3d::update(void)
 						int component_unload = 0;
 						for (int iComp = 0; iComp < NEBD; iComp++)
 						{
+							//Actual deformation difference updated 07/11/2026
+							const double deltaEComponent =
+								eLocalSubdivide[i](iComp) -
+								eLocalCommit[i](iComp);
+
+							const double absDeltaEComponent =
+								fabs(deltaEComponent);
+
+
+							if (absDeltaEComponent >
+								maxAbsDeltaESection[i])
+							{
+								maxAbsDeltaESection[i] =
+									absDeltaEComponent;
+							}
+
+
+							if (absDeltaEComponent >
+								maxAbsDeltaEElement)
+							{
+								maxAbsDeltaEElement =
+									absDeltaEComponent;
+							}
+
 							if (eLocalSubdivide[i](iComp) * eLocalCommit[i](iComp) > 0 && fabs(eLocalSubdivide[i](iComp)) <= fabs(eLocalCommit[i](iComp)))
 							{
 								component_unload += 1;
@@ -1286,11 +1323,22 @@ FBCElemSGINUS3d::update(void)
 						{
 							elasticUnload += 1;
 							WDot_cumulativeElasticUnload += WDot_isec;
-							isLocalizationSection[i] = 0; // updated 05/25/2026
+							//isLocalizationSectionTrial[i] = 0; // updated 07/11/2026
 						}
 					}
-					if (elasticUnload == numSections)
+
+					// Diagnostics only: this merely records the result
+					const bool wholeElementUnloadBranch =
+						(elasticUnload == numSections);
+
+
+					//if (elasticUnload == numSections)
+					if (elasticUnload == numSections && maxAbsDeltaEElement > unloadTol) // updated 07/11/2026
 					{
+						for (i = 0; i < numSections; i++)
+						{
+							isLocalizationSectionTrial[i] = 0; // updated 07/11/2026
+						}
 						WSofteningTrial = std::max(std::min(WSofteningCommit + WDot_cumulativeElasticUnload, 0.), WSofteningTol);
 					}
 					else
@@ -1299,6 +1347,8 @@ FBCElemSGINUS3d::update(void)
 					}
 					// Trick to always do Gradient formulations
 					//WSofteningTrial = WSofteningTol;
+
+
 
 					//todo 
 					/*opserr << "This is the element flexibility matrix:" << Felement << endln;
@@ -2378,11 +2428,25 @@ FBCElemSGINUS3d::initCoefficientMatrixH()
 	coeffs_H_GI(numSections - 1, 2) = 1.;
 	//opserr << "This is coeffs_H_GI:" << coeffs_H_GI << endln;
 
-	double ASection = abs(sections[0]->getSectionArea());
-	//WSofteningTol = -1. * numSections * ASection * 0.5 * 378. * 1e-6;
-	WSofteningTol = -1. * ASection * 0.5 * 378. * 1e-6;
-	/*double alphaSoftTol = 1e3;
-	WSofteningTol = alphaSoftTol * WSofteningTol;*/
+	/*double ASection = abs(sections[0]->getSectionArea());
+	WSofteningTol = -1. * ASection * 0.5 * 378. * 1e-6;*/
+	// For RBS
+	double ASectionRef =
+		fabs(sections[0]->getSectionArea());
+	int iSectionRef = 0;
+	for (int i = 1; i < numSections; ++i)
+	{
+		const double ASectionCurrent =
+			fabs(sections[i]->getSectionArea());
+
+		if (ASectionCurrent < ASectionRef)
+		{
+			ASectionRef = ASectionCurrent;
+			iSectionRef = i;
+		}
+	}
+	WSofteningTol = -1. * ASectionRef * 0.5 * 378. * 1e-6;
+
 }
 
 // Method to compute updated values Ac using exponential smoothing function and Bc for matrix H
@@ -2407,7 +2471,7 @@ FBCElemSGINUS3d::computeCoefficientMatrixH()
 	coeffs_H(0, 0) = 1.;
 	for (int i = 1; i < numSections - 1; i++)
 	{
-		if (isLocalizationSection[i]==0)
+		if (isLocalizationSectionTrial[i]==0)
 		{
 			coeffs_H(i, 0) = gXStar * 0 + (1 - gXStar) * coeffs_H_GI(i, 0);
 			coeffs_H(i, 1) = gXStar * 1 + (1 - gXStar) * coeffs_H_GI(i, 1);
